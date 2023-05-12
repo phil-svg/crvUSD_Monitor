@@ -1,0 +1,25 @@
+{
+  "name": "crvusd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "phil",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "dotenv": "^16.0.3",
+    "fs": "^0.0.1-security",
+    "node-telegram-bot-api": "^0.61.0",
+    "typescript": "^5.0.4",
+    "web3": "^1.9.0",
+    "web3-eth-contract": "^1.9.0"
+  },
+  "devDependencies": {
+    "@types/node-telegram-bot-api": "^0.61.6",
+    "copyfiles": "^2.4.1"
+  }
+}
