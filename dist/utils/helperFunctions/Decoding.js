@@ -117,22 +117,6 @@ export async function processBorrowEvent(event) {
 export async function processTokenExchangeEvent(event) {
     const ADDRESS_crvUSD = "0xf71040d20Cc3FFBb28c1abcEF46134C7936624e0";
     const ADDRESS_sfrxETH = "0xac3E018457B222d93114458476f3E3416Abbe38F";
-    let soldAddress;
-    let boughtAddress;
-    let tokenSoldName;
-    let tokenBoughtName;
-    if (event.returnValues.sold_id === "0") {
-        soldAddress = ADDRESS_crvUSD;
-        boughtAddress = ADDRESS_sfrxETH;
-        tokenSoldName = "crvUSD";
-        tokenBoughtName = "sfrxETH";
-    }
-    if (event.returnValues.sold_id === "1") {
-        boughtAddress = ADDRESS_crvUSD;
-        soldAddress = ADDRESS_sfrxETH;
-        tokenSoldName = "sfrxETH";
-        tokenBoughtName = "crvUSD";
-    }
     let txHash = event.transactionHash;
     let buyer = event.returnValues.buyer;
     let soldAmount = event.returnValues.tokens_sold;
@@ -140,6 +124,25 @@ export async function processTokenExchangeEvent(event) {
     let boughtAmount = event.returnValues.tokens_bought;
     Number((boughtAmount /= 1e18));
     let price_sfrxETH = await getTokenPrice("0xac3E018457B222d93114458476f3E3416Abbe38F");
+    let soldAddress;
+    let boughtAddress;
+    let tokenSoldName;
+    let tokenBoughtName;
+    let numberOfcrvUSDper1_sfrxETH;
+    if (event.returnValues.sold_id === "0") {
+        soldAddress = ADDRESS_crvUSD;
+        boughtAddress = ADDRESS_sfrxETH;
+        tokenSoldName = "crvUSD";
+        tokenBoughtName = "sfrxETH";
+        numberOfcrvUSDper1_sfrxETH = soldAmount / boughtAmount;
+    }
+    if (event.returnValues.sold_id === "1") {
+        boughtAddress = ADDRESS_crvUSD;
+        soldAddress = ADDRESS_sfrxETH;
+        tokenSoldName = "sfrxETH";
+        tokenBoughtName = "crvUSD";
+        numberOfcrvUSDper1_sfrxETH = boughtAmount / soldAmount;
+    }
     let dollarAmount;
     if (event.returnValues.sold_id === "0")
         dollarAmount = Number(boughtAmount * price_sfrxETH);
@@ -147,6 +150,8 @@ export async function processTokenExchangeEvent(event) {
         dollarAmount = Number(soldAmount * price_sfrxETH);
     let crvUSDinCirculation = await getTotalDebt(event.blockNumber);
     return {
+        numberOfcrvUSDper1_sfrxETH,
+        price_sfrxETH,
         soldAddress,
         boughtAddress,
         txHash,

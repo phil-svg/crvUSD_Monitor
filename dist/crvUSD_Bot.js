@@ -28,8 +28,8 @@ async function main() {
     const CONTROLLER = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
     //////////////////////// HISTO MODE ////////////////////////
     /*
-    const START_BLOCK = 17239726;
-    const END_BLOCK = 17239726;
+    const START_BLOCK = 17243539;
+    const END_BLOCK = 17245162;
   
     const PAST_EVENTS_AMM = await getPastEvents(AMM, "allEvents", START_BLOCK, END_BLOCK);
   
