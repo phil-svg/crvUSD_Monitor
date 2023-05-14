@@ -242,7 +242,7 @@ export async function buildTokenExchangeMessage(formattedEventData) {
     }
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
-1 sfrxETH => ${formatForPrint(price_sfrxETH)} Dollar | ${formatForPrint(numberOfcrvUSDper1_sfrxETH)} crvUSD
+1 sfrxETH ➛ ${formatForPrint(price_sfrxETH)} Dollar | ${formatForPrint(numberOfcrvUSDper1_sfrxETH)} crvUSD
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;
