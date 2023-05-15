@@ -26,7 +26,7 @@ async function getTokenPrice(tokenAddress: string) {
 }
 
 async function getTotalDebt(blockNumber: number) {
-  const ADDRESS_CONTROLLER = "0xCdEdbd0AD036C046eDB19576ee65ea96b26075b1";
+  const ADDRESS_CONTROLLER = "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76";
   const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
   const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
 
@@ -39,7 +39,7 @@ async function getTotalDebt(blockNumber: number) {
 }
 
 async function getCrvUsdTranserAmount(event: any) {
-  const ADDRESS_crvUSD = "0xf71040d20Cc3FFBb28c1abcEF46134C7936624e0";
+  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
   const ABI_crvUSD_RAW = fs.readFileSync("../JSONs/crvUSDAbi.json", "utf8");
   const ABI_crvUSD = JSON.parse(ABI_crvUSD_RAW);
 
@@ -129,7 +129,7 @@ export async function processBorrowEvent(event: any) {
 }
 
 export async function processTokenExchangeEvent(event: any) {
-  const ADDRESS_crvUSD = "0xf71040d20Cc3FFBb28c1abcEF46134C7936624e0";
+  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
   const ADDRESS_sfrxETH = "0xac3E018457B222d93114458476f3E3416Abbe38F";
 
   let txHash = event.transactionHash;

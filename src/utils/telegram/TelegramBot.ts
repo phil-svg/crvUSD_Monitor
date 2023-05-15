@@ -86,7 +86,7 @@ function shortenAddress(address: string): string {
 
 export async function buildLiquidateMessage(formattedEventData: any) {
   let { dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation } = formattedEventData;
-  const ADDRESS_crvUSD = "0xf71040d20Cc3FFBb28c1abcEF46134C7936624e0";
+  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
   const ADDRESS_sfrxETH = "0xac3E018457B222d93114458476f3E3416Abbe38F";
 
   const liquidatorURL = getBuyerURL(liquidator);
@@ -97,8 +97,8 @@ export async function buildLiquidateMessage(formattedEventData: any) {
   const sfrxETH_URL = getTokenURL(ADDRESS_sfrxETH);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
   const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
-  const AMM_URL = getPoolURL("0x77fCFB78151c676f390a6236A78b5d3152e43384");
-  const CONTROLLER_URL = getPoolURL("0xCdEdbd0AD036C046eDB19576ee65ea96b26075b1");
+  const AMM_URL = getPoolURL("0x136e783846ef68C8Bd00a3369F787dF8d683a696");
+  const CONTROLLER_URL = getPoolURL("0x8472A9A7632b173c8Cf3a86D3afec50c35548e76");
 
   dollarAmount = formatForPrint(dollarAmount);
   var dollarAddon = getDollarAddOn(dollarAmount);
@@ -141,7 +141,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIG
 
 export async function buildRepayMessage(formattedEventData: any) {
   let { collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation } = formattedEventData;
-  const ADDRESS_crvUSD = "0xf71040d20Cc3FFBb28c1abcEF46134C7936624e0";
+  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
   const ADDRESS_sfrxETH = "0xac3E018457B222d93114458476f3E3416Abbe38F";
 
   const buyerURL = getBuyerURL(buyer);
@@ -171,7 +171,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIG
 
 export async function buildBorrowMessage(formattedEventData: any) {
   let { collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation } = formattedEventData;
-  const ADDRESS_crvUSD = "0xf71040d20Cc3FFBb28c1abcEF46134C7936624e0";
+  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
   const ADDRESS_sfrxETH = "0xac3E018457B222d93114458476f3E3416Abbe38F";
 
   const buyerURL = getBuyerURL(buyer);
@@ -204,7 +204,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIG
 
 export async function buildWithdrawMessage(formattedEventData: any) {
   let { withdrawnAmountcrvUSD, withdrawnAmountsfrxETH, txHash, buyer, crvUSDinCirculation } = formattedEventData;
-  const ADDRESS_crvUSD = "0xf71040d20Cc3FFBb28c1abcEF46134C7936624e0";
+  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
   const ADDRESS_sfrxETH = "0xac3E018457B222d93114458476f3E3416Abbe38F";
 
   const buyerURL = getBuyerURL(buyer);

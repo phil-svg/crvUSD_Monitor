@@ -134,10 +134,14 @@ export async function getBlockTimeStamp(blockNumber: number): Promise<number> {
   return Number(BLOCK.timestamp);
 }
 
-export async function subscribeToEvents(CONTRACT: Contract, eventEmitter: EventEmitter) {
+export async function subscribeToEvents(CONTRACT: any, eventEmitter: EventEmitter) {
   try {
-    CONTRACT.events
-      .allEvents()
+    const subscription = CONTRACT.events.allEvents();
+
+    subscription
+      .on("connected", () => {
+        console.log(CONTRACT._address, `subscribed to events successfully`);
+      })
       .on("data", async (eventData: any) => {
         eventEmitter.emit("newEvent", eventData);
       })

@@ -113,8 +113,11 @@ export async function getBlockTimeStamp(blockNumber) {
 }
 export async function subscribeToEvents(CONTRACT, eventEmitter) {
     try {
-        CONTRACT.events
-            .allEvents()
+        const subscription = CONTRACT.events.allEvents();
+        subscription
+            .on("connected", () => {
+            console.log(CONTRACT._address, `subscribed to events successfully`);
+        })
             .on("data", async (eventData) => {
             eventEmitter.emit("newEvent", eventData);
         })
