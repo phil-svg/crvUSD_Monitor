@@ -29,7 +29,7 @@ async function main() {
     //////////////////////// HISTO MODE ////////////////////////
     /*
     const START_BLOCK = 17258064;
-    const END_BLOCK = 17260365;
+    const END_BLOCK = 17264491;
   
     const PAST_EVENTS_AMM = await getPastEvents(AMM, "allEvents", START_BLOCK, END_BLOCK);
   
@@ -92,51 +92,51 @@ async function main() {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////// LIVE MODE ////////////////////////
     await subscribeToEvents(AMM, eventEmitter);
-    eventEmitter.on("newEvent", async (EVENT) => {
-        if (EVENT.event === "TokenExchange") {
-            console.log("New TokenExchange Event picked up by the Emitter:", EVENT);
-            const formattedEventData = await processTokenExchangeEvent(EVENT);
-            if (Object.values(formattedEventData).some((value) => value === undefined))
-                return;
-            const message = await buildTokenExchangeMessage(formattedEventData);
-            eventEmitter.emit("newMessage", message);
-        }
-    });
     await subscribeToEvents(CONTROLLER, eventEmitter);
-    eventEmitter.on("newEvent", async (CONTROLLER_EVENT) => {
-        if (CONTROLLER_EVENT === "Borrow") {
-            const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT);
+    eventEmitter.on("newEvent", async (EVENT) => {
+        // CONTROLLER EVENTS
+        if (EVENT.event === "Borrow") {
+            const formattedEventData = await processBorrowEvent(EVENT);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
             const message = await buildBorrowMessage(formattedEventData);
             eventEmitter.emit("newMessage", message);
         }
-        else if (CONTROLLER_EVENT === "Repay") {
-            let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT);
+        else if (EVENT.event === "Repay") {
+            let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER, EVENT);
             if (liquidateEventQuestion == true)
                 return;
-            const formattedEventData = await processRepayEvent(CONTROLLER_EVENT);
+            const formattedEventData = await processRepayEvent(EVENT);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
             const message = await buildRepayMessage(formattedEventData);
             eventEmitter.emit("newMessage", message);
         }
-        else if (CONTROLLER_EVENT === "RemoveCollateral") {
-            const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT);
+        else if (EVENT.event === "RemoveCollateral") {
+            const formattedEventData = await processRemoveCollateralEvent(EVENT);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
             const message = await buildRemoveCollateralMessage(formattedEventData);
             eventEmitter.emit("newMessage", message);
         }
-        else if (CONTROLLER_EVENT === "Liquidate") {
-            const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT);
+        else if (EVENT.event === "Liquidate") {
+            const formattedEventData = await processLiquidateEvent(EVENT);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
             const message = await buildLiquidateMessage(formattedEventData);
+            eventEmitter.emit("newMessage", message);
+            // AMM EVENT
+        }
+        else if (EVENT.event === "TokenExchange") {
+            console.log("New TokenExchange Event picked up by the Emitter:", EVENT);
+            const formattedEventData = await processTokenExchangeEvent(EVENT);
+            if (Object.values(formattedEventData).some((value) => value === undefined))
+                return;
+            const message = await buildTokenExchangeMessage(formattedEventData);
             eventEmitter.emit("newMessage", message);
         }
     });
