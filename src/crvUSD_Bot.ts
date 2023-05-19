@@ -8,8 +8,8 @@ import { EventEmitter } from "events";
 
 console.clear();
 
-const ENV = "prod";
-// const ENV = "test";
+// const ENV = "prod";
+const ENV = "test";
 
 const eventEmitter = new EventEmitter();
 
@@ -38,9 +38,12 @@ async function main() {
   const CONTROLLER = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
 
   //////////////////////// HISTO MODE ////////////////////////
-  /*
-  const START_BLOCK = 17258064;
-  const END_BLOCK = 17264491;
+
+  // const START_BLOCK = 17289206;
+  // const END_BLOCK = 17289206;
+
+  const START_BLOCK = 17288804;
+  const END_BLOCK = 17290400;
 
   const PAST_EVENTS_AMM = await getPastEvents(AMM, "allEvents", START_BLOCK, END_BLOCK);
 
@@ -48,9 +51,9 @@ async function main() {
 
   for (const AMM_EVENT of PAST_EVENTS_AMM) {
     if ((AMM_EVENT as { event: string }).event !== "TokenExchange") continue;
-    console.log(AMM_EVENT);
+    // console.log("AMM_EVENT", AMM_EVENT);
     const formattedEventData = await processTokenExchangeEvent(AMM_EVENT);
-    if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
+    if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined)) continue;
     const message = await buildTokenExchangeMessage(formattedEventData);
     eventEmitter.emit("newMessage", message);
   }
@@ -95,8 +98,9 @@ async function main() {
       i++;
     }
   }
+  process.exit();
   console.log(i);
-  */
+
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -140,7 +144,7 @@ async function main() {
     } else if (EVENT.event === "TokenExchange") {
       console.log("New TokenExchange Event picked up by the Emitter:", EVENT);
       const formattedEventData = await processTokenExchangeEvent(EVENT);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) return;
+      if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined)) return;
       const message = await buildTokenExchangeMessage(formattedEventData);
       eventEmitter.emit("newMessage", message);
     }

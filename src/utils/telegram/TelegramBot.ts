@@ -267,6 +267,9 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
     tokenSoldName,
     tokenBoughtName,
     crvUSDinCirculation,
+    profit,
+    revenue,
+    cost,
   } = formattedEventData;
 
   let tokenInURL = getTokenURL(soldAddress);
@@ -295,6 +298,7 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
 
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
+Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}
 1 sfrxETH ➛ ${formatForPrint(price_sfrxETH)} Dollar | ${formatForPrint(numberOfcrvUSDper1_sfrxETH)} crvUSD
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙

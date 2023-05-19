@@ -6,8 +6,8 @@ import { processTokenExchangeEvent, processBorrowEvent, processRepayEvent, proce
 import { buildTokenExchangeMessage, buildBorrowMessage, buildRepayMessage, buildRemoveCollateralMessage, buildLiquidateMessage } from "./utils/telegram/TelegramBot.js";
 import { EventEmitter } from "events";
 console.clear();
-const ENV = "prod";
-// const ENV = "test";
+// const ENV = "prod";
+const ENV = "test";
 const eventEmitter = new EventEmitter();
 async function isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT) {
     let blockNumber = CONTROLLER_EVENT.blockNumber;
@@ -27,65 +27,70 @@ async function main() {
     const AMM = new WEB3_WS_PROVIDER.eth.Contract(ABI_AMM, ADDRESS_AMM);
     const CONTROLLER = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
     //////////////////////// HISTO MODE ////////////////////////
-    /*
-    const START_BLOCK = 17258064;
-    const END_BLOCK = 17264491;
-  
+    // const START_BLOCK = 17289206;
+    // const END_BLOCK = 17289206;
+    const START_BLOCK = 17288804;
+    const END_BLOCK = 17290400;
     const PAST_EVENTS_AMM = await getPastEvents(AMM, "allEvents", START_BLOCK, END_BLOCK);
-  
-    if (!(PAST_EVENTS_AMM instanceof Array)) return;
-  
+    if (!(PAST_EVENTS_AMM instanceof Array))
+        return;
     for (const AMM_EVENT of PAST_EVENTS_AMM) {
-      if ((AMM_EVENT as { event: string }).event !== "TokenExchange") continue;
-      console.log(AMM_EVENT);
-      const formattedEventData = await processTokenExchangeEvent(AMM_EVENT);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
-      const message = await buildTokenExchangeMessage(formattedEventData);
-      eventEmitter.emit("newMessage", message);
+        if (AMM_EVENT.event !== "TokenExchange")
+            continue;
+        // console.log("AMM_EVENT", AMM_EVENT);
+        const formattedEventData = await processTokenExchangeEvent(AMM_EVENT);
+        if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined))
+            continue;
+        const message = await buildTokenExchangeMessage(formattedEventData);
+        eventEmitter.emit("newMessage", message);
     }
-  
     const PAST_EVENTS_CONTROLLER = await getPastEvents(CONTROLLER, "allEvents", START_BLOCK, END_BLOCK);
-  
-    if (!(PAST_EVENTS_CONTROLLER instanceof Array)) return;
-  
+    if (!(PAST_EVENTS_CONTROLLER instanceof Array))
+        return;
     let i = 0;
-  
     for (const CONTROLLER_EVENT of PAST_EVENTS_CONTROLLER) {
-      if ((CONTROLLER_EVENT as { event: string }).event === "Borrow") {
-        const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT);
-        console.log(formattedEventData);
-        if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
-        const message = await buildBorrowMessage(formattedEventData);
-        eventEmitter.emit("newMessage", message);
-        i++;
-      } else if ((CONTROLLER_EVENT as { event: string }).event === "Repay") {
-        let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT);
-        if (liquidateEventQuestion == true) continue;
-        const formattedEventData = await processRepayEvent(CONTROLLER_EVENT);
-        console.log(formattedEventData);
-        if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
-  
-        const message = await buildRepayMessage(formattedEventData);
-        eventEmitter.emit("newMessage", message);
-        i++;
-      } else if ((CONTROLLER_EVENT as { event: string }).event === "RemoveCollateral") {
-        const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT);
-        console.log(formattedEventData);
-        if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
-        const message = await buildRemoveCollateralMessage(formattedEventData);
-        eventEmitter.emit("newMessage", message);
-        i++;
-      } else if ((CONTROLLER_EVENT as { event: string }).event === "Liquidate") {
-        const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT);
-        console.log(formattedEventData);
-        if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
-        const message = await buildLiquidateMessage(formattedEventData);
-        eventEmitter.emit("newMessage", message);
-        i++;
-      }
+        if (CONTROLLER_EVENT.event === "Borrow") {
+            const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT);
+            console.log(formattedEventData);
+            if (Object.values(formattedEventData).some((value) => value === undefined))
+                continue;
+            const message = await buildBorrowMessage(formattedEventData);
+            eventEmitter.emit("newMessage", message);
+            i++;
+        }
+        else if (CONTROLLER_EVENT.event === "Repay") {
+            let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT);
+            if (liquidateEventQuestion == true)
+                continue;
+            const formattedEventData = await processRepayEvent(CONTROLLER_EVENT);
+            console.log(formattedEventData);
+            if (Object.values(formattedEventData).some((value) => value === undefined))
+                continue;
+            const message = await buildRepayMessage(formattedEventData);
+            eventEmitter.emit("newMessage", message);
+            i++;
+        }
+        else if (CONTROLLER_EVENT.event === "RemoveCollateral") {
+            const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT);
+            console.log(formattedEventData);
+            if (Object.values(formattedEventData).some((value) => value === undefined))
+                continue;
+            const message = await buildRemoveCollateralMessage(formattedEventData);
+            eventEmitter.emit("newMessage", message);
+            i++;
+        }
+        else if (CONTROLLER_EVENT.event === "Liquidate") {
+            const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT);
+            console.log(formattedEventData);
+            if (Object.values(formattedEventData).some((value) => value === undefined))
+                continue;
+            const message = await buildLiquidateMessage(formattedEventData);
+            eventEmitter.emit("newMessage", message);
+            i++;
+        }
     }
+    process.exit();
     console.log(i);
-    */
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +139,7 @@ async function main() {
         else if (EVENT.event === "TokenExchange") {
             console.log("New TokenExchange Event picked up by the Emitter:", EVENT);
             const formattedEventData = await processTokenExchangeEvent(EVENT);
-            if (Object.values(formattedEventData).some((value) => value === undefined))
+            if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined))
                 return;
             const message = await buildTokenExchangeMessage(formattedEventData);
             eventEmitter.emit("newMessage", message);

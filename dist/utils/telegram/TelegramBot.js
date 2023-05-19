@@ -221,7 +221,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIG
 `;
 }
 export async function buildTokenExchangeMessage(formattedEventData) {
-    let { numberOfcrvUSDper1_sfrxETH, price_sfrxETH, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, } = formattedEventData;
+    let { numberOfcrvUSDper1_sfrxETH, price_sfrxETH, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, } = formattedEventData;
     let tokenInURL = getTokenURL(soldAddress);
     let tokenOutURL = getTokenURL(boughtAddress);
     let buyerURL = getBuyerURL(buyer);
@@ -242,6 +242,7 @@ export async function buildTokenExchangeMessage(formattedEventData) {
     }
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
+Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}
 1 sfrxETH ➛ ${formatForPrint(price_sfrxETH)} Dollar | ${formatForPrint(numberOfcrvUSDper1_sfrxETH)} crvUSD
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙

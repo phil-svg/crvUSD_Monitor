@@ -2,6 +2,7 @@ import axios from "axios";
 import fs from "fs";
 import { getWeb3HttpProvider } from "./Web3.js";
 import { getPastEvents } from "../web3Calls/generic.js";
+import { solveProfit } from "../profit/profit.js";
 
 async function getTokenPrice(tokenAddress: string) {
   const maxAttempts = 5;
@@ -148,18 +149,24 @@ export async function processTokenExchangeEvent(event: any) {
   let tokenSoldName;
   let tokenBoughtName;
   let numberOfcrvUSDper1_sfrxETH;
+  let amount_sfrxETH;
+  let amount_crvUSD;
   if (event.returnValues.sold_id === "0") {
     soldAddress = ADDRESS_crvUSD;
     boughtAddress = ADDRESS_sfrxETH;
     tokenSoldName = "crvUSD";
+    amount_crvUSD = soldAmount;
     tokenBoughtName = "sfrxETH";
+    amount_sfrxETH = boughtAmount;
     numberOfcrvUSDper1_sfrxETH = soldAmount / boughtAmount;
   }
   if (event.returnValues.sold_id === "1") {
     boughtAddress = ADDRESS_crvUSD;
     soldAddress = ADDRESS_sfrxETH;
     tokenSoldName = "sfrxETH";
+    amount_sfrxETH = soldAmount;
     tokenBoughtName = "crvUSD";
+    amount_crvUSD = boughtAmount;
     numberOfcrvUSDper1_sfrxETH = boughtAmount / soldAmount;
   }
 
@@ -168,6 +175,10 @@ export async function processTokenExchangeEvent(event: any) {
   if (event.returnValues.sold_id === "1") dollarAmount = Number(soldAmount * price_sfrxETH);
 
   let crvUSDinCirculation = await getTotalDebt(event.blockNumber);
+  if (!tokenSoldName) return;
+
+  let [profit, revenue, cost] = (await solveProfit(event, tokenSoldName, amount_sfrxETH, amount_crvUSD)) || [0, 0, 0];
+  if (profit === 0 || revenue === 0 || cost === 0) return;
 
   return {
     numberOfcrvUSDper1_sfrxETH,
@@ -182,5 +193,8 @@ export async function processTokenExchangeEvent(event: any) {
     tokenSoldName,
     tokenBoughtName,
     crvUSDinCirculation,
+    profit,
+    revenue,
+    cost,
   };
 }
