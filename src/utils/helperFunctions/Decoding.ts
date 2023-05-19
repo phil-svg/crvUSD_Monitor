@@ -177,7 +177,8 @@ export async function processTokenExchangeEvent(event: any) {
   let crvUSDinCirculation = await getTotalDebt(event.blockNumber);
   if (!tokenSoldName) return;
 
-  let [profit, revenue, cost] = (await solveProfit(event, tokenSoldName, amount_sfrxETH, amount_crvUSD)) || [0, 0, 0];
+  let [profit, revenue, cost] = (await solveProfit(event)) || [0, 0, 0];
+  console.log("profit, revenue, cost", profit, revenue, cost);
   if (profit === 0 || revenue === 0 || cost === 0) return;
 
   return {

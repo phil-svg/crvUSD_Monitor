@@ -41,7 +41,7 @@ function formatForPrint(someNumber) {
         someNumber = Number(Number(someNumber).toFixed(2)).toLocaleString();
     }
     else {
-        someNumber = Number(Number(someNumber).toFixed(3)).toLocaleString();
+        someNumber = Number(Number(someNumber).toFixed(2)).toLocaleString();
     }
     return someNumber;
 }

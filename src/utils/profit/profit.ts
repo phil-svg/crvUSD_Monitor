@@ -4,6 +4,7 @@ import fs from "fs";
 import { TransactionReceipt } from "web3-eth";
 import { AbiItem } from "web3-utils";
 import Big from "big.js";
+import { getPrice } from "../priceAPI/priceAPI.js";
 
 async function getEthPrice(blockNumber: number): Promise<number | null> {
   let web3 = getWeb3HttpProvider();
@@ -15,7 +16,7 @@ async function getEthPrice(blockNumber: number): Promise<number | null> {
 
   try {
     return (await TRICRYPTO.methods.price_oracle(1).call(blockNumber)) / 1e18;
-  } catch (errror) {
+  } catch (error) {
     return null;
   }
 }
@@ -73,56 +74,6 @@ async function adjustBalancesForDecimals(balanceChanges: BalanceChange[]): Promi
   }
 
   return balanceChanges;
-}
-
-async function getsfxETHPrice(blockNumber: number): Promise<number | null> {
-  let web3 = getWeb3HttpProvider();
-  const ADDRESS_ORACLE = "0x19F5B81e5325F882C9853B5585f74f751DE3896d";
-  const ABI_ORACLE_RAW = fs.readFileSync("../JSONs/OracleAbi.json", "utf8");
-  const ABI_ORACLE = JSON.parse(ABI_ORACLE_RAW);
-
-  const ORACLE = new web3.eth.Contract(ABI_ORACLE, ADDRESS_ORACLE);
-
-  try {
-    const PRICE = await ORACLE.methods.price().call(blockNumber);
-    return PRICE;
-  } catch (error) {
-    return 0;
-  }
-}
-
-async function getcrvUSDPrice(blockNumber: number): Promise<number | null> {
-  let web3 = getWeb3HttpProvider();
-  const ADDRESS_crvUSD_USDC_POOL = "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E";
-  const ABI_crvUSD_USDC_POOL_RAW = fs.readFileSync("../JSONs/crvUSD_USDC_POOLAbi.json", "utf8");
-  const ABI_crvUSD_USDC_POOL = JSON.parse(ABI_crvUSD_USDC_POOL_RAW);
-
-  const crvUSD_USDC_POOL = new web3.eth.Contract(ABI_crvUSD_USDC_POOL, ADDRESS_crvUSD_USDC_POOL);
-
-  let amountOf_crvUSD_perUSDC;
-  try {
-    amountOf_crvUSD_perUSDC = await crvUSD_USDC_POOL.methods.get_dy(0, 1, "1000000").call(blockNumber);
-    amountOf_crvUSD_perUSDC = Number(amountOf_crvUSD_perUSDC / 1e18);
-  } catch (error) {
-    amountOf_crvUSD_perUSDC = 0;
-  }
-
-  const ADDRESS_crvUSD_USDT_POOL = "0x390f3595bCa2Df7d23783dFd126427CCeb997BF4";
-  const ABI_crvUSD_USDT_POOL_RAW = fs.readFileSync("../JSONs/crvUSD_USDT_POOLAbi.json", "utf8");
-  const ABI_crvUSD_USDT_POOL = JSON.parse(ABI_crvUSD_USDT_POOL_RAW);
-
-  const crvUSD_USDT_POOL = new web3.eth.Contract(ABI_crvUSD_USDT_POOL, ADDRESS_crvUSD_USDT_POOL);
-
-  let amountOf_crvUSD_perUSDT;
-  try {
-    amountOf_crvUSD_perUSDT = await crvUSD_USDT_POOL.methods.get_dy(0, 1, "1000000").call(blockNumber);
-    amountOf_crvUSD_perUSDT = Number(amountOf_crvUSD_perUSDT / 1e18);
-  } catch (error) {
-    amountOf_crvUSD_perUSDT = 0;
-  }
-
-  if (amountOf_crvUSD_perUSDC === 0 && amountOf_crvUSD_perUSDT === 0) return null;
-  return 1 / Math.min(amountOf_crvUSD_perUSDC, amountOf_crvUSD_perUSDT);
 }
 
 async function getTokenSymbol(tokenAddress: string): Promise<string | null> {
@@ -222,9 +173,7 @@ async function getEthBalanceChange(userAddress: string, blockNumber: number): Pr
 
   // Fetch the user's Ether balance one block before and one block after the transaction
   let balanceBefore = await web3.eth.getBalance(userAddress, blockNumber - 1);
-  console.log("balanceBefore", balanceBefore);
-  let balanceAfter = await web3.eth.getBalance(userAddress, blockNumber + 1);
-  console.log("balanceAfter", balanceAfter);
+  let balanceAfter = await web3.eth.getBalance(userAddress, blockNumber);
 
   // Calculate the difference in balances
   const balanceChange = web3.utils.toBN(balanceAfter).sub(web3.utils.toBN(balanceBefore));
@@ -233,6 +182,86 @@ async function getEthBalanceChange(userAddress: string, blockNumber: number): Pr
   const balanceChangeEther = web3.utils.fromWei(balanceChange, "ether");
 
   return balanceChangeEther;
+}
+
+interface WithdrawalEvent {
+  receiver: string;
+  wad: string;
+  weth: string;
+}
+
+function getWithdrawalEvents(receipt: TransactionReceipt, userAddress: string): WithdrawalEvent[] {
+  const withdrawalEvents: WithdrawalEvent[] = [];
+  let web3 = getWeb3HttpProvider();
+
+  if (receipt.logs) {
+    for (const log of receipt.logs) {
+      // Adjust the topic to match the Withdrawal event signature
+      if (log.topics[0] !== "0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65") {
+        continue;
+      }
+
+      // Decode the log
+      const decodedLog: any = web3.eth.abi.decodeLog(
+        [
+          { type: "address", indexed: true, name: "src" },
+          { type: "uint256", indexed: false, name: "wad" },
+        ],
+        log.data,
+        log.topics.slice(1)
+      );
+
+      // Check if the withdrawal event concerns the userAddress
+      if (decodedLog.src.toLowerCase() === userAddress.toLowerCase()) {
+        // Create an object matching WithdrawalEvent interface
+        const withdrawalEvent: WithdrawalEvent = {
+          receiver: decodedLog.src,
+          wad: decodedLog.wad,
+          weth: log.address, // Add the contract address generating this log
+        };
+        withdrawalEvents.push(withdrawalEvent);
+      }
+    }
+  }
+  return withdrawalEvents;
+}
+
+function combineEvents(transferEvents: any[], withdrawalEvents: WithdrawalEvent[]): any[] {
+  // Map withdrawal events to match TransferEvent format
+  const formattedWithdrawals = withdrawalEvents.map((withdrawalEvent) => ({
+    from: withdrawalEvent.receiver,
+    to: withdrawalEvent.weth,
+    value: withdrawalEvent.wad,
+    token: withdrawalEvent.weth,
+  }));
+
+  // Return a new array combining both transfer and withdrawal events
+  return [...transferEvents, ...formattedWithdrawals];
+}
+
+function addEthBalanceChange(balanceChanges: any[], ethBalanceChange: string): any[] {
+  if (ethBalanceChange !== "0") {
+    balanceChanges.push({
+      token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+      balanceChange: ethBalanceChange,
+    });
+  }
+  return balanceChanges;
+}
+
+async function calculateAbsDollarBalance(decimalAdjustedBalanceChanges: any[], blockNumber: number): Promise<Big> {
+  let total = new Big(0);
+
+  for (const item of decimalAdjustedBalanceChanges) {
+    const price = await getPrice(item.token, blockNumber);
+
+    if (price !== null) {
+      const valueInDollars = new Big(item.balanceChange).times(price);
+      total = total.plus(valueInDollars.abs());
+    }
+  }
+
+  return total;
 }
 
 function getTransferEvents(receipt: TransactionReceipt, userAddress: string): TransferEvent[] {
@@ -273,17 +302,32 @@ function getTransferEvents(receipt: TransactionReceipt, userAddress: string): Tr
 }
 
 async function getRevenue(event: any): Promise<any> {
-  let txReceipt = await getTxReceipt(event.transactionHash);
-  let buyerTransfersInAndOut = getTransferEvents(txReceipt, event.returnValues.buyer);
-  let balanceChanges = getTokenBalanceChanges(buyerTransfersInAndOut, event.returnValues.buyer);
-  let adjustedBalanceChanges = await adjustBalancesForDecimals(balanceChanges);
-  console.log("adjustedBalanceChanges", adjustedBalanceChanges);
-  const balanceChange = await getEthBalanceChange(event.returnValues.buyer, event.blockNumber);
-  console.log("balanceChange", balanceChange);
+  const txReceipt = await getTxReceipt(event.transactionHash);
+
+  const buyerTransfersInAndOut = getTransferEvents(txReceipt, event.returnValues.buyer);
+
+  const wethWithdrawals = getWithdrawalEvents(txReceipt, event.returnValues.buyer);
+
+  const combinedEvents = combineEvents(buyerTransfersInAndOut, wethWithdrawals);
+
+  const balanceChanges = getTokenBalanceChanges(combinedEvents, event.returnValues.buyer);
+
+  const ethBalanceChange = await getEthBalanceChange(event.returnValues.buyer, event.blockNumber);
+
+  const balanceChangesWithEth = addEthBalanceChange(balanceChanges, ethBalanceChange);
+
+  const decimalAdjustedBalanceChanges = await adjustBalancesForDecimals(balanceChangesWithEth);
+  if (!decimalAdjustedBalanceChanges) return;
+  console.log("decimalAdjustedBalanceChanges", decimalAdjustedBalanceChanges);
+
+  const revenue = await calculateAbsDollarBalance(decimalAdjustedBalanceChanges, event.blockNumber);
+  console.log("revenue", revenue);
+  return revenue;
+
   //
 }
 
-export async function solveProfit(event: any, tokenSoldName: string, amount_sfrxETH: number, amount_crvUSD: number): Promise<number[] | void> {
+export async function solveProfit(event: any): Promise<number[] | void> {
   console.log("event.transactionHash", event.transactionHash);
 
   let revenue = await getRevenue(event);
