@@ -120,6 +120,7 @@ function getTokenBalanceChanges(transferEvents, userAddress) {
             balanceChangesMap[event.token] += eventValue;
         }
     }
+    console.log("balanceChangesMap", balanceChangesMap);
     const balanceChanges = [];
     for (const [token, balanceChange] of Object.entries(balanceChangesMap)) {
         if (balanceChange >= BigInt(100)) {
@@ -230,10 +231,13 @@ function getTransferEvents(receipt, userAddress) {
 }
 async function getRevenue(event) {
     const txReceipt = await getTxReceipt(event.transactionHash);
+    // console.log("txReceipt", txReceipt);
     const buyerTransfersInAndOut = getTransferEvents(txReceipt, event.returnValues.buyer);
     const wethWithdrawals = getWithdrawalEvents(txReceipt, event.returnValues.buyer);
     const combinedEvents = combineEvents(buyerTransfersInAndOut, wethWithdrawals);
+    console.log("combinedEvents", combinedEvents);
     const balanceChanges = getTokenBalanceChanges(combinedEvents, event.returnValues.buyer);
+    console.log("balanceChanges", balanceChanges);
     const ethBalanceChange = await getEthBalanceChange(event.returnValues.buyer, event.blockNumber);
     const balanceChangesWithEth = addEthBalanceChange(balanceChanges, ethBalanceChange);
     const decimalAdjustedBalanceChanges = await adjustBalancesForDecimals(balanceChangesWithEth);

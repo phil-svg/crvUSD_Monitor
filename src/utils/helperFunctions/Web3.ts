@@ -45,10 +45,13 @@ export async function getTxReceipt(txHash: string): Promise<any> {
     }
   } catch (error) {
     const err = error as Error & { code?: string };
+    /*
     if (err.code !== "ECONNABORTED" && err.code !== "ERR_SOCKET_CONNECTION_TIMEOUT" && err.code !== "ERR_BAD_REQUEST") {
       // Don't log timeout errors
       console.error("Error fetching transaction receipt:", err);
     }
+    */
+    console.error("Error fetching transaction receipt:", err);
     return null;
   }
 }

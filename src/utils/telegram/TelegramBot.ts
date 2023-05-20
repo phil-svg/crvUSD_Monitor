@@ -253,6 +253,61 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIG
 `;
 }
 
+async function buildSwapRouterMessage(formattedEventData: any) {
+  let {
+    numberOfcrvUSDper1_sfrxETH,
+    price_sfrxETH,
+    soldAddress,
+    boughtAddress,
+    txHash,
+    buyer,
+    soldAmount,
+    boughtAmount,
+    dollarAmount,
+    tokenSoldName,
+    tokenBoughtName,
+    crvUSDinCirculation,
+    profit,
+    revenue,
+    cost,
+  } = formattedEventData;
+
+  const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
+
+  console.log("formattedEventData", formattedEventData);
+
+  let tokenInURL = getTokenURL(soldAddress);
+  let tokenOutURL = getTokenURL(boughtAddress);
+  let buyerURL = getBuyerURL(buyer);
+
+  const shortenBuyer = "Swap Router";
+
+  soldAmount = formatForPrint(soldAmount);
+  boughtAmount = formatForPrint(boughtAmount);
+  dollarAmount = formatForPrint(dollarAmount);
+
+  var dollarAddon = getDollarAddOn(dollarAmount);
+
+  crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
+
+  const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+  const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+
+  let swappedWhat;
+  if (tokenSoldName === "crvUSD") {
+    swappedWhat = `traded ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)} for ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)}${dollarAddon}`;
+  } else if (tokenSoldName === "sfrxETH") {
+    swappedWhat = `traded ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)}${dollarAddon} for ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)}`;
+  }
+
+  return `
+  🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
+1 sfrxETH ➛ ${formatForPrint(price_sfrxETH)} Dollar | ${formatForPrint(numberOfcrvUSDper1_sfrxETH)} crvUSD
+Marketcap crvUSD: ${crvUSDinCirculation} 
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+`;
+}
+
 export async function buildTokenExchangeMessage(formattedEventData: any) {
   let {
     numberOfcrvUSDper1_sfrxETH,
@@ -271,6 +326,11 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
     revenue,
     cost,
   } = formattedEventData;
+
+  const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
+  if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase()) return await buildSwapRouterMessage(formattedEventData);
+
+  console.log("formattedEventData", formattedEventData);
 
   let tokenInURL = getTokenURL(soldAddress);
   let tokenOutURL = getTokenURL(boughtAddress);
@@ -335,3 +395,59 @@ export async function telegramBotMain(env: string, eventEmitter: EventEmitter) {
     }
   });
 }
+
+/*
+export async function buildTokenExchangeMessage(formattedEventData: any) {
+  let {
+    numberOfcrvUSDper1_sfrxETH,
+    price_sfrxETH,
+    soldAddress,
+    boughtAddress,
+    txHash,
+    buyer,
+    soldAmount,
+    boughtAmount,
+    dollarAmount,
+    tokenSoldName,
+    tokenBoughtName,
+    crvUSDinCirculation,
+    profit,
+    revenue,
+    cost,
+  } = formattedEventData;
+
+  console.log("formattedEventData", formattedEventData);
+
+  let tokenInURL = getTokenURL(soldAddress);
+  let tokenOutURL = getTokenURL(boughtAddress);
+  let buyerURL = getBuyerURL(buyer);
+
+  const shortenBuyer = shortenAddress(buyer);
+
+  soldAmount = formatForPrint(soldAmount);
+  boughtAmount = formatForPrint(boughtAmount);
+  dollarAmount = formatForPrint(dollarAmount);
+
+  var dollarAddon = getDollarAddOn(dollarAmount);
+
+  crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
+
+  const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+  const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+
+  let swappedWhat;
+  if (tokenSoldName === "crvUSD") {
+    swappedWhat = `liquidated ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)} with ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)}${dollarAddon}`;
+  } else if (tokenSoldName === "sfrxETH") {
+    swappedWhat = `de-liquidated ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)} with ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)}${dollarAddon}`;
+  }
+
+  return `
+  🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
+Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}
+1 sfrxETH ➛ ${formatForPrint(price_sfrxETH)} Dollar | ${formatForPrint(numberOfcrvUSDper1_sfrxETH)} crvUSD
+Marketcap crvUSD: ${crvUSDinCirculation} 
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+`;
+}
+*/
