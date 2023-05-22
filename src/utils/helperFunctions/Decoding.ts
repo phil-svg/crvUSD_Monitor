@@ -26,6 +26,19 @@ async function getTokenPrice(tokenAddress: string) {
   }
 }
 
+async function getPositionHealth(userAddress: string, blockNumber: number) {
+  const ADDRESS_CONTROLLER = "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76";
+  const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
+  const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
+
+  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+
+  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
+
+  const HEALTH = await CONTROLLER.methods.health(userAddress).call(blockNumber);
+  return Number(HEALTH / 1e18);
+}
+
 async function getTotalDebt(blockNumber: number) {
   const ADDRESS_CONTROLLER = "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76";
   const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
@@ -181,6 +194,9 @@ export async function processTokenExchangeEvent(event: any) {
   console.log("profit, revenue, cost", profit, revenue, cost);
   if (profit === 0 || revenue === 0 || cost === 0) return;
 
+  const MICH = "0x7a16fF8270133F063aAb6C9977183D9e72835428";
+  let researchPositionHealth = await getPositionHealth(MICH, event.blockNumber);
+
   return {
     numberOfcrvUSDper1_sfrxETH,
     price_sfrxETH,
@@ -197,5 +213,6 @@ export async function processTokenExchangeEvent(event: any) {
     profit,
     revenue,
     cost,
+    researchPositionHealth,
   };
 }

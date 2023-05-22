@@ -325,6 +325,7 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
     profit,
     revenue,
     cost,
+    researchPositionHealth,
   } = formattedEventData;
 
   const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
@@ -360,6 +361,7 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
 Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}
 1 sfrxETH ➛ ${formatForPrint(price_sfrxETH)} Dollar | ${formatForPrint(numberOfcrvUSDper1_sfrxETH)} crvUSD
+Research Pos. Health: ${formatForPrint(researchPositionHealth * 100)} 🔭
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;
