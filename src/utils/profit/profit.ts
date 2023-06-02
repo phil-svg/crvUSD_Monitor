@@ -150,8 +150,6 @@ function getTokenBalanceChanges(transferEvents: TransferEvent[], userAddress: st
     }
   }
 
-  console.log("balanceChangesMap", balanceChangesMap);
-
   const balanceChanges: BalanceChange[] = [];
   for (const [token, balanceChange] of Object.entries(balanceChangesMap)) {
     if (balanceChange >= BigInt(100)) {
@@ -312,10 +310,8 @@ async function getRevenue(event: any): Promise<any> {
   const wethWithdrawals = getWithdrawalEvents(txReceipt, event.returnValues.buyer);
 
   const combinedEvents = combineEvents(buyerTransfersInAndOut, wethWithdrawals);
-  console.log("combinedEvents", combinedEvents);
 
   const balanceChanges = getTokenBalanceChanges(combinedEvents, event.returnValues.buyer);
-  console.log("balanceChanges", balanceChanges);
 
   const ethBalanceChange = await getEthBalanceChange(event.returnValues.buyer, event.blockNumber);
 
@@ -323,7 +319,6 @@ async function getRevenue(event: any): Promise<any> {
 
   const decimalAdjustedBalanceChanges = await adjustBalancesForDecimals(balanceChangesWithEth);
   if (!decimalAdjustedBalanceChanges) return;
-  console.log("decimalAdjustedBalanceChanges", decimalAdjustedBalanceChanges);
 
   const revenue = await calculateAbsDollarBalance(decimalAdjustedBalanceChanges, event.blockNumber);
   console.log("revenue", revenue);

@@ -3,6 +3,7 @@ import fs from "fs";
 import { getWeb3HttpProvider } from "./Web3.js";
 import { getPastEvents } from "../web3Calls/generic.js";
 import { solveProfit } from "../profit/profit.js";
+import { getAmmAddressFromEventAddress, getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
 async function getTokenPrice(tokenAddress) {
     const maxAttempts = 5;
     const delay = 350;
@@ -33,6 +34,15 @@ async function getPositionHealth(userAddress, blockNumber) {
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
     const HEALTH = await CONTROLLER.methods.health(userAddress).call(blockNumber);
     return Number(HEALTH / 1e18);
+}
+async function getBorrowRate(event) {
+    const AMM_ADDRESS = await getAmmAddressFromEventAddress(event.address);
+    if (!AMM_ADDRESS)
+        return null;
+    const RATE = await getBorrowRateForProvidedLlamma(AMM_ADDRESS, event.blockNumber);
+    if (!RATE)
+        return null;
+    return RATE;
 }
 async function getTotalDebt(blockNumber) {
     const ADDRESS_CONTROLLER = "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76";
@@ -68,7 +78,8 @@ export async function processLiquidateEvent(event) {
     let crvUSD_amount = await getCrvUsdTranserAmount(event);
     let price_sfrxETH = await getTokenPrice("0xac3E018457B222d93114458476f3E3416Abbe38F");
     let dollarAmount = Number(collateral_received * price_sfrxETH);
-    return { dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation };
+    let borrowRate = await getBorrowRate(event);
+    return { dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate };
 }
 export async function processRemoveCollateralEvent(event) {
     let crvUSDinCirculation = await getTotalDebt(event.blockNumber);
@@ -80,7 +91,8 @@ export async function processRemoveCollateralEvent(event) {
     collateral_decrease /= 1e18;
     let price_sfrxETH = await getTokenPrice("0xac3E018457B222d93114458476f3E3416Abbe38F");
     let dollarAmount = Number(collateral_decrease * price_sfrxETH);
-    return { dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation };
+    let borrowRate = await getBorrowRate(event);
+    return { dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation, borrowRate };
 }
 export async function processWithdrawEvent(event) {
     let crvUSDinCirculation = await getTotalDebt(event.blockNumber);
@@ -90,7 +102,10 @@ export async function processWithdrawEvent(event) {
     withdrawnAmountcrvUSD /= 1e18;
     let withdrawnAmountsfrxETH = event.returnValues.amount_collateral;
     withdrawnAmountsfrxETH /= 1e18;
-    return { withdrawnAmountcrvUSD, withdrawnAmountsfrxETH, txHash, buyer, crvUSDinCirculation };
+    let borrowRate = await getBorrowRate(event);
+    if (!borrowRate)
+        return null;
+    return { withdrawnAmountcrvUSD, withdrawnAmountsfrxETH, txHash, buyer, crvUSDinCirculation, borrowRate };
 }
 export async function processDepositEvent(event) {
     let crvUSDinCirculation = await getTotalDebt(event.blockNumber);
@@ -110,7 +125,8 @@ export async function processRepayEvent(event) {
     let loan_decrease = event.returnValues.loan_decrease;
     loan_decrease /= 1e18;
     loan_decrease = Number(loan_decrease);
-    return { collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation };
+    let borrowRate = await getBorrowRate(event);
+    return { collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation, borrowRate };
 }
 export async function processBorrowEvent(event) {
     let crvUSDinCirculation = await getTotalDebt(event.blockNumber);
@@ -122,7 +138,8 @@ export async function processBorrowEvent(event) {
     let loan_increase = event.returnValues.loan_increase;
     loan_increase /= 1e18;
     loan_increase = Number(loan_increase);
-    return { collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation };
+    let borrowRate = await getBorrowRate(event);
+    return { collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate };
 }
 export async function processTokenExchangeEvent(event) {
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
@@ -173,6 +190,7 @@ export async function processTokenExchangeEvent(event) {
         return;
     const MICH = "0x7a16fF8270133F063aAb6C9977183D9e72835428";
     let researchPositionHealth = await getPositionHealth(MICH, event.blockNumber);
+    let borrowRate = await getBorrowRate(event);
     return {
         numberOfcrvUSDper1_sfrxETH,
         price_sfrxETH,
@@ -190,6 +208,7 @@ export async function processTokenExchangeEvent(event) {
         revenue,
         cost,
         researchPositionHealth,
+        borrowRate,
     };
 }
 //# sourceMappingURL=Decoding.js.map
