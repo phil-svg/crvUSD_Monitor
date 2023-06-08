@@ -111,7 +111,7 @@ export async function getBlockTimeStamp(blockNumber) {
     const BLOCK = await WEB3_HTTP_PROVIDER.eth.getBlock(blockNumber);
     return Number(BLOCK.timestamp);
 }
-export async function subscribeToEvents(CONTRACT, eventEmitter) {
+export async function subscribeToEvents(CONTRACT, eventEmitter, Market) {
     try {
         const subscription = CONTRACT.events.allEvents();
         subscription
@@ -119,7 +119,7 @@ export async function subscribeToEvents(CONTRACT, eventEmitter) {
             console.log(CONTRACT._address, `subscribed to events successfully`);
         })
             .on("data", async (eventData) => {
-            eventEmitter.emit("newEvent", eventData);
+            eventEmitter.emit("newEvent", { eventData, Market });
         })
             .on("error", (error) => {
             console.error("Error in event subscription: ", error);

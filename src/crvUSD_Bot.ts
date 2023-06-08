@@ -3,7 +3,7 @@ import { getWeb3WsProvider } from "./utils/helperFunctions/Web3.js";
 import { getCurrentBlockNumber, getPastEvents } from "./utils/web3Calls/generic.js";
 import { telegramBotMain } from "./utils/telegram/TelegramBot.js";
 import { EventEmitter } from "events";
-import { manageMarket } from "./utils/Oragnizer.js";
+import { handleLiveEvents, manageMarket } from "./utils/Oragnizer.js";
 
 export const AMM_ADDRESSES = ["0x136e783846ef68C8Bd00a3369F787dF8d683a696"];
 
@@ -48,6 +48,7 @@ async function main() {
     await manageMarket(MARKET_CREATION, eventEmitter);
   }
   await watchingForNewMarketOpenings(crvUSD_ControllerFactory);
+  await handleLiveEvents(eventEmitter);
   console.log("crvUSD_Bot launched successfully.");
 }
 

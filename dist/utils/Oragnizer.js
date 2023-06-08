@@ -11,23 +11,26 @@ async function isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT) {
     const PAST_EVENTS_CONTROLLER = await getPastEvents(CONTROLLER, "Liquidate", blockNumber, blockNumber);
     return Array.isArray(PAST_EVENTS_CONTROLLER) && PAST_EVENTS_CONTROLLER.some((event) => event.transactionHash === txHash);
 }
-export async function manageMarket(event, eventEmitter) {
+export async function manageMarket(MARKET, eventEmitter) {
     const WEB3_WS_PROVIDER = getWeb3WsProvider();
-    const ADDRESS_COLLATERAL = event.returnValues.collateral;
-    const ADDRESS_CONTROLLER = event.returnValues.controller;
+    const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
+    const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
     const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
     const CONTROLLER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
-    const ADDRESS_AMM = event.returnValues.amm;
+    const ADDRESS_AMM = MARKET.returnValues.amm;
     const ABI_AMM = JSON.parse(fs.readFileSync("../JSONs/AmmAbi.json", "utf8"));
     const AMM_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_AMM, ADDRESS_AMM);
+    console.log("ADDRESS_COLLATERAL", ADDRESS_COLLATERAL);
+    console.log("ADDRESS_CONTROLLER", ADDRESS_CONTROLLER);
+    console.log("ADDRESS_AMM", ADDRESS_AMM, "\n");
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
     /*
-    // const START_BLOCK = 17431353;
-    // const END_BLOCK = 17432073;
+    const START_BLOCK = 17432225;
+    const END_BLOCK = 17432312;
   
-    const START_BLOCK = 17429289;
-    const END_BLOCK = 17429289;
+    // const START_BLOCK = 17429289;
+    // const END_BLOCK = 17429289;
   
     const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
   
@@ -76,18 +79,24 @@ export async function manageMarket(event, eventEmitter) {
         eventEmitter.emit("newMessage", message);
       }
     }
-  
-    //process.exit();
     */
+    //process.exit();
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////// LIVE MODE ////////////////////////
-    await subscribeToEvents(AMM_CONTRACT, eventEmitter);
-    await subscribeToEvents(CONTROLLER_CONTRACT, eventEmitter);
-    eventEmitter.on("newEvent", async (EVENT) => {
-        console.log("New Event picked up by the Emitter:", EVENT);
+    await subscribeToEvents(AMM_CONTRACT, eventEmitter, MARKET);
+    await subscribeToEvents(CONTROLLER_CONTRACT, eventEmitter, MARKET);
+}
+export async function handleLiveEvents(eventEmitter) {
+    eventEmitter.on("newEvent", async ({ eventData: EVENT, Market: MARKET }) => {
+        console.log("New Event picked up by the Emitter:", EVENT, "..Market:", MARKET);
+        const WEB3_WS_PROVIDER = getWeb3WsProvider();
+        const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
+        const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
+        const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
+        const CONTROLLER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
         if (EVENT.event === "Borrow") {
             const formattedEventData = await processBorrowEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
             console.log(formattedEventData);
