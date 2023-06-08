@@ -1,6 +1,5 @@
 import fs from "fs";
 import { getWeb3HttpProvider } from "./Web3.js";
-import { AMM_ADDRESSES } from "../../crvUSD_Bot.js";
 export function calculateInterest(rate) {
     rate = rate / 1e18;
     const SECONDS_IN_A_YEAR = 365 * 86400;
@@ -36,13 +35,6 @@ async function getAmmAddressFromController(controllerAddress) {
     }
 }
 export async function getAmmAddressFromEventAddress(eventAddress) {
-    const normalizedEventAddress = eventAddress.toLowerCase();
-    const normalizedAMMAddresses = AMM_ADDRESSES.map((addr) => addr.toLowerCase());
-    if (normalizedAMMAddresses.includes(normalizedEventAddress)) {
-        return eventAddress;
-    }
-    else {
-        return await getAmmAddressFromController(eventAddress);
-    }
+    return await getAmmAddressFromController(eventAddress);
 }
 //# sourceMappingURL=LLAMMA.js.map

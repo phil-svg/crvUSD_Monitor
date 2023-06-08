@@ -4,7 +4,6 @@ import { getCurrentBlockNumber, getPastEvents } from "./utils/web3Calls/generic.
 import { telegramBotMain } from "./utils/telegram/TelegramBot.js";
 import { EventEmitter } from "events";
 import { handleLiveEvents, manageMarket } from "./utils/Oragnizer.js";
-export const AMM_ADDRESSES = ["0x136e783846ef68C8Bd00a3369F787dF8d683a696"];
 console.clear();
 const ENV = "prod";
 // const ENV = "test";

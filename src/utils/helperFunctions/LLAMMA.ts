@@ -1,6 +1,5 @@
 import fs from "fs";
 import { getWeb3HttpProvider } from "./Web3.js";
-import { AMM_ADDRESSES } from "../../crvUSD_Bot.js";
 
 export function calculateInterest(rate: number): number {
   rate = rate / 1e18;
@@ -41,12 +40,5 @@ async function getAmmAddressFromController(controllerAddress: string): Promise<s
 }
 
 export async function getAmmAddressFromEventAddress(eventAddress: string): Promise<string | null> {
-  const normalizedEventAddress = eventAddress.toLowerCase();
-  const normalizedAMMAddresses = AMM_ADDRESSES.map((addr) => addr.toLowerCase());
-
-  if (normalizedAMMAddresses.includes(normalizedEventAddress)) {
-    return eventAddress;
-  } else {
-    return await getAmmAddressFromController(eventAddress);
-  }
+  return await getAmmAddressFromController(eventAddress);
 }
