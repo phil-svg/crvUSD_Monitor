@@ -139,4 +139,30 @@ export async function getTxFromTxHash(txHash) {
         return null;
     }
 }
+export async function getWalletTokenBalance(walletAddress, tokenAddress, blockNumber) {
+    const ABI_BALANCE_OF = [
+        {
+            inputs: [
+                {
+                    internalType: "address",
+                    name: "account",
+                    type: "address",
+                },
+            ],
+            name: "balanceOf",
+            outputs: [
+                {
+                    internalType: "uint256",
+                    name: "",
+                    type: "uint256",
+                },
+            ],
+            stateMutability: "view",
+            type: "function",
+        },
+    ];
+    const TOKEN = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_BALANCE_OF, tokenAddress);
+    const BALANCE = await web3Call(TOKEN, "balanceOf", [walletAddress], blockNumber);
+    return BALANCE;
+}
 //# sourceMappingURL=generic.js.map

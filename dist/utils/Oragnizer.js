@@ -26,11 +26,11 @@ export async function manageMarket(MARKET, eventEmitter) {
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
     /*
-    const START_BLOCK = 17432225;
-    const END_BLOCK = 17432312;
+    const START_BLOCK = 17433981;
+    const END_BLOCK = 17434913;
   
-    // const START_BLOCK = 17429289;
-    // const END_BLOCK = 17429289;
+    // const START_BLOCK = 17434114;
+    // const END_BLOCK = 17434114;
   
     const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
   
@@ -39,7 +39,7 @@ export async function manageMarket(MARKET, eventEmitter) {
     for (const AMM_EVENT of PAST_EVENTS_AMM_CONTRACT) {
       if ((AMM_EVENT as { event: string }).event !== "TokenExchange") continue;
       console.log("AMM_EVENT", AMM_EVENT);
-      const formattedEventData = await processTokenExchangeEvent(AMM_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+      const formattedEventData = await processTokenExchangeEvent(AMM_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined)) continue;
       const message = await buildTokenExchangeMessage(formattedEventData);
       eventEmitter.emit("newMessage", message);
@@ -52,7 +52,7 @@ export async function manageMarket(MARKET, eventEmitter) {
     for (const CONTROLLER_EVENT of PAST_EVENTS_crvUSD_CONTROLLER) {
       console.log("CONTROLLER_EVENT", CONTROLLER_EVENT);
       if ((CONTROLLER_EVENT as { event: string }).event === "Borrow") {
-        const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+        const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
         console.log(formattedEventData);
         if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
         const message = await buildBorrowMessage(formattedEventData);
@@ -60,27 +60,28 @@ export async function manageMarket(MARKET, eventEmitter) {
       } else if ((CONTROLLER_EVENT as { event: string }).event === "Repay") {
         let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, CONTROLLER_EVENT);
         if (liquidateEventQuestion == true) continue;
-        const formattedEventData = await processRepayEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+        const formattedEventData = await processRepayEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
         console.log(formattedEventData);
         if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
         const message = await buildRepayMessage(formattedEventData);
         eventEmitter.emit("newMessage", message);
       } else if ((CONTROLLER_EVENT as { event: string }).event === "RemoveCollateral") {
-        const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+        const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
         console.log(formattedEventData);
         if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
         const message = await buildRemoveCollateralMessage(formattedEventData);
         eventEmitter.emit("newMessage", message);
       } else if ((CONTROLLER_EVENT as { event: string }).event === "Liquidate") {
-        const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+        const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
         console.log(formattedEventData);
         if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
         const message = await buildLiquidateMessage(formattedEventData);
         eventEmitter.emit("newMessage", message);
       }
     }
+  
+    // process.exit();
     */
-    //process.exit();
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,10 +96,11 @@ export async function handleLiveEvents(eventEmitter) {
         const WEB3_WS_PROVIDER = getWeb3WsProvider();
         const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
         const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
+        const AMM_ADDRESS = MARKET.returnValues.amm;
         const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
         const CONTROLLER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLLER, ADDRESS_CONTROLLER);
         if (EVENT.event === "Borrow") {
-            const formattedEventData = await processBorrowEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+            const formattedEventData = await processBorrowEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
@@ -109,7 +111,7 @@ export async function handleLiveEvents(eventEmitter) {
             let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, EVENT);
             if (liquidateEventQuestion == true)
                 return;
-            const formattedEventData = await processRepayEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+            const formattedEventData = await processRepayEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
@@ -117,7 +119,7 @@ export async function handleLiveEvents(eventEmitter) {
             eventEmitter.emit("newMessage", message);
         }
         else if (EVENT.event === "RemoveCollateral") {
-            const formattedEventData = await processRemoveCollateralEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+            const formattedEventData = await processRemoveCollateralEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
@@ -125,7 +127,7 @@ export async function handleLiveEvents(eventEmitter) {
             eventEmitter.emit("newMessage", message);
         }
         else if (EVENT.event === "Liquidate") {
-            const formattedEventData = await processLiquidateEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+            const formattedEventData = await processLiquidateEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
             console.log(formattedEventData);
             if (Object.values(formattedEventData).some((value) => value === undefined))
                 return;
@@ -134,7 +136,7 @@ export async function handleLiveEvents(eventEmitter) {
             // AMM EVENT
         }
         else if (EVENT.event === "TokenExchange") {
-            const formattedEventData = await processTokenExchangeEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL);
+            const formattedEventData = await processTokenExchangeEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
             if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined))
                 return;
             const message = await buildTokenExchangeMessage(formattedEventData);

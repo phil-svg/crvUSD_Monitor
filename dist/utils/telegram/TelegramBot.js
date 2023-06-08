@@ -22,6 +22,12 @@ function getProfitPrint(profit, revenue, cost) {
     }
     return `Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}`;
 }
+function getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount) {
+    collatValue = formatForPrint(collatValue);
+    marketBorrowedAmount = formatForPrint(marketBorrowedAmount);
+    qtyCollat = formatForPrint(qtyCollat);
+    return `Collateral: ${getShortenNumber(qtyCollat)} ${collateralName}${getDollarAddOn(collatValue)} | Borrowed: ${getShortenNumber(marketBorrowedAmount)} crvUSD`;
+}
 function formatForPrint(someNumber) {
     if (typeof someNumber === "string" && someNumber.includes(","))
         return someNumber;
@@ -36,6 +42,31 @@ function formatForPrint(someNumber) {
         someNumber = Number(Number(someNumber).toFixed(2)).toLocaleString();
     }
     return someNumber;
+}
+function getShortenNumber(amountStr) {
+    let amount = parseFloat(amountStr.replace(/,/g, ""));
+    //amount = roundToNearest(amount);
+    if (amount >= 1000000) {
+        const millionAmount = amount / 1000000;
+        if (Number.isInteger(millionAmount)) {
+            return `${millionAmount.toFixed(0)}M`;
+        }
+        else {
+            return `${millionAmount.toFixed(2)}M`;
+        }
+    }
+    else if (amount >= 1000) {
+        const thousandAmount = amount / 1000;
+        if (Number.isInteger(thousandAmount)) {
+            return `${thousandAmount.toFixed(0)}k`;
+        }
+        else {
+            return `${thousandAmount.toFixed(1)}k`;
+        }
+    }
+    else {
+        return `${amount.toFixed(2)}`;
+    }
 }
 function getDollarAddOn(amountStr) {
     let amount = parseFloat(amountStr.replace(/,/g, ""));
@@ -84,7 +115,7 @@ function shortenAddress(address) {
     return address.slice(0, 5) + ".." + address.slice(-2);
 }
 export async function buildLiquidateMessage(formattedEventData) {
-    let { collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const liquidatorURL = getBuyerURL(liquidator);
     const shortenLiquidator = shortenAddress(liquidator);
@@ -102,16 +133,18 @@ export async function buildLiquidateMessage(formattedEventData) {
     let liquidated = `liquidated ${hyperlink(userURL, shortenUser)}`;
     if (liquidator === user)
         liquidated = `self-liquidated`;
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and received: ${formatForPrint(collateral_received)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
 The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyperlink(crvUSD_URL, "crvUSD")} to the${hyperlink(CONTROLLER_URL, "Controller")}
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;
 }
 export async function buildRemoveCollateralMessage(formattedEventData) {
-    let { collateralAddress, collateralName, dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = shortenAddress(buyer);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
@@ -120,15 +153,17 @@ export async function buildRemoveCollateralMessage(formattedEventData) {
     dollarAmount = formatForPrint(dollarAmount);
     var dollarAddon = getDollarAddOn(dollarAmount);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;
 }
 export async function buildRepayMessage(formattedEventData) {
-    let { collateralAddress, collateralName, collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = shortenAddress(buyer);
@@ -147,15 +182,17 @@ export async function buildRepayMessage(formattedEventData) {
     else if (loan_decrease >= 0) {
         didWhat = `repayed ${formatForPrint(loan_decrease)}${hyperlink(crvUSD_URL, "crvUSD")}`;
     }
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
   `;
 }
 export async function buildBorrowMessage(formattedEventData) {
-    let { collateralAddress, collateralName, collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = shortenAddress(buyer);
@@ -174,15 +211,17 @@ export async function buildBorrowMessage(formattedEventData) {
     else if (loan_increase >= 0) {
         didWhat = `borrowed ${formatForPrint(loan_increase)}${hyperlink(crvUSD_URL, "crvUSD")}`;
     }
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
   `;
 }
 export async function buildWithdrawMessage(formattedEventData) {
-    let { collateralAddress, collateralName, withdrawnAmountcrvUSD, withdrawnAmountsCollat, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, withdrawnAmountcrvUSD, withdrawnAmountsCollat, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = shortenAddress(buyer);
@@ -201,15 +240,17 @@ export async function buildWithdrawMessage(formattedEventData) {
         removedWhat = `${formatForPrint(withdrawnAmountcrvUSD)}${hyperlink(COLLATERAL_URL, collateralName)}`;
     }
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} removed ${removedWhat}
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;
 }
 export async function buildDepositMessage(formattedEventData) {
-    let { collateralAddress, collateralName, borrowedAmount, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, borrowedAmount, txHash, buyer, crvUSDinCirculation, borrowRate } = formattedEventData;
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = shortenAddress(buyer);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
@@ -217,15 +258,17 @@ export async function buildDepositMessage(formattedEventData) {
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     borrowedAmount = formatForPrint(borrowedAmount);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} deposited ${borrowedAmount}${hyperlink(COLLATERAL_URL, collateralName)}
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;
 }
 async function buildSwapRouterMessage(formattedEventData) {
-    let { collateralName, numberOfcrvUSDper1_collat, price_of_collateral, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, borrowRate, } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, price_of_collateral, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, borrowRate, } = formattedEventData;
     console.log("formattedEventData", formattedEventData);
     let tokenInURL = getTokenURL(soldAddress);
     let tokenOutURL = getTokenURL(boughtAddress);
@@ -245,16 +288,18 @@ async function buildSwapRouterMessage(formattedEventData) {
     else if (tokenSoldName === collateralName) {
         swappedWhat = `traded ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)}${dollarAddon} for ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)}`;
     }
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
 1 ${collateralName} ➛ ${formatForPrint(price_of_collateral)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;
 }
 export async function buildTokenExchangeMessage(formattedEventData) {
-    let { collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, researchPositionHealth, borrowRate, } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, researchPositionHealth, borrowRate, } = formattedEventData;
     const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
     if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase())
         return await buildSwapRouterMessage(formattedEventData);
@@ -278,12 +323,14 @@ export async function buildTokenExchangeMessage(formattedEventData) {
         swappedWhat = `de-liquidated ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)} with ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)}${dollarAddon}`;
     }
     let profitPrint = getProfitPrint(profit, revenue, cost);
+    let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
 ${profitPrint}
 1 ${collateralName} ➛ ${formatForPrint(collateral_price)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
 Research Pos. Health: ${formatForPrint(researchPositionHealth * 100)} 🔭
 Borrow Rate: ${formatForPrint(borrowRate)}%
+${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
 `;

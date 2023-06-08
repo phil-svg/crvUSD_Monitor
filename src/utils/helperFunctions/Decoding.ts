@@ -1,11 +1,11 @@
 import fs from "fs";
-import { getWeb3HttpProvider } from "./Web3.js";
-import { getPastEvents, web3Call } from "../web3Calls/generic.js";
+import { getWeb3HttpProvider, getWeb3WsProvider } from "./Web3.js";
+import { getPastEvents, getWalletTokenBalance, web3Call } from "../web3Calls/generic.js";
 import { solveProfit } from "../profit/profit.js";
-import { getAmmAddressFromEventAddress, getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
+import { getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
 import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatCheatSheet.js";
 
-async function getCollatPrice(controllerAddress: string, collateralAddress: string, blockNumber: number): Promise<number | null> {
+async function getCollatPrice(controllerAddress: string, collateralAddress: string, blockNumber: number): Promise<number> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 
   const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
@@ -17,7 +17,7 @@ async function getCollatPrice(controllerAddress: string, collateralAddress: stri
   return Number(PRICE / 10 ** COLLAT_DECIMALS);
 }
 
-async function getPositionHealth(controllerAddress: string, userAddress: string, blockNumber: number) {
+async function getPositionHealth(controllerAddress: string, userAddress: string, blockNumber: number): Promise<number | null> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 
   const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
@@ -28,15 +28,29 @@ async function getPositionHealth(controllerAddress: string, userAddress: string,
   return Number(HEALTH / 1e18);
 }
 
-async function getBorrowRate(event: any) {
-  const AMM_ADDRESS = await getAmmAddressFromEventAddress(event.address);
-  if (!AMM_ADDRESS) return null;
+async function getBorrowRate(event: any, AMM_ADDRESS: string): Promise<number | null> {
   const RATE = await getBorrowRateForProvidedLlamma(AMM_ADDRESS, event.blockNumber);
   if (!RATE) return null;
   return RATE;
 }
 
-async function getTotalDebt(blockNumber: number, controllerAddress: string) {
+async function getAmountOfCollatInMarket(addressCollat: string, addressAmm: string, blockNumber: number) {
+  const BALANCE = await getWalletTokenBalance(addressAmm, addressCollat, blockNumber);
+  const DECIMALS = getDecimalFromCheatSheet(addressCollat);
+  return BALANCE / 10 ** DECIMALS;
+}
+
+async function getMarketCap(blockNumber: number): Promise<number> {
+  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+  const ADDRESS_crvUSD_ControllerFactory = "0xC9332fdCB1C491Dcc683bAe86Fe3cb70360738BC";
+  const ABI_crvUSD_ControllerFactory = JSON.parse(fs.readFileSync("../JSONs/crvUSD_ControllerFactory.json", "utf8"));
+  const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
+
+  const totalDebt = await web3Call(crvUSD_ControllerFactory, "total_debt", [], blockNumber);
+  return Number(totalDebt / 1e18);
+}
+
+async function getTotalMarketDebt(blockNumber: number, controllerAddress: string) {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 
   const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
@@ -60,8 +74,7 @@ async function getCrvUsdTranserAmount(event: any) {
   return Number(liquidatorCrvUsdTransferAmount / 1e18);
 }
 
-export async function processLiquidateEvent(event: any, controllerAddress: string, collateralAddress: string) {
-  let crvUSDinCirculation = await getTotalDebt(event.blockNumber, controllerAddress);
+export async function processLiquidateEvent(event: any, controllerAddress: string, collateralAddress: string, AMM_ADDRESS: string) {
   let txHash = event.transactionHash;
   let liquidator = event.returnValues.liquidator;
   let user = event.returnValues.user;
@@ -73,13 +86,31 @@ export async function processLiquidateEvent(event: any, controllerAddress: strin
   let crvUSD_amount = await getCrvUsdTranserAmount(event);
   let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
   let dollarAmount = Number(collateral_received * collateral_price!);
-  let borrowRate = await getBorrowRate(event);
+  let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
-  return { collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate };
+  let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
+  let collatValue = qtyCollat * collateral_price;
+  let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
+  let crvUSDinCirculation = await getMarketCap(event.blockNumber);
+  return {
+    qtyCollat,
+    collatValue,
+    marketBorrowedAmount,
+    collateralAddress,
+    collateralName,
+    dollarAmount,
+    liquidator,
+    crvUSD_amount,
+    user,
+    stablecoin_received,
+    collateral_received,
+    txHash,
+    crvUSDinCirculation,
+    borrowRate,
+  };
 }
 
-export async function processRemoveCollateralEvent(event: any, controllerAddress: string, collateralAddress: string) {
-  let crvUSDinCirculation = await getTotalDebt(event.blockNumber, controllerAddress);
+export async function processRemoveCollateralEvent(event: any, controllerAddress: string, collateralAddress: string, AMM_ADDRESS: string) {
   let txHash = event.transactionHash;
   let buyer = event.returnValues.user;
   let withdrawnAmountcrvUSD = event.returnValues.amount_borrowed;
@@ -89,13 +120,16 @@ export async function processRemoveCollateralEvent(event: any, controllerAddress
   collateral_decrease /= 10 ** collateralDecimals;
   let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
   let dollarAmount = Number(collateral_decrease * collateral_price!);
-  let borrowRate = await getBorrowRate(event);
+  let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
-  return { collateralAddress, collateralName, dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation, borrowRate };
+  let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
+  let collatValue = qtyCollat * collateral_price;
+  let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
+  let crvUSDinCirculation = await getMarketCap(event.blockNumber);
+  return { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation, borrowRate };
 }
 
-export async function processWithdrawEvent(event: any, controllerAddress: string, collateralAddress: string) {
-  let crvUSDinCirculation = await getTotalDebt(event.blockNumber, controllerAddress);
+export async function processWithdrawEvent(event: any, controllerAddress: string, collateralAddress: string, AMM_ADDRESS: string) {
   let txHash = event.transactionHash;
   let buyer = event.returnValues.provider;
   let withdrawnAmountcrvUSD = event.returnValues.amount_borrowed;
@@ -103,23 +137,30 @@ export async function processWithdrawEvent(event: any, controllerAddress: string
   let withdrawnAmountsCollat = event.returnValues.amount_collateral;
   let collateralDecimals = getDecimalFromCheatSheet(collateralAddress);
   withdrawnAmountsCollat /= 10 ** collateralDecimals;
-  let borrowRate = await getBorrowRate(event);
+  let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   if (!borrowRate) return null;
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
-  return { collateralAddress, collateralName, withdrawnAmountcrvUSD, withdrawnAmountsCollat, txHash, buyer, crvUSDinCirculation, borrowRate };
+  let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
+  let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
+  let collatValue = qtyCollat * collateral_price;
+  let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
+  let crvUSDinCirculation = await getMarketCap(event.blockNumber);
+  return {
+    qtyCollat,
+    collatValue,
+    marketBorrowedAmount,
+    collateralAddress,
+    collateralName,
+    withdrawnAmountcrvUSD,
+    withdrawnAmountsCollat,
+    txHash,
+    buyer,
+    crvUSDinCirculation,
+    borrowRate,
+  };
 }
 
-export async function processDepositEvent(event: any, controllerAddress: string) {
-  let crvUSDinCirculation = await getTotalDebt(event.blockNumber, controllerAddress);
-  let txHash = event.transactionHash;
-  let buyer = event.returnValues.provider;
-  let borrowedAmount = event.returnValues.amount;
-  borrowedAmount /= 1e18;
-  return { borrowedAmount, txHash, buyer, crvUSDinCirculation };
-}
-
-export async function processRepayEvent(event: any, controllerAddress: string, collateralAddress: string) {
-  let crvUSDinCirculation = await getTotalDebt(event.blockNumber, controllerAddress);
+export async function processRepayEvent(event: any, controllerAddress: string, collateralAddress: string, AMM_ADDRESS: string) {
   let txHash = event.transactionHash;
   let buyer = event.returnValues.user;
   let collateral_decrease = event.returnValues.collateral_decrease;
@@ -129,13 +170,17 @@ export async function processRepayEvent(event: any, controllerAddress: string, c
   let loan_decrease = event.returnValues.loan_decrease;
   loan_decrease /= 1e18;
   loan_decrease = Number(loan_decrease);
-  let borrowRate = await getBorrowRate(event);
+  let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
-  return { collateralAddress, collateralName, collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation, borrowRate };
+  let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
+  let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
+  let collatValue = qtyCollat * collateral_price;
+  let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
+  let crvUSDinCirculation = await getMarketCap(event.blockNumber);
+  return { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation, borrowRate };
 }
 
-export async function processBorrowEvent(event: any, controllerAddress: string, collateralAddress: string) {
-  let crvUSDinCirculation = await getTotalDebt(event.blockNumber, controllerAddress);
+export async function processBorrowEvent(event: any, controllerAddress: string, collateralAddress: string, AMM_ADDRESS: string) {
   let txHash = event.transactionHash;
   let buyer = event.returnValues.user;
   let collateral_increase = event.returnValues.collateral_increase;
@@ -145,12 +190,17 @@ export async function processBorrowEvent(event: any, controllerAddress: string, 
   let loan_increase = event.returnValues.loan_increase;
   loan_increase /= 1e18;
   loan_increase = Number(loan_increase);
-  let borrowRate = await getBorrowRate(event);
+  let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
-  return { collateralAddress, collateralName, collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate };
+  let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
+  let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
+  let collatValue = qtyCollat * collateral_price;
+  let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
+  let crvUSDinCirculation = await getMarketCap(event.blockNumber);
+  return { qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate };
 }
 
-export async function processTokenExchangeEvent(event: any, controllerAddress: string, collateralAddress: string) {
+export async function processTokenExchangeEvent(event: any, controllerAddress: string, collateralAddress: string, AMM_ADDRESS: string) {
   const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
 
   let txHash = event.transactionHash;
@@ -200,7 +250,6 @@ export async function processTokenExchangeEvent(event: any, controllerAddress: s
   if (event.returnValues.sold_id === "0") dollarAmount = Number(boughtAmount * collateral_price!);
   if (event.returnValues.sold_id === "1") dollarAmount = Number(soldAmount * collateral_price!);
 
-  let crvUSDinCirculation = await getTotalDebt(event.blockNumber, controllerAddress);
   if (!tokenSoldName) return;
 
   let [profit, revenue, cost] = (await solveProfit(event)) || [0, 0, 0];
@@ -209,10 +258,18 @@ export async function processTokenExchangeEvent(event: any, controllerAddress: s
   const MICH = "0x7a16fF8270133F063aAb6C9977183D9e72835428";
   let researchPositionHealth = await getPositionHealth(controllerAddress, MICH, event.blockNumber);
 
-  let borrowRate = await getBorrowRate(event);
+  let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
 
+  let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
+  let collatValue = qtyCollat * collateral_price;
+  let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
+  let crvUSDinCirculation = await getMarketCap(event.blockNumber);
+
   return {
+    qtyCollat,
+    collatValue,
+    marketBorrowedAmount,
     collateralName,
     numberOfcrvUSDper1_collat,
     collateral_price,

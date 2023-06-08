@@ -38,7 +38,3 @@ async function getAmmAddressFromController(controllerAddress: string): Promise<s
     return null;
   }
 }
-
-export async function getAmmAddressFromEventAddress(eventAddress: string): Promise<string | null> {
-  return await getAmmAddressFromController(eventAddress);
-}

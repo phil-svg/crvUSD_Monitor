@@ -34,7 +34,4 @@ async function getAmmAddressFromController(controllerAddress) {
         return null;
     }
 }
-export async function getAmmAddressFromEventAddress(eventAddress) {
-    return await getAmmAddressFromController(eventAddress);
-}
 //# sourceMappingURL=LLAMMA.js.map
