@@ -3,7 +3,7 @@ import { getWeb3HttpProvider } from "../helperFunctions/Web3.js";
 import fs from "fs";
 const rawTokens = getRawTokens();
 const tokens = rawTokens;
-async function getEthPrice(blockNumber) {
+async function getPriceOf_ETH(blockNumber) {
     let web3 = getWeb3HttpProvider();
     const ADDRESS_TRICRYPTO = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const ABI_TRICRYPTO_RAW = fs.readFileSync("../JSONs/TRICRYPTOAbi.json", "utf8");
@@ -30,10 +30,10 @@ export async function getPriceOf_sfrxETH(blockNumber) {
     }
 }
 export async function getPriceOf_WETH(blockNumber) {
-    return await getEthPrice(blockNumber);
+    return await getPriceOf_ETH(blockNumber);
 }
 export async function getPriceOf_frxETH(blockNumber) {
-    return await getEthPrice(blockNumber);
+    return await getPriceOf_ETH(blockNumber);
 }
 export async function getPriceOf_crvUSD(blockNumber) {
     let web3 = getWeb3HttpProvider();
@@ -55,6 +55,7 @@ export async function getPriceOf_USDC(blockNumber) {
     return 1;
 }
 const tokenGetPriceFunctions = {
+    getPriceOf_ETH: getPriceOf_ETH,
     getPriceOf_WETH: getPriceOf_WETH,
     getPriceOf_frxETH: getPriceOf_frxETH,
     getPriceOf_crvUSD: getPriceOf_crvUSD,
@@ -71,7 +72,7 @@ Object.keys(tokens).forEach((tokenName) => {
 });
 export async function getPrice(address, blockNumber) {
     const lowercasedAddress = address.toLowerCase();
-    const tokenName = Object.keys(tokens).find((key) => tokens[key].toLowerCase() === lowercasedAddress.toLowerCase());
+    let tokenName = Object.keys(tokens).find((key) => tokens[key].toLowerCase() === lowercasedAddress.toLowerCase());
     if (tokenName) {
         const functionName = `getPriceOf_${tokenName}`;
         return tokenPriceFunctions[functionName](blockNumber);

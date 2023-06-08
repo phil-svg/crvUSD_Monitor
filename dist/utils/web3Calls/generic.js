@@ -129,4 +129,14 @@ export async function subscribeToEvents(CONTRACT, eventEmitter) {
         console.log("Error in fetching events:", err.message);
     }
 }
+export async function getTxFromTxHash(txHash) {
+    try {
+        const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);
+        return TX;
+    }
+    catch (err) {
+        console.log(err);
+        return null;
+    }
+}
 //# sourceMappingURL=generic.js.map

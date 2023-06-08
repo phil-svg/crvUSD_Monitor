@@ -5,7 +5,7 @@ import fs from "fs";
 const rawTokens = getRawTokens();
 const tokens: Record<string, string> = rawTokens;
 
-async function getEthPrice(blockNumber: number): Promise<number | null> {
+async function getPriceOf_ETH(blockNumber: number): Promise<number | null> {
   let web3 = getWeb3HttpProvider();
   const ADDRESS_TRICRYPTO = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
   const ABI_TRICRYPTO_RAW = fs.readFileSync("../JSONs/TRICRYPTOAbi.json", "utf8");
@@ -36,11 +36,11 @@ export async function getPriceOf_sfrxETH(blockNumber: number): Promise<number | 
 }
 
 export async function getPriceOf_WETH(blockNumber: number): Promise<number | null> {
-  return await getEthPrice(blockNumber);
+  return await getPriceOf_ETH(blockNumber);
 }
 
 export async function getPriceOf_frxETH(blockNumber: number): Promise<number | null> {
-  return await getEthPrice(blockNumber);
+  return await getPriceOf_ETH(blockNumber);
 }
 
 export async function getPriceOf_crvUSD(blockNumber: number): Promise<number | null> {
@@ -67,6 +67,7 @@ export async function getPriceOf_USDC(blockNumber: number): Promise<number | nul
 }
 
 const tokenGetPriceFunctions: { [key: string]: (blockNumber: number) => Promise<number | null> } = {
+  getPriceOf_ETH: getPriceOf_ETH,
   getPriceOf_WETH: getPriceOf_WETH,
   getPriceOf_frxETH: getPriceOf_frxETH,
   getPriceOf_crvUSD: getPriceOf_crvUSD,
@@ -85,7 +86,7 @@ Object.keys(tokens).forEach((tokenName) => {
 
 export async function getPrice(address: string, blockNumber: number): Promise<number | null> {
   const lowercasedAddress = address.toLowerCase();
-  const tokenName = Object.keys(tokens).find((key) => tokens[key].toLowerCase() === lowercasedAddress.toLowerCase());
+  let tokenName = Object.keys(tokens).find((key) => tokens[key].toLowerCase() === lowercasedAddress.toLowerCase());
   if (tokenName) {
     const functionName = `getPriceOf_${tokenName}`;
     return tokenPriceFunctions[functionName](blockNumber);

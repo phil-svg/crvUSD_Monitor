@@ -2,6 +2,7 @@ import { getWeb3HttpProvider, getTxReceipt } from "../helperFunctions/Web3.js";
 import fs from "fs";
 import Big from "big.js";
 import { getPrice } from "../priceAPI/priceAPI.js";
+import { getTxFromTxHash } from "../web3Calls/generic.js";
 async function getEthPrice(blockNumber) {
     let web3 = getWeb3HttpProvider();
     const ADDRESS_TRICRYPTO = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
@@ -45,18 +46,24 @@ async function adjustBalancesForDecimals(balanceChanges) {
         const symbol = await getTokenSymbol(balanceChange.token);
         if (!symbol)
             return null;
-        // Create a Big.js instance of the balance change and the token's decimals
-        const balanceBig = new Big(balanceChange.balanceChange);
-        const decimalsBig = new Big(10).pow(decimals);
-        // Divide the balance change by the token's decimals
-        const adjustedBalance = balanceBig.div(decimalsBig).toString();
-        // Update the balance change and token symbol
-        balanceChange.balanceChange = adjustedBalance;
+        // If token is not ETH, adjust the balance change
+        if (symbol !== "ETH") {
+            // Create a Big.js instance of the balance change and the token's decimals
+            const balanceBig = new Big(balanceChange.balanceChange);
+            const decimalsBig = new Big(10).pow(decimals);
+            // Divide the balance change by the token's decimals
+            const adjustedBalance = balanceBig.div(decimalsBig).toString();
+            // Update the balance change
+            balanceChange.balanceChange = adjustedBalance;
+        }
+        // Update the token symbol
         balanceChange.tokenSymbol = symbol;
     }
     return balanceChanges;
 }
-async function getTokenSymbol(tokenAddress) {
+export async function getTokenSymbol(tokenAddress) {
+    if (tokenAddress === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE")
+        return "ETH";
     let web3 = getWeb3HttpProvider();
     const SYMBOL_ABI = [
         {
@@ -81,7 +88,9 @@ async function getTokenSymbol(tokenAddress) {
         return null;
     }
 }
-async function getTokenDecimals(tokenAddress) {
+export async function getTokenDecimals(tokenAddress) {
+    if (tokenAddress === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE")
+        return 18;
     let web3 = getWeb3HttpProvider();
     const DECIMALS_ABI = [
         {
@@ -189,12 +198,12 @@ function addEthBalanceChange(balanceChanges, ethBalanceChange) {
     return balanceChanges;
 }
 async function calculateAbsDollarBalance(decimalAdjustedBalanceChanges, blockNumber) {
-    let total = new Big(0);
+    let total = 0;
     for (const item of decimalAdjustedBalanceChanges) {
         const price = await getPrice(item.token, blockNumber);
         if (price !== null) {
-            const valueInDollars = new Big(item.balanceChange).times(price);
-            total = total.plus(valueInDollars.abs());
+            const valueInDollars = item.balanceChange * price;
+            total += valueInDollars;
         }
     }
     return total;
@@ -230,23 +239,21 @@ function getTransferEvents(receipt, userAddress) {
 }
 async function getRevenue(event) {
     const txReceipt = await getTxReceipt(event.transactionHash);
-    // console.log("txReceipt", txReceipt);
-    const buyerTransfersInAndOut = getTransferEvents(txReceipt, event.returnValues.buyer);
-    const wethWithdrawals = getWithdrawalEvents(txReceipt, event.returnValues.buyer);
+    const tx = await getTxFromTxHash(event.transactionHash);
+    const buyer = tx.from;
+    const buyerTransfersInAndOut = getTransferEvents(txReceipt, buyer);
+    const wethWithdrawals = getWithdrawalEvents(txReceipt, buyer);
     const combinedEvents = combineEvents(buyerTransfersInAndOut, wethWithdrawals);
-    const balanceChanges = getTokenBalanceChanges(combinedEvents, event.returnValues.buyer);
-    const ethBalanceChange = await getEthBalanceChange(event.returnValues.buyer, event.blockNumber);
+    const balanceChanges = getTokenBalanceChanges(combinedEvents, buyer);
+    const ethBalanceChange = await getEthBalanceChange(buyer, event.blockNumber);
     const balanceChangesWithEth = addEthBalanceChange(balanceChanges, ethBalanceChange);
     const decimalAdjustedBalanceChanges = await adjustBalancesForDecimals(balanceChangesWithEth);
     if (!decimalAdjustedBalanceChanges)
         return;
     const revenue = await calculateAbsDollarBalance(decimalAdjustedBalanceChanges, event.blockNumber);
-    console.log("revenue", revenue);
     return revenue;
-    //
 }
 export async function solveProfit(event) {
-    console.log("event.transactionHash", event.transactionHash);
     let revenue = await getRevenue(event);
     if (!revenue)
         return;

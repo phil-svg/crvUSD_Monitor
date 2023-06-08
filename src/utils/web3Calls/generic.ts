@@ -152,3 +152,13 @@ export async function subscribeToEvents(CONTRACT: any, eventEmitter: EventEmitte
     console.log("Error in fetching events:", err.message);
   }
 }
+
+export async function getTxFromTxHash(txHash: string): Promise<any | null> {
+  try {
+    const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);
+    return TX;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
