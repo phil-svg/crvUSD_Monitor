@@ -26,11 +26,11 @@ export async function manageMarket(MARKET, eventEmitter) {
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
     /*
-    const START_BLOCK = 17433981;
-    const END_BLOCK = 17434913;
+    // const START_BLOCK = 17433981;
+    // const END_BLOCK = 17434913;
   
-    // const START_BLOCK = 17434114;
-    // const END_BLOCK = 17434114;
+    const START_BLOCK = 17448533;
+    const END_BLOCK = 17448595;
   
     const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
   
@@ -38,7 +38,6 @@ export async function manageMarket(MARKET, eventEmitter) {
   
     for (const AMM_EVENT of PAST_EVENTS_AMM_CONTRACT) {
       if ((AMM_EVENT as { event: string }).event !== "TokenExchange") continue;
-      console.log("AMM_EVENT", AMM_EVENT);
       const formattedEventData = await processTokenExchangeEvent(AMM_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined)) continue;
       const message = await buildTokenExchangeMessage(formattedEventData);
@@ -50,7 +49,6 @@ export async function manageMarket(MARKET, eventEmitter) {
     if (!(PAST_EVENTS_crvUSD_CONTROLLER instanceof Array)) return;
   
     for (const CONTROLLER_EVENT of PAST_EVENTS_crvUSD_CONTROLLER) {
-      console.log("CONTROLLER_EVENT", CONTROLLER_EVENT);
       if ((CONTROLLER_EVENT as { event: string }).event === "Borrow") {
         const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
         console.log(formattedEventData);
@@ -80,7 +78,7 @@ export async function manageMarket(MARKET, eventEmitter) {
       }
     }
   
-    // process.exit();
+    process.exit();
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////

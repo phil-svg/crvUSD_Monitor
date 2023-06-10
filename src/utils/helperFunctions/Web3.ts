@@ -55,3 +55,28 @@ export async function getTxReceipt(txHash: string): Promise<any> {
     return null;
   }
 }
+
+export async function getCallTraceViaAlchemy(txHash: string): Promise<any> {
+  const API_KEY = process.env.ALCHEMY;
+  const url = `https://eth-mainnet.g.alchemy.com/v2/${API_KEY}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      method: "trace_transaction",
+      params: [txHash],
+      id: 1,
+      jsonrpc: "2.0",
+    }),
+  });
+
+  if (response.status !== 200) {
+    return "request failed";
+  }
+
+  const data = (await response.json()) as { result: any };
+  return data.result;
+}

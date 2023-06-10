@@ -170,7 +170,7 @@ The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyp
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
@@ -196,7 +196,7 @@ export async function buildRemoveCollateralMessage(formattedEventData: any) {
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
@@ -230,7 +230,7 @@ export async function buildRepayMessage(formattedEventData: any) {
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
   `;
 }
 
@@ -267,7 +267,7 @@ export async function buildBorrowMessage(formattedEventData: any) {
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
   `;
 }
 
@@ -315,7 +315,7 @@ export async function buildWithdrawMessage(formattedEventData: any) {
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
@@ -339,7 +339,7 @@ export async function buildDepositMessage(formattedEventData: any) {
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
@@ -363,8 +363,6 @@ async function buildSwapRouterMessage(formattedEventData: any) {
     crvUSDinCirculation,
     borrowRate,
   } = formattedEventData;
-
-  console.log("formattedEventData", formattedEventData);
 
   let tokenInURL = getTokenURL(soldAddress);
   let tokenOutURL = getTokenURL(boughtAddress);
@@ -398,7 +396,7 @@ async function buildSwapRouterMessage(formattedEventData: any) {
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
@@ -429,8 +427,6 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
 
   const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
   if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase()) return await buildSwapRouterMessage(formattedEventData);
-
-  console.log("formattedEventData", formattedEventData);
 
   let tokenInURL = getTokenURL(soldAddress);
   let tokenOutURL = getTokenURL(boughtAddress);
@@ -467,7 +463,7 @@ Research Pos. Health: ${formatForPrint(researchPositionHealth * 100)} 🔭
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "TxHash")} |${hyperlink(TX_HASH_URL_EIGENPHI, "EigenPhi")} 🦙🦙🦙
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
