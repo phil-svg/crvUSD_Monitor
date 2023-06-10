@@ -1,6 +1,7 @@
 import { getRawTokens } from "./tokens.js";
 import { getWeb3HttpProvider } from "../helperFunctions/Web3.js";
 import fs from "fs";
+import { web3Call } from "../web3Calls/generic.js";
 const rawTokens = getRawTokens();
 const tokens = rawTokens;
 async function getPriceOf_ETH(blockNumber) {
@@ -48,6 +49,20 @@ export async function getPriceOf_crvUSD(blockNumber) {
         return null;
     }
 }
+export async function getPriceOf_wstETH(blockNumber) {
+    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
+    const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
+    const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, "0x100dAa78fC509Db39Ef7D04DE0c1ABD299f4C6CE");
+    const PRICE = await web3Call(CONTROLLER, "amm_price", [], blockNumber);
+    const COLLAT_DECIMALS = 18;
+    try {
+        return Number(PRICE / 10 ** COLLAT_DECIMALS);
+    }
+    catch (error) {
+        return null;
+    }
+}
 export async function getPriceOf_USDT(blockNumber) {
     return 1;
 }
@@ -62,6 +77,7 @@ const tokenGetPriceFunctions = {
     getPriceOf_USDT: getPriceOf_USDT,
     getPriceOf_USDC: getPriceOf_USDC,
     getPriceOf_sfrxETH: getPriceOf_sfrxETH,
+    getPriceOf_wstETH: getPriceOf_wstETH,
 };
 const tokenPriceFunctions = {};
 Object.keys(tokens).forEach((tokenName) => {

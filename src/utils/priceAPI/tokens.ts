@@ -6,6 +6,7 @@ const rawTokens = {
   frxETH: "0x5e8422345238f34275888049021821e8e08caa1f",
   sfrxETH: "0xac3E018457B222d93114458476f3E3416Abbe38F",
   ETH: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+  wstETH: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
 };
 
 export function getRawTokens() {

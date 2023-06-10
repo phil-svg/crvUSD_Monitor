@@ -17,9 +17,9 @@ function getBuyerURL(buyerAddress) {
     return "https://etherscan.io/address/" + buyerAddress;
 }
 function getProfitPrint(profit, revenue, cost) {
-    if (Number(revenue) < Number(cost)) {
-        return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
-    }
+    // if (Number(revenue) < Number(cost)) {
+    //   return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
+    // }
     return `Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}`;
 }
 function getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount) {
@@ -31,7 +31,7 @@ function getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorr
 function formatForPrint(someNumber) {
     if (typeof someNumber === "string" && someNumber.includes(","))
         return someNumber;
-    someNumber = Math.abs(someNumber);
+    //someNumber = Math.abs(someNumber);
     if (someNumber > 100) {
         someNumber = Number(Number(someNumber).toFixed(0)).toLocaleString();
     }
@@ -268,7 +268,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 `;
 }
 async function buildSwapRouterMessage(formattedEventData) {
-    let { qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, price_of_collateral, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, borrowRate, } = formattedEventData;
+    let { qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, borrowRate, } = formattedEventData;
     let tokenInURL = getTokenURL(soldAddress);
     let tokenOutURL = getTokenURL(boughtAddress);
     let buyerURL = getBuyerURL(buyer);
@@ -290,7 +290,7 @@ async function buildSwapRouterMessage(formattedEventData) {
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
-1 ${collateralName} ➛ ${formatForPrint(price_of_collateral)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
+1 ${collateralName} ➛ ${formatForPrint(collateral_price)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 

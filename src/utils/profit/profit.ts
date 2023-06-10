@@ -62,12 +62,12 @@ async function adjustBalancesForDecimals(balanceChanges: BalanceChange[]): Promi
     const decimals = await getTokenDecimals(balanceChange.token);
     if (!decimals) {
       console.log("unknown decimals for", balanceChange.tokenSymbol, balanceChange.token);
-      return null;
+      continue;
     }
     const symbol = await getTokenSymbol(balanceChange.token);
     if (!symbol) {
       console.log("unknown symbol for", balanceChange.tokenSymbol, balanceChange.token);
-      return null;
+      continue;
     }
 
     // Create a Big.js instance of the balance change and the token's decimals
@@ -339,17 +339,48 @@ function calculateEthBalanceChange(callTrace: CallTrace, userAddress: string): n
 function getTransferEventsFromTrace(callTraces: any[], userAddress: string): TransferEvent[] {
   const transferEvents: TransferEvent[] = [];
   const transferMethodId = "0xa9059cbb";
+  const transferFromMethodId = "0x23b872dd";
+  const withdrawMethodId = "0x2e1a7d4d";
+  const customBurnMethodId = "0xba087652";
   const userAddressLower = userAddress.toLowerCase();
 
   for (const callTrace of callTraces) {
     const action = callTrace.action;
 
-    // Check if the input starts with the transfer method id
-    if (action.input && action.input.toLowerCase().startsWith(transferMethodId)) {
-      const sender = action.from;
-      // Extract receiver and amount from the input
-      const receiver = "0x" + action.input.slice(34, 74);
-      const amountHex = action.input.slice(74, 138);
+    // Check if the input starts with the transfer method id, transferFrom method id, withdraw method id or custom burn method id
+    if (
+      action.input &&
+      (action.input.toLowerCase().startsWith(transferMethodId) ||
+        action.input.toLowerCase().startsWith(transferFromMethodId) ||
+        action.input.toLowerCase().startsWith(withdrawMethodId) ||
+        action.input.toLowerCase().startsWith(customBurnMethodId))
+    ) {
+      let sender, receiver, amountHex;
+
+      if (action.input.toLowerCase().startsWith(transferMethodId)) {
+        sender = action.from;
+        // Extract receiver and amount from the input
+        receiver = "0x" + action.input.slice(34, 74);
+        amountHex = action.input.slice(74, 138);
+      } else if (action.input.toLowerCase().startsWith(transferFromMethodId)) {
+        // Extract sender, receiver and amount from the input for transferFrom
+        sender = "0x" + action.input.slice(34, 74);
+        receiver = "0x" + action.input.slice(98, 138);
+        amountHex = action.input.slice(162, 202);
+      } else if (action.input.toLowerCase().startsWith(withdrawMethodId)) {
+        // Added this block
+        sender = action.from;
+        // The receiver is the user who sent the transaction
+        receiver = action.from;
+        // Extract the amount from the input
+        amountHex = action.input.slice(10, 74);
+      } else if (action.input.toLowerCase().startsWith(customBurnMethodId)) {
+        // Handle the custom burn function
+        sender = action.from;
+        receiver = "0x" + action.input.slice(74, 114); // Extract receiver from the input
+        amountHex = action.input.slice(34, 74); // Extract amount from the input
+      }
+
       const amount = BigInt("0x" + amountHex).toString(); // convert from hex to decimal
 
       // Check if this log is a transfer from or to the userAddress
@@ -370,61 +401,24 @@ function getTransferEventsFromTrace(callTraces: any[], userAddress: string): Tra
 
 async function getRevenueForAddress(event: any, CALL_TRACE: any, user: string): Promise<number> {
   const userTransfersInAndOut = getTransferEventsFromTrace(CALL_TRACE, user);
-  const weth_Withdrawals = checkCallTraceForWETH(CALL_TRACE, user);
-  const combinedEvents = combineEvents(userTransfersInAndOut, weth_Withdrawals);
-  const balanceChanges = getTokenBalanceChanges(combinedEvents, user);
-  console.log("balanceChanges", user, balanceChanges);
+  //console.log("userTransfersInAndOut", user, userTransfersInAndOut);
+
+  const balanceChanges = getTokenBalanceChanges(userTransfersInAndOut, user);
+
   const ethBalanceChange = calculateEthBalanceChange(CALL_TRACE, user);
+
   const balanceChangesWithEth = addEthBalanceChange(balanceChanges, ethBalanceChange);
+  //console.log("balanceChangesWithEth", user, balanceChangesWithEth);
 
   const decimalAdjustedBalanceChanges = await adjustBalancesForDecimals(balanceChangesWithEth);
-  console.log("decimalAdjustedBalanceChanges", decimalAdjustedBalanceChanges);
+  //console.log("decimalAdjustedBalanceChanges", user, decimalAdjustedBalanceChanges);
   if (!decimalAdjustedBalanceChanges) return 0;
 
   const revenue = await calculateAbsDollarBalance(decimalAdjustedBalanceChanges, event.blockNumber);
   return revenue;
 }
 
-function checkCallTraceForWETH(callTraces: any, userAddress: string) {
-  const WETHAddress = ADDRESS_WETH;
-  const transferMethodId = "0xa9059cbb";
-  const results = [];
-
-  const userAddressLower = userAddress.toLowerCase();
-
-  for (let i = 0; i < callTraces.length; i++) {
-    const callTrace = callTraces[i];
-
-    const action = callTrace.action;
-
-    // Only check the "to" field for the WETH address
-    if (action.to && action.to.toLowerCase() === WETHAddress.toLowerCase()) {
-      // Check if the input starts with the transfer method id
-      if (action.input && action.input.toLowerCase().startsWith(transferMethodId)) {
-        // Extract receiver and amount from the input
-        // Assumes that the receiver address and amount are each 64 characters (32 bytes) long
-        // and that they immediately follow the method id in the input string
-        const receiver = "0x" + action.input.slice(34, 74);
-        const amountHex = action.input.slice(74, 138);
-        const amount = BigInt("0x" + amountHex).toString(); // convert from hex to decimal
-
-        // Only add the result if the receiver matches the user address
-        if (receiver.toLowerCase() === userAddressLower) {
-          results.push({
-            receiver,
-            wad: amount,
-            weth: WETHAddress,
-          });
-        }
-      }
-    }
-  }
-
-  return results;
-}
-
 async function getRevenue(event: any): Promise<any> {
-  console.log("txHash", event.transactionHash);
   const CALL_TRACE = await getCallTraceViaAlchemy(event.transactionHash);
 
   const buyer = CALL_TRACE[0].action.from;
@@ -438,7 +432,6 @@ async function getRevenue(event: any): Promise<any> {
 
 export async function solveProfit(event: any): Promise<number[] | void> {
   let revenue = await getRevenue(event);
-  console.log("final revenue", revenue);
   if (!revenue && revenue !== 0) return;
   let cost = await getCosts(event.transactionHash, event.blockNumber);
   if (!cost) return;

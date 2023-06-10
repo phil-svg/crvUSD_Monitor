@@ -35,11 +35,11 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  // const START_BLOCK = 17433981;
-  // const END_BLOCK = 17434913;
+  // const START_BLOCK = 17451885;
+  // const END_BLOCK = 17451885;
 
-  const START_BLOCK = 17448533;
-  const END_BLOCK = 17448595;
+  const START_BLOCK = 17451489;
+  const END_BLOCK = 17451940;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
 
@@ -87,7 +87,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
     }
   }
 
-  process.exit();
+  // process.exit();
   */
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
 export async function handleLiveEvents(eventEmitter: any) {
   eventEmitter.on("newEvent", async ({ eventData: EVENT, Market: MARKET }: EventAndMarket) => {
-    console.log("New Event picked up by the Emitter:", EVENT, "..Market:", MARKET);
+    console.log("New Event picked up by the Emitter:", EVENT, "..with Market:", MARKET);
     const WEB3_WS_PROVIDER = getWeb3WsProvider();
     const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
     const ADDRESS_CONTROLLER = MARKET.returnValues.controller;

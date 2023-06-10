@@ -24,9 +24,9 @@ function getBuyerURL(buyerAddress: string) {
 }
 
 function getProfitPrint(profit: any, revenue: any, cost: any) {
-  if (Number(revenue) < Number(cost)) {
-    return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
-  }
+  // if (Number(revenue) < Number(cost)) {
+  //   return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
+  // }
   return `Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}`;
 }
 
@@ -39,7 +39,7 @@ function getMarketHealthPrint(qtyCollat: number, collateralName: string, collatV
 
 function formatForPrint(someNumber: any) {
   if (typeof someNumber === "string" && someNumber.includes(",")) return someNumber;
-  someNumber = Math.abs(someNumber);
+  //someNumber = Math.abs(someNumber);
   if (someNumber > 100) {
     someNumber = Number(Number(someNumber).toFixed(0)).toLocaleString();
   } else if (someNumber > 5) {
@@ -350,7 +350,7 @@ async function buildSwapRouterMessage(formattedEventData: any) {
     marketBorrowedAmount,
     collateralName,
     numberOfcrvUSDper1_collat,
-    price_of_collateral,
+    collateral_price,
     soldAddress,
     boughtAddress,
     txHash,
@@ -392,7 +392,7 @@ async function buildSwapRouterMessage(formattedEventData: any) {
 
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
-1 ${collateralName} ➛ ${formatForPrint(price_of_collateral)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
+1 ${collateralName} ➛ ${formatForPrint(collateral_price)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap crvUSD: ${crvUSDinCirculation} 
