@@ -419,6 +419,8 @@ async function getRevenueForAddress(event: any, CALL_TRACE: any, user: string): 
 }
 
 async function getRevenue(event: any): Promise<any> {
+  // Wait for 4 seconds to give Alchemy time to build the call_trace.
+  await new Promise((resolve) => setTimeout(resolve, 4000));
   const CALL_TRACE = await getCallTraceViaAlchemy(event.transactionHash);
 
   const buyer = CALL_TRACE[0].action.from;
