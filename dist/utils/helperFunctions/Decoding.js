@@ -13,6 +13,16 @@ async function getCollatPrice(controllerAddress, collateralAddress, blockNumber)
     const COLLAT_DECIMALS = getDecimalFromCheatSheet(collateralAddress);
     return Number(PRICE / 10 ** COLLAT_DECIMALS);
 }
+async function getPositionHealthOfGeneralAddress(controllerAddress, userAddress, blockNumber) {
+    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
+    const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
+    const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
+    const hasLoan = await web3Call(CONTROLLER, "loan_exists", [userAddress], blockNumber);
+    if (!hasLoan)
+        return "no loan";
+    return await getPositionHealth(controllerAddress, userAddress, blockNumber);
+}
 async function getPositionHealth(controllerAddress, userAddress, blockNumber) {
     const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
@@ -159,7 +169,9 @@ export async function processRemoveCollateralEvent(event, controllerAddress, col
     let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+    const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
     return {
+        borrowerHealth,
         marketCap,
         qtyCollat,
         collatValue,
@@ -192,7 +204,9 @@ export async function processWithdrawEvent(event, controllerAddress, collateralA
     let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+    const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
     return {
+        borrowerHealth,
         marketCap,
         qtyCollat,
         collatValue,
@@ -225,7 +239,9 @@ export async function processRepayEvent(event, controllerAddress, collateralAddr
     let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+    const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
     return {
+        borrowerHealth,
         marketCap,
         qtyCollat,
         collatValue,
@@ -258,7 +274,9 @@ export async function processBorrowEvent(event, controllerAddress, collateralAdd
     let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+    const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
     return {
+        borrowerHealth,
         marketCap,
         qtyCollat,
         collatValue,
