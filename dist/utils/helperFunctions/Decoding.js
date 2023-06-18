@@ -4,8 +4,9 @@ import { getPastEvents, getWalletTokenBalance, web3Call } from "../web3Calls/gen
 import { solveProfit } from "../profit/profit.js";
 import { getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
 import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatCheatSheet.js";
+import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
 async function getCollatPrice(controllerAddress, collateralAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
@@ -14,7 +15,7 @@ async function getCollatPrice(controllerAddress, collateralAddress, blockNumber)
     return Number(PRICE / 10 ** COLLAT_DECIMALS);
 }
 async function getPositionHealthOfGeneralAddress(controllerAddress, userAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
@@ -24,7 +25,7 @@ async function getPositionHealthOfGeneralAddress(controllerAddress, userAddress,
     return await getPositionHealth(controllerAddress, userAddress, blockNumber);
 }
 async function getPositionHealth(controllerAddress, userAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
@@ -43,7 +44,7 @@ async function getAmountOfCollatInMarket(addressCollat, addressAmm, blockNumber)
     return BALANCE / 10 ** DECIMALS;
 }
 async function getcrvUSDinCirculation(blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
     const ADDRESS_crvUSD_ControllerFactory = "0xC9332fdCB1C491Dcc683bAe86Fe3cb70360738BC";
     const ABI_crvUSD_ControllerFactory = JSON.parse(fs.readFileSync("../JSONs/crvUSD_ControllerFactory.json", "utf8"));
     const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
@@ -51,7 +52,7 @@ async function getcrvUSDinCirculation(blockNumber) {
     return Number(totalDebt / 1e18);
 }
 async function getTotalMarketDebt(blockNumber, controllerAddress) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
     const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
     const TOTAL_DEBT = await web3Call(CONTROLLER, "total_debt", [], blockNumber);
@@ -63,14 +64,17 @@ async function getCrvUsdTranserAmount(event) {
     const ABI_crvUSD = JSON.parse(fs.readFileSync("../JSONs/crvUSDAbi.json", "utf8"));
     const crvUSD = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
     let amounts = await getPastEvents(crvUSD, "Transfer", event.blockNumber, event.blockNumber);
+    console.log("event.returnValues", event.returnValues);
+    console.log("amounts", amounts);
     if (!amounts || !Array.isArray(amounts))
         return;
-    let amountElement = amounts.find((element) => element.returnValues.sender === event.returnValues.liquidator);
+    let amountElement = amounts.find((element) => element.returnValues.sender === event.returnValues.liquidator || element.returnValues.receiver === event.returnValues.liquidator);
+    console.log("amountElement", amountElement);
     let liquidatorCrvUsdTransferAmount = amountElement ? amountElement.returnValues.value : "bar";
     return Number(liquidatorCrvUsdTransferAmount / 1e18);
 }
 async function getPegKeepers(blockNumber) {
-    let web3 = getWeb3HttpProvider();
+    let web3 = await getWeb3HttpProvider();
     const addressAggMonetary = "0xc684432FD6322c6D58b6bC5d28B18569aA0AD0A1";
     const ABI_AggMonetaryPolicy = JSON.parse(fs.readFileSync("../JSONs/AggMonetaryPolicy.json", "utf8"));
     const AggMonetaryPolicy = new web3.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
@@ -91,7 +95,7 @@ async function getPegKeepers(blockNumber) {
     return pegKeeperAddresses;
 }
 async function getMarketCap(blockNumber) {
-    let web3 = getWeb3HttpProvider();
+    let web3 = await getWeb3HttpProvider();
     const pegKeepers = await getPegKeepers(blockNumber);
     const ABI = [
         {
@@ -134,7 +138,9 @@ export async function processLiquidateEvent(event, controllerAddress, collateral
     let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+    const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
     return {
+        crvUSD_price,
         marketCap,
         qtyCollat,
         collatValue,
@@ -170,7 +176,9 @@ export async function processRemoveCollateralEvent(event, controllerAddress, col
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
     const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+    const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
     return {
+        crvUSD_price,
         borrowerHealth,
         marketCap,
         qtyCollat,
@@ -205,7 +213,9 @@ export async function processWithdrawEvent(event, controllerAddress, collateralA
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
     const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+    const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
     return {
+        crvUSD_price,
         borrowerHealth,
         marketCap,
         qtyCollat,
@@ -240,7 +250,9 @@ export async function processRepayEvent(event, controllerAddress, collateralAddr
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
     const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+    const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
     return {
+        crvUSD_price,
         borrowerHealth,
         marketCap,
         qtyCollat,
@@ -275,7 +287,9 @@ export async function processBorrowEvent(event, controllerAddress, collateralAdd
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
     const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+    const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
     return {
+        crvUSD_price,
         borrowerHealth,
         marketCap,
         qtyCollat,
@@ -348,7 +362,9 @@ export async function processTokenExchangeEvent(event, controllerAddress, collat
     let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+    const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
     return {
+        crvUSD_price,
         marketCap,
         qtyCollat,
         collatValue,

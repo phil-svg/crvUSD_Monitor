@@ -8,7 +8,7 @@ export function calculateInterest(rate) {
     return percentageRate;
 }
 export async function getBorrowRateForProvidedLlamma(LLAMMA_ADDRESS, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
     const ABI_AMM_RAW = fs.readFileSync("../JSONs/AmmAbi.json", "utf8");
     const ABI_AMM = JSON.parse(ABI_AMM_RAW);
     const AMM = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_AMM, LLAMMA_ADDRESS);
@@ -22,7 +22,7 @@ export async function getBorrowRateForProvidedLlamma(LLAMMA_ADDRESS, blockNumber
     }
 }
 async function getAmmAddressFromController(controllerAddress) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
     const ABI_crvUSD_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_crvUSD_CONTROLLER = JSON.parse(ABI_crvUSD_CONTROLLER_RAW);
     const crvUSD_CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_CONTROLLER, controllerAddress);

@@ -5,9 +5,10 @@ import { solveProfit } from "../profit/profit.js";
 import { getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
 import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatCheatSheet.js";
 import { AbiItem } from "web3-utils";
+import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
 
 async function getCollatPrice(controllerAddress: string, collateralAddress: string, blockNumber: number): Promise<number> {
-  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+  const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
 
   const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
   const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
@@ -19,7 +20,7 @@ async function getCollatPrice(controllerAddress: string, collateralAddress: stri
 }
 
 async function getPositionHealthOfGeneralAddress(controllerAddress: string, userAddress: string, blockNumber: number): Promise<number | string | null> {
-  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+  const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
 
   const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
   const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
@@ -32,7 +33,7 @@ async function getPositionHealthOfGeneralAddress(controllerAddress: string, user
 }
 
 async function getPositionHealth(controllerAddress: string, userAddress: string, blockNumber: number): Promise<number | null> {
-  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+  const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
 
   const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
   const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
@@ -55,7 +56,7 @@ async function getAmountOfCollatInMarket(addressCollat: string, addressAmm: stri
 }
 
 async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
-  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+  const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
   const ADDRESS_crvUSD_ControllerFactory = "0xC9332fdCB1C491Dcc683bAe86Fe3cb70360738BC";
   const ABI_crvUSD_ControllerFactory = JSON.parse(fs.readFileSync("../JSONs/crvUSD_ControllerFactory.json", "utf8"));
   const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
@@ -65,7 +66,7 @@ async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
 }
 
 async function getTotalMarketDebt(blockNumber: number, controllerAddress: string) {
-  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+  const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
 
   const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
   const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
@@ -82,14 +83,20 @@ async function getCrvUsdTranserAmount(event: any) {
   const crvUSD = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
 
   let amounts = await getPastEvents(crvUSD, "Transfer", event.blockNumber, event.blockNumber);
+  console.log("event.returnValues", event.returnValues);
+  console.log("amounts", amounts);
   if (!amounts || !Array.isArray(amounts)) return;
-  let amountElement = amounts.find((element: any) => element.returnValues.sender === event.returnValues.liquidator);
+  let amountElement = amounts.find(
+    (element: any) => element.returnValues.sender === event.returnValues.liquidator || element.returnValues.receiver === event.returnValues.liquidator
+  );
+
+  console.log("amountElement", amountElement);
   let liquidatorCrvUsdTransferAmount = amountElement ? (amountElement as any).returnValues.value : "bar";
   return Number(liquidatorCrvUsdTransferAmount / 1e18);
 }
 
 async function getPegKeepers(blockNumber: number) {
-  let web3 = getWeb3HttpProvider();
+  let web3 = await getWeb3HttpProvider();
 
   const addressAggMonetary = "0xc684432FD6322c6D58b6bC5d28B18569aA0AD0A1";
   const ABI_AggMonetaryPolicy = JSON.parse(fs.readFileSync("../JSONs/AggMonetaryPolicy.json", "utf8"));
@@ -113,7 +120,7 @@ async function getPegKeepers(blockNumber: number) {
 }
 
 async function getMarketCap(blockNumber: number) {
-  let web3 = getWeb3HttpProvider();
+  let web3 = await getWeb3HttpProvider();
   const pegKeepers = await getPegKeepers(blockNumber);
   const ABI: AbiItem[] = [
     {
@@ -159,7 +166,9 @@ export async function processLiquidateEvent(event: any, controllerAddress: strin
   let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
   let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
   const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+  const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
   return {
+    crvUSD_price,
     marketCap,
     qtyCollat,
     collatValue,
@@ -196,7 +205,9 @@ export async function processRemoveCollateralEvent(event: any, controllerAddress
   let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
   const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
   const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+  const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
   return {
+    crvUSD_price,
     borrowerHealth,
     marketCap,
     qtyCollat,
@@ -231,7 +242,9 @@ export async function processWithdrawEvent(event: any, controllerAddress: string
   let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
   const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
   const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+  const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
   return {
+    crvUSD_price,
     borrowerHealth,
     marketCap,
     qtyCollat,
@@ -267,7 +280,9 @@ export async function processRepayEvent(event: any, controllerAddress: string, c
   let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
   const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
   const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+  const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
   return {
+    crvUSD_price,
     borrowerHealth,
     marketCap,
     qtyCollat,
@@ -303,8 +318,10 @@ export async function processBorrowEvent(event: any, controllerAddress: string, 
   let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
   const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
   const borrowerHealth = await getPositionHealthOfGeneralAddress(controllerAddress, buyer, event.blockNumber);
+  const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
 
   return {
+    crvUSD_price,
     borrowerHealth,
     marketCap,
     qtyCollat,
@@ -388,8 +405,10 @@ export async function processTokenExchangeEvent(event: any, controllerAddress: s
   let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
 
   const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
+  const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
 
   return {
+    crvUSD_price,
     marketCap,
     qtyCollat,
     collatValue,

@@ -5,7 +5,7 @@ import { getPrice } from "../priceAPI/priceAPI.js";
 const ADDRESS_ETH = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const ADDRESS_WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 async function getEthPrice(blockNumber) {
-    let web3 = getWeb3HttpProvider();
+    let web3 = await getWeb3HttpProvider();
     const ADDRESS_TRICRYPTO = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const ABI_TRICRYPTO_RAW = fs.readFileSync("../JSONs/TRICRYPTOAbi.json", "utf8");
     const ABI_TRICRYPTO = JSON.parse(ABI_TRICRYPTO_RAW);
@@ -18,7 +18,7 @@ async function getEthPrice(blockNumber) {
     }
 }
 async function getCosts(txHash, blockNumber) {
-    let web3 = getWeb3HttpProvider();
+    let web3 = await getWeb3HttpProvider();
     try {
         const txReceipt = await web3.eth.getTransactionReceipt(txHash);
         const gasUsed = txReceipt.gasUsed;
@@ -66,7 +66,7 @@ async function adjustBalancesForDecimals(balanceChanges) {
 export async function getTokenSymbol(tokenAddress) {
     if (tokenAddress === ADDRESS_ETH)
         return "ETH";
-    let web3 = getWeb3HttpProvider();
+    let web3 = await getWeb3HttpProvider();
     const SYMBOL_ABI = [
         {
             inputs: [],
@@ -93,7 +93,7 @@ export async function getTokenSymbol(tokenAddress) {
 export async function getTokenDecimals(tokenAddress) {
     if (tokenAddress === ADDRESS_ETH)
         return 18;
-    let web3 = getWeb3HttpProvider();
+    let web3 = await getWeb3HttpProvider();
     const DECIMALS_ABI = [
         {
             inputs: [],

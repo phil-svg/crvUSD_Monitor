@@ -3,7 +3,7 @@ import { getWeb3WsProvider, getWeb3HttpProvider } from "../helperFunctions/Web3.
 import { EventEmitter } from "stream";
 
 const WEB3_WS_PROVIDER = getWeb3WsProvider();
-const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
 
 function isCupsErr(err: Error): boolean {
   return err.message.includes("compute units per second capacity");

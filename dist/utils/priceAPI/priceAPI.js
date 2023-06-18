@@ -38,7 +38,7 @@ export async function getPriceOf_frxETH(blockNumber) {
 }
 export async function getPriceOf_crvUSD(blockNumber) {
     let web3 = getWeb3HttpProvider();
-    const ADDRESS_PRICE_AGGREGATOR = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
+    const ADDRESS_PRICE_AGGREGATOR = "0xe5Afcf332a5457E8FafCD668BcE3dF953762Dfe7";
     const ABI_PRICE_AGGREGATOR_RAW = fs.readFileSync("../JSONs/PRICE_AGGREGATORAbi.json", "utf8");
     const ABI_PRICE_AGGREGATOR = JSON.parse(ABI_PRICE_AGGREGATOR_RAW);
     const PRICE_AGGREGATOR = new web3.eth.Contract(ABI_PRICE_AGGREGATOR, ADDRESS_PRICE_AGGREGATOR);
@@ -46,6 +46,7 @@ export async function getPriceOf_crvUSD(blockNumber) {
         return (await PRICE_AGGREGATOR.methods.price().call(blockNumber)) / 1e18;
     }
     catch (error) {
+        console.log(error);
         return null;
     }
 }
@@ -91,7 +92,7 @@ export async function getPrice(address, blockNumber) {
     let tokenName = Object.keys(tokens).find((key) => tokens[key].toLowerCase() === lowercasedAddress.toLowerCase());
     if (tokenName) {
         const functionName = `getPriceOf_${tokenName}`;
-        return tokenPriceFunctions[functionName](blockNumber);
+        return await tokenPriceFunctions[functionName](blockNumber);
     }
     console.log(`token ${address} not saved in priceAPI`);
     return null; // handle the case when the address is not found
