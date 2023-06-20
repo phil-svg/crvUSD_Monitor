@@ -1,5 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
+import { labels } from "../../Labels.js";
 dotenv.config({ path: "../.env" });
 function getTokenURL(tokenAddress) {
     return "https://etherscan.io/token/" + tokenAddress;
@@ -114,13 +115,19 @@ function send(bot, message, groupID) {
 function shortenAddress(address) {
     return address.slice(0, 5) + ".." + address.slice(-2);
 }
+function getAddressName(address) {
+    // Find label for address
+    const labelObject = labels.find((label) => label.Address.toLowerCase() === address.toLowerCase());
+    // If label found, return it. Otherwise, return shortened address
+    return labelObject ? labelObject.Label : shortenAddress(address);
+}
 export async function buildLiquidateMessage(formattedEventData) {
     let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const liquidatorURL = getBuyerURL(liquidator);
-    const shortenLiquidator = shortenAddress(liquidator);
+    const shortenLiquidator = getAddressName(liquidator);
     const userURL = getBuyerURL(user);
-    const shortenUser = shortenAddress(user);
+    const shortenUser = getAddressName(user);
     const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -146,7 +153,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 export async function buildRemoveCollateralMessage(formattedEventData) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const buyerURL = getBuyerURL(buyer);
-    const shortenBuyer = shortenAddress(buyer);
+    const shortenBuyer = getAddressName(buyer);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -169,7 +176,7 @@ export async function buildRepayMessage(formattedEventData) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const buyerURL = getBuyerURL(buyer);
-    const shortenBuyer = shortenAddress(buyer);
+    const shortenBuyer = getAddressName(buyer);
     const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -195,7 +202,7 @@ export async function buildBorrowMessage(formattedEventData) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const buyerURL = getBuyerURL(buyer);
-    const shortenBuyer = shortenAddress(buyer);
+    const shortenBuyer = getAddressName(buyer);
     const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -227,7 +234,7 @@ export async function buildWithdrawMessage(formattedEventData) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, withdrawnAmountcrvUSD, withdrawnAmountsCollat, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const buyerURL = getBuyerURL(buyer);
-    const shortenBuyer = shortenAddress(buyer);
+    const shortenBuyer = getAddressName(buyer);
     const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -258,7 +265,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 export async function buildDepositMessage(formattedEventData) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, borrowedAmount, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const buyerURL = getBuyerURL(buyer);
-    const shortenBuyer = shortenAddress(buyer);
+    const shortenBuyer = getAddressName(buyer);
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -314,7 +321,7 @@ export async function buildTokenExchangeMessage(formattedEventData) {
     let tokenInURL = getTokenURL(soldAddress);
     let tokenOutURL = getTokenURL(boughtAddress);
     let buyerURL = getBuyerURL(buyer);
-    const shortenBuyer = shortenAddress(buyer);
+    const shortenBuyer = getAddressName(buyer);
     soldAmount = formatForPrint(soldAmount);
     boughtAmount = formatForPrint(boughtAmount);
     dollarAmount = formatForPrint(dollarAmount);

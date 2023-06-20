@@ -35,8 +35,8 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 17472331;
-  const END_BLOCK = 17472331;
+  const START_BLOCK = 17521892;
+  const END_BLOCK = 17521892;
 
   // const START_BLOCK = 17451489;
   // const END_BLOCK = 17451940;

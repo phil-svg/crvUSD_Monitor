@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
+import { labels } from "../../Labels.js";
 dotenv.config({ path: "../.env" });
 
 function getTokenURL(tokenAddress: string) {
@@ -122,6 +123,14 @@ function shortenAddress(address: string): string {
   return address.slice(0, 5) + ".." + address.slice(-2);
 }
 
+function getAddressName(address: string): string {
+  // Find label for address
+  const labelObject = labels.find((label: { Address: string }) => label.Address.toLowerCase() === address.toLowerCase());
+
+  // If label found, return it. Otherwise, return shortened address
+  return labelObject ? labelObject.Label : shortenAddress(address);
+}
+
 export async function buildLiquidateMessage(formattedEventData: any) {
   let {
     crvUSD_price,
@@ -144,9 +153,9 @@ export async function buildLiquidateMessage(formattedEventData: any) {
   const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
 
   const liquidatorURL = getBuyerURL(liquidator);
-  const shortenLiquidator = shortenAddress(liquidator);
+  const shortenLiquidator = getAddressName(liquidator);
   const userURL = getBuyerURL(user);
-  const shortenUser = shortenAddress(user);
+  const shortenUser = getAddressName(user);
   const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
   const COLLATERAL_URL = getTokenURL(collateralAddress);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -195,7 +204,7 @@ export async function buildRemoveCollateralMessage(formattedEventData: any) {
   } = formattedEventData;
 
   const buyerURL = getBuyerURL(buyer);
-  const shortenBuyer = shortenAddress(buyer);
+  const shortenBuyer = getAddressName(buyer);
   const COLLATERAL_URL = getTokenURL(collateralAddress);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
   const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -239,7 +248,7 @@ export async function buildRepayMessage(formattedEventData: any) {
   const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
 
   const buyerURL = getBuyerURL(buyer);
-  const shortenBuyer = shortenAddress(buyer);
+  const shortenBuyer = getAddressName(buyer);
   const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
   const COLLATERAL_URL = getTokenURL(collateralAddress);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -286,7 +295,7 @@ export async function buildBorrowMessage(formattedEventData: any) {
   const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
 
   const buyerURL = getBuyerURL(buyer);
-  const shortenBuyer = shortenAddress(buyer);
+  const shortenBuyer = getAddressName(buyer);
   const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
   const COLLATERAL_URL = getTokenURL(collateralAddress);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -340,7 +349,7 @@ export async function buildWithdrawMessage(formattedEventData: any) {
   const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
 
   const buyerURL = getBuyerURL(buyer);
-  const shortenBuyer = shortenAddress(buyer);
+  const shortenBuyer = getAddressName(buyer);
   const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
   const COLLATERAL_URL = getTokenURL(collateralAddress);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
@@ -392,7 +401,7 @@ export async function buildDepositMessage(formattedEventData: any) {
   } = formattedEventData;
 
   const buyerURL = getBuyerURL(buyer);
-  const shortenBuyer = shortenAddress(buyer);
+  const shortenBuyer = getAddressName(buyer);
   const COLLATERAL_URL = getTokenURL(collateralAddress);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
   const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -508,7 +517,7 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
   let tokenOutURL = getTokenURL(boughtAddress);
   let buyerURL = getBuyerURL(buyer);
 
-  const shortenBuyer = shortenAddress(buyer);
+  const shortenBuyer = getAddressName(buyer);
 
   soldAmount = formatForPrint(soldAmount);
   boughtAmount = formatForPrint(boughtAmount);
