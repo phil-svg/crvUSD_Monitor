@@ -6,16 +6,16 @@ import { getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
 import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatCheatSheet.js";
 import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
 async function getCollatPrice(controllerAddress, collateralAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
     const PRICE = await web3Call(CONTROLLER, "amm_price", [], blockNumber);
-    const COLLAT_DECIMALS = getDecimalFromCheatSheet(collateralAddress);
-    return Number(PRICE / 10 ** COLLAT_DECIMALS);
+    // const COLLAT_DECIMALS = getDecimalFromCheatSheet(collateralAddress);
+    return Number(PRICE / 10 ** 18);
 }
 async function getPositionHealthOfGeneralAddress(controllerAddress, userAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
@@ -52,7 +52,7 @@ async function getcrvUSDinCirculation(blockNumber) {
     return Number(totalDebt / 1e18);
 }
 async function getTotalMarketDebt(blockNumber, controllerAddress) {
-    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
     const TOTAL_DEBT = await web3Call(CONTROLLER, "total_debt", [], blockNumber);
@@ -74,7 +74,7 @@ async function getCrvUsdTranserAmount(event) {
     return Number(liquidatorCrvUsdTransferAmount / 1e18);
 }
 async function getPegKeepers(blockNumber) {
-    let web3 = await getWeb3HttpProvider();
+    let web3 = getWeb3HttpProvider();
     const addressAggMonetary = "0xc684432FD6322c6D58b6bC5d28B18569aA0AD0A1";
     const ABI_AggMonetaryPolicy = JSON.parse(fs.readFileSync("../JSONs/AggMonetaryPolicy.json", "utf8"));
     const AggMonetaryPolicy = new web3.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
@@ -95,7 +95,7 @@ async function getPegKeepers(blockNumber) {
     return pegKeeperAddresses;
 }
 async function getMarketCap(blockNumber) {
-    let web3 = await getWeb3HttpProvider();
+    let web3 = getWeb3HttpProvider();
     const pegKeepers = await getPegKeepers(blockNumber);
     const ABI = [
         {
@@ -282,6 +282,7 @@ export async function processBorrowEvent(event, controllerAddress, collateralAdd
     let collateralName = getSymbolFromCheatSheet(collateralAddress);
     let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
     let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
+    console.log("collateral_price", collateral_price);
     let collatValue = qtyCollat * collateral_price;
     let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);

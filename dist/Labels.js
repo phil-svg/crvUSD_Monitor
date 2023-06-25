@@ -156,10 +156,6 @@ export const labels = [
         Label: "Vyper_contract",
     },
     {
-        Address: "0x000000000dfde7deaf24138722987c9a6991e2d4",
-        Label: "MEV Bot: 0x000...2D4",
-    },
-    {
         Address: "0xb576491f1e6e5e62f1d8f26062ee822b40b0e0d4",
         Label: "Vyper_contract",
     },

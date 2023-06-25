@@ -35,11 +35,11 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 17521892;
-  const END_BLOCK = 17521892;
+  // const START_BLOCK = 17521599; // catch 1inch swaps: look at rev number, compare against swap amounts, look at %, filter % < or > than x.
+  // const END_BLOCK = 17557482;
 
-  // const START_BLOCK = 17451489;
-  // const END_BLOCK = 17451940;
+  const START_BLOCK = 17557482;
+  const END_BLOCK = 17557482;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
 
