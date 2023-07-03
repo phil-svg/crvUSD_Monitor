@@ -2,6 +2,8 @@ import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
 import { labels } from "../../Labels.js";
+import { getTxReceipt, getTxWithLimiter } from "../helperFunctions/Web3.js";
+import { decode1Inch, get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
 dotenv.config({ path: "../.env" });
 
 function getTokenURL(tokenAddress: string) {
@@ -28,6 +30,7 @@ function getProfitPrint(profit: any, revenue: any, cost: any) {
   // if (Number(revenue) < Number(cost)) {
   //   return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
   // }
+  if (profit > revenue * 0.5) return `Revenue: ¯⧵_(ツ)_/¯`;
   return `Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}`;
 }
 
@@ -510,6 +513,8 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
     borrowRate,
   } = formattedEventData;
 
+  console.log("researchPositionHealth", researchPositionHealth);
+
   const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
   if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase()) return await buildSwapRouterMessage(formattedEventData);
 
@@ -538,6 +543,17 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
   }
 
   let profitPrint = getProfitPrint(profit, revenue, cost);
+  if (shortenBuyer === "1Inch") {
+    let _1Inchdetails = await getSwap1InchMinAmountInfo(txHash);
+    profitPrint = `Decoded 1Inch-Swap: Swap ${formatForPrint(_1Inchdetails.amountIn)} ${_1Inchdetails.tokenInName} to min. ${formatForPrint(_1Inchdetails.minReturnAmount)} ${
+      _1Inchdetails.tokenOutName
+    }`;
+  } else if (shortenBuyer === "1inch v5: Aggregation Router") {
+    let _1Inchdetails = await get1InchV5MinAmountInfo(txHash);
+    profitPrint = `Decoded 1Inch-Swap: Swap ${formatForPrint(_1Inchdetails.amountIn)} ${_1Inchdetails.tokenInName} to min. ${formatForPrint(_1Inchdetails.minReturnAmount)} ${
+      _1Inchdetails.tokenOutName
+    }`;
+  }
   let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
 
   return `

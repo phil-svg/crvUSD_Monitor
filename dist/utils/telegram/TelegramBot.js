@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { labels } from "../../Labels.js";
+import { get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
 dotenv.config({ path: "../.env" });
 function getTokenURL(tokenAddress) {
     return "https://etherscan.io/token/" + tokenAddress;
@@ -21,6 +22,8 @@ function getProfitPrint(profit, revenue, cost) {
     // if (Number(revenue) < Number(cost)) {
     //   return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
     // }
+    if (profit > revenue * 0.5)
+        return `Revenue: ¯⧵_(ツ)_/¯`;
     return `Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}`;
 }
 function getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount) {
@@ -315,6 +318,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 }
 export async function buildTokenExchangeMessage(formattedEventData) {
     let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, researchPositionHealth, borrowRate, } = formattedEventData;
+    console.log("researchPositionHealth", researchPositionHealth);
     const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
     if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase())
         return await buildSwapRouterMessage(formattedEventData);
@@ -337,6 +341,14 @@ export async function buildTokenExchangeMessage(formattedEventData) {
         swappedWhat = `de-liquidated ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)} with ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)}${dollarAddon}`;
     }
     let profitPrint = getProfitPrint(profit, revenue, cost);
+    if (shortenBuyer === "1Inch") {
+        let _1Inchdetails = await getSwap1InchMinAmountInfo(txHash);
+        profitPrint = `Decoded 1Inch-Swap: Swap ${formatForPrint(_1Inchdetails.amountIn)} ${_1Inchdetails.tokenInName} to min. ${formatForPrint(_1Inchdetails.minReturnAmount)} ${_1Inchdetails.tokenOutName}`;
+    }
+    else if (shortenBuyer === "1inch v5: Aggregation Router") {
+        let _1Inchdetails = await get1InchV5MinAmountInfo(txHash);
+        profitPrint = `Decoded 1Inch-Swap: Swap ${formatForPrint(_1Inchdetails.amountIn)} ${_1Inchdetails.tokenInName} to min. ${formatForPrint(_1Inchdetails.minReturnAmount)} ${_1Inchdetails.tokenOutName}`;
+    }
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}

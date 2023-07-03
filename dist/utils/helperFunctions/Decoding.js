@@ -19,10 +19,15 @@ async function getPositionHealthOfGeneralAddress(controllerAddress, userAddress,
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
-    const hasLoan = await web3Call(CONTROLLER, "loan_exists", [userAddress], blockNumber);
-    if (!hasLoan)
+    try {
+        const hasLoan = await web3Call(CONTROLLER, "loan_exists", [userAddress], blockNumber);
+        if (!hasLoan)
+            return "no loan";
+        return await getPositionHealth(controllerAddress, userAddress, blockNumber);
+    }
+    catch (err) {
         return "no loan";
-    return await getPositionHealth(controllerAddress, userAddress, blockNumber);
+    }
 }
 async function getPositionHealth(controllerAddress, userAddress, blockNumber) {
     const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();

@@ -29,8 +29,8 @@ export async function manageMarket(MARKET, eventEmitter) {
     // const START_BLOCK = 17521599; // catch 1inch swaps: look at rev number, compare against swap amounts, look at %, filter % < or > than x.
     // const END_BLOCK = 17557482;
   
-    const START_BLOCK = 17557482;
-    const END_BLOCK = 17557482;
+    const START_BLOCK = 17605121;
+    const END_BLOCK = 17605121;
   
     const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
   
