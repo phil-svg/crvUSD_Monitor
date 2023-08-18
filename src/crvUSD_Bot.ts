@@ -7,6 +7,10 @@ import { handleLiveEvents, manageMarket } from "./utils/Oragnizer.js";
 
 console.clear();
 
+// will not print loan-repays under 50k
+export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 50000;
+export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 20000;
+
 const ENV = "prod";
 // const ENV = "test";
 

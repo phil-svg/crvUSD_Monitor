@@ -6,6 +6,7 @@ import { getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
 import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatCheatSheet.js";
 import { AbiItem } from "web3-utils";
 import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
+import { getDollarValue } from "../../txValue/DefiLlama.js";
 
 async function getCollatPrice(controllerAddress: string, collateralAddress: string, blockNumber: number): Promise<number> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
@@ -310,6 +311,7 @@ export async function processBorrowEvent(event: any, controllerAddress: string, 
   let collateralDecimals = getDecimalFromCheatSheet(collateralAddress);
   collateral_increase /= 10 ** collateralDecimals;
   collateral_increase = Number(collateral_increase);
+  let collateral_increase_value = await getDollarValue(collateralAddress, collateral_increase);
   let loan_increase = event.returnValues.loan_increase;
   loan_increase /= 1e18;
   loan_increase = Number(loan_increase);
@@ -317,7 +319,6 @@ export async function processBorrowEvent(event: any, controllerAddress: string, 
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
   let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
   let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
-  console.log("collateral_price", collateral_price);
   let collatValue = qtyCollat * collateral_price;
   let marketBorrowedAmount = await getTotalMarketDebt(event.blockNumber, controllerAddress);
   let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
@@ -335,6 +336,7 @@ export async function processBorrowEvent(event: any, controllerAddress: string, 
     collateralAddress,
     collateralName,
     collateral_increase,
+    collateral_increase_value,
     loan_increase,
     txHash,
     buyer,
@@ -398,8 +400,14 @@ export async function processTokenExchangeEvent(event: any, controllerAddress: s
   let [profit, revenue, cost] = (await solveProfit(event)) || [0, 0, 0];
   if (cost === 0) return;
 
-  const MICH = "0x7a16fF8270133F063aAb6C9977183D9e72835428";
-  let researchPositionHealth = await getPositionHealth(controllerAddress, MICH, event.blockNumber);
+  const MICH1 = "0x7a16fF8270133F063aAb6C9977183D9e72835428";
+  const MICH2 = "0x425d16B0e08a28A3Ff9e4404AE99D78C0a076C5A";
+
+  let researchPositionHealth = await getPositionHealth(controllerAddress, MICH1, event.blockNumber);
+
+  if (!researchPositionHealth) {
+    researchPositionHealth = await getPositionHealth(controllerAddress, MICH2, event.blockNumber);
+  }
 
   let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);

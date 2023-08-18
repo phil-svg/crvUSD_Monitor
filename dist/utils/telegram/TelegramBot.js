@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { labels } from "../../Labels.js";
 import { get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
+import { MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING } from "../../crvUSD_Bot.js";
 dotenv.config({ path: "../.env" });
 function getTokenURL(tokenAddress) {
     return "https://etherscan.io/token/" + tokenAddress;
@@ -140,7 +141,7 @@ export async function buildLiquidateMessage(formattedEventData) {
     dollarAmount = formatForPrint(dollarAmount);
     var dollarAddon = getDollarAddOn(dollarAmount);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
-    let liquidated = `liquidated ${hyperlink(userURL, shortenUser)}`;
+    let liquidated = `hard-liquidated ${hyperlink(userURL, shortenUser)}`;
     if (liquidator === user)
         liquidated = `self-liquidated`;
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
@@ -202,7 +203,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
   `;
 }
 export async function buildBorrowMessage(formattedEventData) {
-    let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_increase, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
+    let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_increase, collateral_increase_value, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = getAddressName(buyer);
@@ -210,15 +211,18 @@ export async function buildBorrowMessage(formattedEventData) {
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    const dollarAddonCollat = getDollarAddOn(collateral_increase_value.toFixed(0));
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
     let didWhat;
     if (collateral_increase > 0 && loan_increase > 1) {
-        didWhat = `increased collat by ${formatForPrint(collateral_increase)}${hyperlink(COLLATERAL_URL, collateralName)} and borrowed ${formatForPrint(loan_increase)}${hyperlink(crvUSD_URL, "crvUSD")}`;
+        didWhat = `increased collat by ${formatForPrint(collateral_increase)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddonCollat} and borrowed ${formatForPrint(loan_increase)}${hyperlink(crvUSD_URL, "crvUSD")}`;
     }
     else if (collateral_increase > 0) {
-        didWhat = `increased collat by ${formatForPrint(collateral_increase)}${hyperlink(COLLATERAL_URL, collateralName)}`;
+        didWhat = `increased collat by ${formatForPrint(collateral_increase)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddonCollat}`;
     }
     else if (loan_increase >= 0) {
+        if (loan_increase < MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING)
+            return "don't print tiny liquidations";
         didWhat = `borrowed ${formatForPrint(loan_increase)}${hyperlink(crvUSD_URL, "crvUSD")}`;
     }
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
@@ -318,7 +322,6 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 }
 export async function buildTokenExchangeMessage(formattedEventData) {
     let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, researchPositionHealth, borrowRate, } = formattedEventData;
-    console.log("researchPositionHealth", researchPositionHealth);
     const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
     if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase())
         return await buildSwapRouterMessage(formattedEventData);
@@ -326,6 +329,8 @@ export async function buildTokenExchangeMessage(formattedEventData) {
     let tokenOutURL = getTokenURL(boughtAddress);
     let buyerURL = getBuyerURL(buyer);
     const shortenBuyer = getAddressName(buyer);
+    if (boughtAmount < MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING)
+        return "don't print tiny liquidations";
     soldAmount = formatForPrint(soldAmount);
     boughtAmount = formatForPrint(boughtAmount);
     dollarAmount = formatForPrint(dollarAmount);
@@ -350,12 +355,13 @@ export async function buildTokenExchangeMessage(formattedEventData) {
         profitPrint = `Decoded 1Inch-Swap: Swap ${formatForPrint(_1Inchdetails.amountIn)} ${_1Inchdetails.tokenInName} to min. ${formatForPrint(_1Inchdetails.minReturnAmount)} ${_1Inchdetails.tokenOutName}`;
     }
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
+    let researchPositionHealthPrint = `${formatForPrint(researchPositionHealth * 100)} 🔭`;
+    if (!researchPositionHealth)
+        researchPositionHealthPrint = `— 🔭`;
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
 ${profitPrint}
-1 ${collateralName} ➛ ${formatForPrint(collateral_price)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
-Research Pos. Health: ${formatForPrint(researchPositionHealth * 100)} 🔭
-Borrow Rate: ${formatForPrint(borrowRate)}%
+Research Pos. Health: ${researchPositionHealthPrint}
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
