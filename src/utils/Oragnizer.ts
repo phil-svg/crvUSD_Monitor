@@ -36,8 +36,8 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 17939881;
-  const END_BLOCK = 17941325;
+  const START_BLOCK = 17942061;
+  const END_BLOCK = 17942061;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
 

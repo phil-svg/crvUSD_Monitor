@@ -4,7 +4,7 @@ import { EventEmitter } from "events";
 import { labels } from "../../Labels.js";
 import { getTxReceipt, getTxWithLimiter } from "../helperFunctions/Web3.js";
 import { decode1Inch, get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
-import { MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING } from "../../crvUSD_Bot.js";
+import { MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING, MIN_REPAYED_AMOUNT_WORTH_PRINTING } from "../../crvUSD_Bot.js";
 dotenv.config({ path: "../.env" });
 
 function getTokenURL(tokenAddress: string) {
@@ -318,7 +318,7 @@ export async function buildBorrowMessage(formattedEventData: any) {
   } else if (collateral_increase > 0) {
     didWhat = `increased collat by ${formatForPrint(collateral_increase)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddonCollat}`;
   } else if (loan_increase >= 0) {
-    if (loan_increase < MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING) return "don't print tiny liquidations";
+    if (loan_increase < MIN_REPAYED_AMOUNT_WORTH_PRINTING) return "don't print tiny liquidations";
     didWhat = `borrowed ${formatForPrint(loan_increase)}${hyperlink(crvUSD_URL, "crvUSD")}`;
   }
 
