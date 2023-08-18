@@ -1,4 +1,10 @@
 import { getCurrentTokenPriceFromDefiLlama } from "./DefiLlama.js";
+export var TransactionType;
+(function (TransactionType) {
+    TransactionType["Swap"] = "swap";
+    TransactionType["Deposit"] = "deposit";
+    TransactionType["Remove"] = "remove";
+})(TransactionType || (TransactionType = {}));
 export async function priceTransaction(enrichedTransaction) {
     let coins;
     switch (enrichedTransaction.transaction_type) {
