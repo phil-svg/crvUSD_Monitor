@@ -88,14 +88,11 @@ async function getCrvUsdTranserAmount(event: any) {
   const crvUSD = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
 
   let amounts = await getPastEvents(crvUSD, "Transfer", event.blockNumber, event.blockNumber);
-  console.log("event.returnValues", event.returnValues);
-  console.log("amounts", amounts);
   if (!amounts || !Array.isArray(amounts)) return;
   let amountElement = amounts.find(
     (element: any) => element.returnValues.sender === event.returnValues.liquidator || element.returnValues.receiver === event.returnValues.liquidator
   );
 
-  console.log("amountElement", amountElement);
   let liquidatorCrvUsdTransferAmount = amountElement ? (amountElement as any).returnValues.value : "bar";
   return Number(liquidatorCrvUsdTransferAmount / 1e18);
 }

@@ -4,7 +4,7 @@ import { EventEmitter } from "events";
 import { labels } from "../../Labels.js";
 import { getTxReceipt, getTxWithLimiter } from "../helperFunctions/Web3.js";
 import { decode1Inch, get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
-import { MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING, MIN_REPAYED_AMOUNT_WORTH_PRINTING } from "../../crvUSD_Bot.js";
+import { MIN_HARDLIQ_AMOUNT_WORTH_PRINTING, MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING, MIN_REPAYED_AMOUNT_WORTH_PRINTING } from "../../crvUSD_Bot.js";
 dotenv.config({ path: "../.env" });
 
 function getTokenURL(tokenAddress: string) {
@@ -154,6 +154,11 @@ export async function buildLiquidateMessage(formattedEventData: any) {
     crvUSDinCirculation,
     borrowRate,
   } = formattedEventData;
+
+  console.log("stablecoin_received", stablecoin_received);
+
+  if (stablecoin_received < MIN_HARDLIQ_AMOUNT_WORTH_PRINTING) return "don't print tiny hard-liquidations";
+
   const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
 
   const liquidatorURL = getBuyerURL(liquidator);

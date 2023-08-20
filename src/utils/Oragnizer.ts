@@ -46,7 +46,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
   for (const AMM_EVENT of PAST_EVENTS_AMM_CONTRACT) {
     if ((AMM_EVENT as { event: string }).event !== "TokenExchange") continue;
     const formattedEventData = await processTokenExchangeEvent(AMM_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
-    if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined)) continue;
+    if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
     const message = await buildTokenExchangeMessage(formattedEventData);
     if (message === "don't print tiny liquidations") continue;
     eventEmitter.emit("newMessage", message);
@@ -60,7 +60,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
     if ((CONTROLLER_EVENT as { event: string }).event === "Borrow") {
       const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in Borrow", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
       if (formattedEventData.collateral_increase_value && formattedEventData.collateral_increase_value < MIN_REPAYED_AMOUNT_WORTH_PRINTING) continue;
       const message = await buildBorrowMessage(formattedEventData);
       if (message === "don't print tiny liquidations") continue;
@@ -70,21 +70,22 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
       if (liquidateEventQuestion == true) continue;
       const formattedEventData = await processRepayEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in Repay", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
       if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING) continue;
       const message = await buildRepayMessage(formattedEventData);
       eventEmitter.emit("newMessage", message);
     } else if ((CONTROLLER_EVENT as { event: string }).event === "RemoveCollateral") {
       const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in RemoveCollateral", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
       const message = await buildRemoveCollateralMessage(formattedEventData);
       eventEmitter.emit("newMessage", message);
     } else if ((CONTROLLER_EVENT as { event: string }).event === "Liquidate") {
       const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in Liquidate", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) continue;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
       const message = await buildLiquidateMessage(formattedEventData);
+      if (message === "don't print tiny hard-liquidations") continue;
       eventEmitter.emit("newMessage", message);
     }
   }
@@ -115,7 +116,7 @@ export async function handleLiveEvents(eventEmitter: any) {
     if (EVENT.event === "Borrow") {
       const formattedEventData = await processBorrowEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
       console.log("formattedEventData in Borrow", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) return;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
       if (formattedEventData.collateral_increase_value && formattedEventData.collateral_increase_value < MIN_REPAYED_AMOUNT_WORTH_PRINTING) return;
       const message = await buildBorrowMessage(formattedEventData);
       if (message === "don't print tiny liquidations") return;
@@ -125,27 +126,28 @@ export async function handleLiveEvents(eventEmitter: any) {
       if (liquidateEventQuestion == true) return;
       const formattedEventData = await processRepayEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
       console.log("formattedEventData in Repay", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) return;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
       if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING) return;
       const message = await buildRepayMessage(formattedEventData);
       eventEmitter.emit("newMessage", message);
     } else if (EVENT.event === "RemoveCollateral") {
       const formattedEventData = await processRemoveCollateralEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
       console.log("formattedEventData in RemoveCollateral", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) return;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
       const message = await buildRemoveCollateralMessage(formattedEventData);
       eventEmitter.emit("newMessage", message);
     } else if (EVENT.event === "Liquidate") {
       const formattedEventData = await processLiquidateEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
       console.log("formattedEventData in Liquidate", formattedEventData);
-      if (Object.values(formattedEventData).some((value) => value === undefined)) return;
+      if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
       const message = await buildLiquidateMessage(formattedEventData);
+      if (message === "don't print tiny hard-liquidations") return;
       eventEmitter.emit("newMessage", message);
 
       // AMM EVENT
     } else if (EVENT.event === "TokenExchange") {
       const formattedEventData = await processTokenExchangeEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
-      if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined)) return;
+      if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
       const message = await buildTokenExchangeMessage(formattedEventData);
       if (message === "don't print tiny liquidations") return;
       eventEmitter.emit("newMessage", message);
