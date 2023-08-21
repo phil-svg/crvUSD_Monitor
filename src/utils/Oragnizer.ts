@@ -15,6 +15,9 @@ async function isLiquidateEvent(CONTROLLER: any, CONTROLLER_EVENT: any) {
   return Array.isArray(PAST_EVENTS_CONTROLLER) && PAST_EVENTS_CONTROLLER.some((event: any) => event.transactionHash === txHash);
 }
 
+export let lastSeenTxHash: string | null = null;
+export let lastSeenTxTimestamp: Date | null = null;
+
 export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void> {
   const WEB3_WS_PROVIDER = getWeb3WsProvider();
 
@@ -105,6 +108,8 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
 export async function handleLiveEvents(eventEmitter: any) {
   eventEmitter.on("newEvent", async ({ eventData: EVENT, Market: MARKET }: EventAndMarket) => {
+    lastSeenTxHash = EVENT.transactionHash;
+    lastSeenTxTimestamp = new Date();
     console.log("New Event picked up by the Emitter:", EVENT, "..with Market:", MARKET);
     const WEB3_WS_PROVIDER = getWeb3WsProvider();
     const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
