@@ -145,14 +145,13 @@ export async function buildLiquidateMessage(formattedEventData) {
     const AMM_URL = getPoolURL("0x136e783846ef68C8Bd00a3369F787dF8d683a696");
     const CONTROLLER_URL = getPoolURL("0x8472A9A7632b173c8Cf3a86D3afec50c35548e76");
     dollarAmount = formatForPrint(dollarAmount);
-    var dollarAddon = getDollarAddOn(dollarAmount);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
     let liquidated = `hard-liquidated ${hyperlink(userURL, shortenUser)}`;
     if (liquidator === user)
         liquidated = `self-liquidated`;
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
-  🚀${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(collateral_received)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
+  🚀${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(collateral_received)}${hyperlink(COLLATERAL_URL, collateralName)}
 The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyperlink(crvUSD_URL, "crvUSD")} to the${hyperlink(CONTROLLER_URL, "Controller")}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}

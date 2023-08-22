@@ -176,7 +176,6 @@ export async function buildLiquidateMessage(formattedEventData: any) {
   const CONTROLLER_URL = getPoolURL("0x8472A9A7632b173c8Cf3a86D3afec50c35548e76");
 
   dollarAmount = formatForPrint(dollarAmount);
-  var dollarAddon = getDollarAddOn(dollarAmount);
 
   crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
 
@@ -188,7 +187,7 @@ export async function buildLiquidateMessage(formattedEventData: any) {
   return `
   🚀${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(
     collateral_received
-  )}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
+  )}${hyperlink(COLLATERAL_URL, collateralName)}
 The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyperlink(crvUSD_URL, "crvUSD")} to the${hyperlink(CONTROLLER_URL, "Controller")}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
