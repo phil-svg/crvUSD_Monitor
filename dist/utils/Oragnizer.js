@@ -29,8 +29,8 @@ export async function manageMarket(MARKET, eventEmitter) {
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
     /*
-    const START_BLOCK = 17942061;
-    const END_BLOCK = 17942061;
+    const START_BLOCK = 17969227;
+    const END_BLOCK = 17969227;
   
     const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
   
@@ -72,6 +72,7 @@ export async function manageMarket(MARKET, eventEmitter) {
         console.log("formattedEventData in RemoveCollateral", formattedEventData);
         if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
         const message = await buildRemoveCollateralMessage(formattedEventData);
+        if (message === "don't print small amounts") continue;
         eventEmitter.emit("newMessage", message);
       } else if ((CONTROLLER_EVENT as { event: string }).event === "Liquidate") {
         const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);

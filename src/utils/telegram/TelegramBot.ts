@@ -215,6 +215,8 @@ export async function buildRemoveCollateralMessage(formattedEventData: any) {
     borrowRate,
   } = formattedEventData;
 
+  if (dollarAmount < MIN_REPAYED_AMOUNT_WORTH_PRINTING) return "don't print small amounts";
+
   const buyerURL = getBuyerURL(buyer);
   const shortenBuyer = getAddressName(buyer);
   const COLLATERAL_URL = getTokenURL(collateralAddress);
@@ -342,60 +344,6 @@ ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
   `;
-}
-
-export async function buildWithdrawMessage(formattedEventData: any) {
-  let {
-    crvUSD_price,
-    borrowerHealth,
-    marketCap,
-    qtyCollat,
-    collatValue,
-    marketBorrowedAmount,
-    collateralAddress,
-    collateralName,
-    withdrawnAmountcrvUSD,
-    withdrawnAmountsCollat,
-    txHash,
-    buyer,
-    crvUSDinCirculation,
-    borrowRate,
-  } = formattedEventData;
-  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
-
-  const buyerURL = getBuyerURL(buyer);
-  const shortenBuyer = getAddressName(buyer);
-  const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
-  const COLLATERAL_URL = getTokenURL(collateralAddress);
-  const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
-  const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
-
-  let removedWhat;
-  if (withdrawnAmountcrvUSD >= 0 && withdrawnAmountsCollat === 0) {
-    removedWhat = `${formatForPrint(withdrawnAmountcrvUSD)}${hyperlink(crvUSD_URL, "crvUSD")}`;
-  } else if (withdrawnAmountcrvUSD >= 0 && withdrawnAmountsCollat >= 0) {
-    removedWhat = `${formatForPrint(withdrawnAmountcrvUSD)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(withdrawnAmountsCollat)}${hyperlink(
-      COLLATERAL_URL,
-      collateralName
-    )}`;
-  } else {
-    removedWhat = `${formatForPrint(withdrawnAmountcrvUSD)}${hyperlink(COLLATERAL_URL, collateralName)}`;
-  }
-
-  crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
-
-  let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
-
-  if (borrowerHealth !== "no loan") borrowerHealth = formatForPrint(borrowerHealth * 100);
-
-  return `
-  🚀${hyperlink(buyerURL, shortenBuyer)} removed ${removedWhat}
-Health of Borrower: ${borrowerHealth}
-Borrow Rate: ${formatForPrint(borrowRate)}%
-${marketHealthPrint}
-Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
-`;
 }
 
 export async function buildDepositMessage(formattedEventData: any) {
