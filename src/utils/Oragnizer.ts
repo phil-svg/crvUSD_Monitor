@@ -141,6 +141,7 @@ export async function handleLiveEvents(eventEmitter: any) {
       console.log("formattedEventData in RemoveCollateral", formattedEventData);
       if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
       const message = await buildRemoveCollateralMessage(formattedEventData);
+      if (message === "don't print small amounts") return;
       eventEmitter.emit("newMessage", message);
     } else if (EVENT.event === "Liquidate") {
       const formattedEventData = await processLiquidateEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
