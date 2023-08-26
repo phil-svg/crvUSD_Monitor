@@ -6,6 +6,17 @@ import { buildTokenExchangeMessage, buildRemoveCollateralMessage, buildLiquidate
 import { buildBorrowMessage, buildRepayMessage } from "./telegram/TelegramBot.js";
 import { updateCheatSheet } from "./CollatCheatSheet.js";
 import { MIN_REPAYED_AMOUNT_WORTH_PRINTING } from "../crvUSD_Bot.js";
+import { promisify } from "util";
+// Promisify the necessary fs methods for easier async/await usage
+export const writeFileAsync = promisify(fs.writeFile);
+export const readFileAsync = promisify(fs.readFile);
+async function saveLastSeenToFile(hash, timestamp) {
+    const data = {
+        txHash: hash,
+        txTimestamp: timestamp.toISOString(),
+    };
+    await writeFileAsync("lastSeen.json", JSON.stringify(data, null, 2));
+}
 async function isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT) {
     let blockNumber = CONTROLLER_EVENT.blockNumber;
     let txHash = CONTROLLER_EVENT.transactionHash;
@@ -96,8 +107,8 @@ export async function manageMarket(MARKET, eventEmitter) {
 }
 export async function handleLiveEvents(eventEmitter) {
     eventEmitter.on("newEvent", async ({ eventData: EVENT, Market: MARKET }) => {
-        lastSeenTxHash = EVENT.transactionHash;
-        lastSeenTxTimestamp = new Date();
+        // for command checking when was the last seen tx.
+        await saveLastSeenToFile(EVENT.transactionHash, new Date());
         console.log("New Event picked up by the Emitter:", EVENT, "..with Market:", MARKET);
         const WEB3_WS_PROVIDER = getWeb3WsProvider();
         const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;

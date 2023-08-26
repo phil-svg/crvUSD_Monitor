@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { labels } from "../../Labels.js";
 import { get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
 import { MIN_HARDLIQ_AMOUNT_WORTH_PRINTING, MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING, MIN_REPAYED_AMOUNT_WORTH_PRINTING } from "../../crvUSD_Bot.js";
-import { lastSeenTxHash, lastSeenTxTimestamp } from "../Oragnizer.js";
+import { readFileAsync } from "../Oragnizer.js";
 dotenv.config({ path: "../.env" });
 function getTokenURL(tokenAddress) {
     return "https://etherscan.io/token/" + tokenAddress;
@@ -342,10 +342,23 @@ Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${g
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
-function getTimeMessage() {
-    if (!lastSeenTxTimestamp)
+async function getLastSeenValues() {
+    try {
+        const data = JSON.parse(await readFileAsync("lastSeen.json", "utf-8"));
+        return {
+            txHash: data.txHash,
+            txTimestamp: new Date(data.txTimestamp),
+        };
+    }
+    catch (error) {
+        console.error("Error reading last seen data from file:", error);
+        return null;
+    }
+}
+function getTimeMessage(timestamp) {
+    if (!timestamp)
         return "never seen"; // If no transaction was seen
-    const differenceInSeconds = (new Date().getTime() - lastSeenTxTimestamp.getTime()) / 1000;
+    const differenceInSeconds = (new Date().getTime() - timestamp.getTime()) / 1000;
     if (differenceInSeconds < 60) {
         const seconds = Math.floor(differenceInSeconds);
         return `${seconds} ${seconds === 1 ? "second" : "seconds"} ago`;
@@ -357,9 +370,9 @@ function getTimeMessage() {
     const hours = Math.floor(differenceInSeconds / 3600);
     return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
 }
-function getLastSeenMessage() {
-    const timeMessage = getTimeMessage();
-    const message = `last seen ${timeMessage} ser ➛${hyperlink(getTxHashURLfromEtherscan(lastSeenTxHash), "tx")}`;
+function getLastSeenMessage(txHash, timestamp) {
+    const timeMessage = getTimeMessage(timestamp);
+    const message = `The last seen crvUSD${hyperlink(getTxHashURLfromEtherscan(txHash), "tx")} was ${timeMessage}`;
     return message;
 }
 export async function telegramBotMain(env, eventEmitter) {
@@ -386,15 +399,16 @@ export async function telegramBotMain(env, eventEmitter) {
                 bot.sendMessage(msg.chat.id, "always have been");
             }
         }
-        if (msg.text === "print last seen") {
-            await new Promise((resolve) => setTimeout(resolve, 950));
+        if (msg.text && msg.text.toLowerCase() === "print last seen") {
+            await new Promise((resolve) => setTimeout(resolve, 650));
             if (groupID) {
                 let message;
-                if (lastSeenTxHash === null || lastSeenTxHash === undefined) {
+                const lastSeenValues = await getLastSeenValues();
+                if (!lastSeenValues || !lastSeenValues.txHash) {
                     message = "¯⧵_(ツ)_/¯ ";
                 }
                 else {
-                    message = getLastSeenMessage();
+                    message = getLastSeenMessage(lastSeenValues.txHash, lastSeenValues.txTimestamp);
                 }
                 eventEmitter.emit("newMessage", message);
             }

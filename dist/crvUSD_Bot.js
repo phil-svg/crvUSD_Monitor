@@ -5,10 +5,12 @@ import { telegramBotMain } from "./utils/telegram/TelegramBot.js";
 import { EventEmitter } from "events";
 import { handleLiveEvents, manageMarket } from "./utils/Oragnizer.js";
 console.clear();
-// will not print loan-repays under 50k
 export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 100000;
 export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 20000;
 export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
+// export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 0;
+// export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 0;
+// export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0;
 const ENV = "prod";
 // const ENV = "test";
 const eventEmitter = new EventEmitter();
