@@ -24,14 +24,15 @@ async function getPositionHealthOfGeneralAddress(controllerAddress, userAddress,
         const hasLoan = await web3Call(CONTROLLER, "loan_exists", [userAddress], blockNumber);
         if (!hasLoan)
             return "no loan";
-        return await getPositionHealth(controllerAddress, userAddress, blockNumber);
+        const HEALTH = await web3Call(CONTROLLER, "health", [userAddress, "true"], blockNumber);
+        return Number(HEALTH / 1e18);
     }
     catch (err) {
         return "no loan";
     }
 }
 async function getPositionHealth(controllerAddress, userAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
     const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
@@ -123,6 +124,42 @@ async function getMarketCap(blockNumber) {
     return pegKeepersDebt;
 }
 export async function processLiquidateEvent(event, controllerAddress, collateralAddress, AMM_ADDRESS) {
+    // during histo-mode, and a provided hard-liquidation, this chunk will create an excel with user health over time
+    /*
+    const healthResults = [];
+    const steps = 100;
+  
+    for (let i = 0; i <= steps; i++) {
+      const blockNumber = Number(event.blockNumber) - i;
+      let userHealth = await getPositionHealthOfGeneralAddress(controllerAddress, event.returnValues.user, blockNumber);
+  
+      if (userHealth === "no loan") {
+        userHealth = 0;
+      }
+  
+      healthResults.push({
+        blockDifference: i,
+        health: userHealth,
+      });
+  
+      console.log(`userHealth ${blockNumber}`, Number(Number(userHealth!).toFixed(6)));
+    }
+  
+    function saveToExcel(results: any) {
+      // Reverse the results array
+      const reversedResults = [...results].reverse();
+  
+      const ws = XLSX.utils.json_to_sheet(reversedResults);
+      const wb = XLSX.utils.book_new();
+  
+      XLSX.utils.book_append_sheet(wb, ws, "HealthResults");
+  
+      XLSX.writeFile(wb, "healthResults.xlsx");
+    }
+  
+    // After your loop completes:
+    saveToExcel(healthResults);
+    */
     let txHash = event.transactionHash;
     let liquidator = event.returnValues.liquidator;
     let user = event.returnValues.user;

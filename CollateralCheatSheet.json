@@ -18,5 +18,10 @@
     "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     "symbol": "WETH",
     "decimals": 18
+  },
+  {
+    "address": "0x18084fbA666a33d37592fA2633fD49a74DD93a88",
+    "symbol": "tBTC",
+    "decimals": 18
   }
 ]
