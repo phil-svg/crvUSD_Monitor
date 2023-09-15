@@ -128,7 +128,7 @@ function getAddressName(address) {
     // If label found, return it. Otherwise, return shortened address
     return labelObject ? labelObject.Label : shortenAddress(address);
 }
-export async function buildLiquidateMessage(formattedEventData) {
+export async function buildLiquidateMessage(formattedEventData, controllerAddress, ammAddress) {
     let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate, } = formattedEventData;
     console.log("stablecoin_received", stablecoin_received);
     if (stablecoin_received < MIN_HARDLIQ_AMOUNT_WORTH_PRINTING)
@@ -142,8 +142,8 @@ export async function buildLiquidateMessage(formattedEventData) {
     const COLLATERAL_URL = getTokenURL(collateralAddress);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
-    const AMM_URL = getPoolURL("0x136e783846ef68C8Bd00a3369F787dF8d683a696");
-    const CONTROLLER_URL = getPoolURL("0x8472A9A7632b173c8Cf3a86D3afec50c35548e76");
+    const AMM_URL = getPoolURL(controllerAddress);
+    const CONTROLLER_URL = getPoolURL(ammAddress);
     dollarAmount = formatForPrint(dollarAmount);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
     let liquidated = `hard-liquidated ${hyperlink(userURL, shortenUser)}`;

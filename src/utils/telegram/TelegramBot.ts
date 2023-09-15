@@ -138,7 +138,7 @@ function getAddressName(address: string): string {
   return labelObject ? labelObject.Label : shortenAddress(address);
 }
 
-export async function buildLiquidateMessage(formattedEventData: any) {
+export async function buildLiquidateMessage(formattedEventData: any, controllerAddress: string, ammAddress: string) {
   let {
     crvUSD_price,
     marketCap,
@@ -172,8 +172,8 @@ export async function buildLiquidateMessage(formattedEventData: any) {
   const COLLATERAL_URL = getTokenURL(collateralAddress);
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
   const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
-  const AMM_URL = getPoolURL("0x136e783846ef68C8Bd00a3369F787dF8d683a696");
-  const CONTROLLER_URL = getPoolURL("0x8472A9A7632b173c8Cf3a86D3afec50c35548e76");
+  const AMM_URL = getPoolURL(controllerAddress);
+  const CONTROLLER_URL = getPoolURL(ammAddress);
 
   dollarAmount = formatForPrint(dollarAmount);
 

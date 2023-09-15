@@ -52,8 +52,8 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 18044252;
-  const END_BLOCK = 18044252;
+  const START_BLOCK = 18142320;
+  const END_BLOCK = 18142320;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
 
@@ -101,7 +101,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
       const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in Liquidate", formattedEventData);
       if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
-      const message = await buildLiquidateMessage(formattedEventData);
+      const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, ADDRESS_AMM);
       if (message === "don't print tiny hard-liquidations") continue;
       eventEmitter.emit("newMessage", message);
     }
@@ -160,7 +160,7 @@ export async function handleLiveEvents(eventEmitter: any) {
       const formattedEventData = await processLiquidateEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
       console.log("formattedEventData in Liquidate", formattedEventData);
       if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
-      const message = await buildLiquidateMessage(formattedEventData);
+      const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, AMM_ADDRESS);
       if (message === "don't print tiny hard-liquidations") return;
       eventEmitter.emit("newMessage", message);
 
