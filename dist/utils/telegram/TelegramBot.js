@@ -375,6 +375,36 @@ function getLastSeenMessage(txHash, timestamp) {
     const message = `The last seen crvUSD${hyperlink(getTxHashURLfromEtherscan(txHash), "tx")} was ${timeMessage}`;
     return message;
 }
+let intervalId = null;
+async function getLastSeenMessageContent() {
+    const lastSeenValues = await getLastSeenValues();
+    if (!lastSeenValues || !lastSeenValues.txHash) {
+        return "¯⧵_(ツ)_/¯ ";
+    }
+    return getLastSeenMessage(lastSeenValues.txHash, lastSeenValues.txTimestamp);
+}
+// prints sharpy updates at h:00, h:15, h:30, h:45
+async function botMonitoringIntervalPrint(bot) {
+    // If the interval is already set, return immediately.
+    if (intervalId)
+        return;
+    const groupID = -1001929399603;
+    const sendBotMessage = async () => {
+        const message = await getLastSeenMessageContent();
+        bot.sendMessage(groupID, message, { parse_mode: "HTML", disable_web_page_preview: "true" });
+    };
+    const currentMinute = new Date().getMinutes();
+    let minutesUntilNextQuarter = 15 - (currentMinute % 15);
+    let timeoutDuration = minutesUntilNextQuarter * 60 * 1000; // Duration until next quarter hour in milliseconds.
+    setTimeout(() => {
+        sendBotMessage();
+        intervalId = setInterval(sendBotMessage, 15 * 60 * 1000); // Set 15 minutes interval after the first message.
+    }, timeoutDuration);
+}
+export async function processLastSeen(eventEmitter) {
+    const message = await getLastSeenMessageContent();
+    eventEmitter.emit("newMessage", message);
+}
 export async function telegramBotMain(env, eventEmitter) {
     eventEmitter.on("newMessage", (message) => {
         if (groupID) {
@@ -392,6 +422,7 @@ export async function telegramBotMain(env, eventEmitter) {
         groupID = process.env.TELEGRAM_TEST_GROUP_ID;
     }
     const bot = new TelegramBot(telegramGroupToken, { polling: true });
+    botMonitoringIntervalPrint(bot);
     bot.on("message", async (msg) => {
         if (msg.text === "bot u with us") {
             await new Promise((resolve) => setTimeout(resolve, 650));
@@ -399,19 +430,9 @@ export async function telegramBotMain(env, eventEmitter) {
                 bot.sendMessage(msg.chat.id, "always have been");
             }
         }
-        if (msg.text && msg.text.toLowerCase() === "print last seen") {
+        if (msg && msg.text && msg.text.toLowerCase() === "print last seen") {
             await new Promise((resolve) => setTimeout(resolve, 650));
-            if (groupID) {
-                let message;
-                const lastSeenValues = await getLastSeenValues();
-                if (!lastSeenValues || !lastSeenValues.txHash) {
-                    message = "¯⧵_(ツ)_/¯ ";
-                }
-                else {
-                    message = getLastSeenMessage(lastSeenValues.txHash, lastSeenValues.txTimestamp);
-                }
-                eventEmitter.emit("newMessage", message);
-            }
+            await processLastSeen(eventEmitter);
         }
     });
 }
