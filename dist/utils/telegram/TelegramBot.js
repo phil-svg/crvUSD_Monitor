@@ -130,7 +130,6 @@ function getAddressName(address) {
 }
 export async function buildLiquidateMessage(formattedEventData, controllerAddress, ammAddress) {
     let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate, } = formattedEventData;
-    console.log("stablecoin_received", stablecoin_received);
     if (stablecoin_received < MIN_HARDLIQ_AMOUNT_WORTH_PRINTING)
         return "don't print tiny hard-liquidations";
     const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
@@ -144,7 +143,7 @@ export async function buildLiquidateMessage(formattedEventData, controllerAddres
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const AMM_URL = getPoolURL(controllerAddress);
     const CONTROLLER_URL = getPoolURL(ammAddress);
-    dollarAmount = formatForPrint(dollarAmount);
+    const botRevenue = formatForPrint(dollarAmount - crvUSD_amount * crvUSD_price);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
     let liquidated = `hard-liquidated ${hyperlink(userURL, shortenUser)}`;
     if (liquidator === user)
@@ -153,6 +152,7 @@ export async function buildLiquidateMessage(formattedEventData, controllerAddres
     return `
   🚀${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(collateral_received)}${hyperlink(COLLATERAL_URL, collateralName)}
 The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyperlink(crvUSD_URL, "crvUSD")} to the${hyperlink(CONTROLLER_URL, "Controller")}
+Bot Revenue: $${botRevenue}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
