@@ -146,13 +146,16 @@ export async function buildLiquidateMessage(formattedEventData, controllerAddres
     const botRevenue = formatForPrint(dollarAmount - crvUSD_amount * crvUSD_price);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
     let liquidated = `hard-liquidated ${hyperlink(userURL, shortenUser)}`;
-    if (liquidator === user)
+    let revOrLossMessage = `Bot Revenue: $${botRevenue}`;
+    if (liquidator === user) {
         liquidated = `self-liquidated`;
+        revOrLossMessage = `User loss: ¯⧵_(ツ)_/¯`;
+    }
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     return `
   🚀${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(collateral_received)}${hyperlink(COLLATERAL_URL, collateralName)}
 The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyperlink(crvUSD_URL, "crvUSD")} to the${hyperlink(CONTROLLER_URL, "Controller")}
-Bot Revenue: $${botRevenue}
+${revOrLossMessage}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
