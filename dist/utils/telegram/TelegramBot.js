@@ -307,7 +307,7 @@ export async function buildTokenExchangeMessage(formattedEventData) {
     let tokenOutURL = getTokenURL(boughtAddress);
     let buyerURL = getBuyerURL(buyer);
     const shortenBuyer = getAddressName(buyer);
-    if (boughtAmount < MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING)
+    if (dollarAmount < MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING)
         return "don't print tiny liquidations";
     soldAmount = formatForPrint(soldAmount);
     boughtAmount = formatForPrint(boughtAmount);
@@ -318,7 +318,7 @@ export async function buildTokenExchangeMessage(formattedEventData) {
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     let swappedWhat;
     if (tokenSoldName === "crvUSD") {
-        swappedWhat = `liquidated ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)} with ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)}${dollarAddon}`;
+        swappedWhat = `soft-liquidated ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)} with ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)}${dollarAddon}`;
     }
     else if (tokenSoldName === collateralName) {
         swappedWhat = `de-liquidated ${soldAmount}${hyperlink(tokenInURL, tokenSoldName)} with ${boughtAmount}${hyperlink(tokenOutURL, tokenBoughtName)}${dollarAddon}`;

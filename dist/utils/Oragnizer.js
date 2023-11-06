@@ -40,8 +40,8 @@ export async function manageMarket(MARKET, eventEmitter) {
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
     /*
-    const START_BLOCK = 18290056;
-    const END_BLOCK = 18290056;
+    const START_BLOCK = 18508875;
+    const END_BLOCK = 18508875;
   
     const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
   
@@ -94,8 +94,9 @@ export async function manageMarket(MARKET, eventEmitter) {
         eventEmitter.emit("newMessage", message);
       }
     }
-    */
+  
     // process.exit();
+    */
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
