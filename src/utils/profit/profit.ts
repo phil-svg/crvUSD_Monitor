@@ -433,10 +433,15 @@ async function getRevenue(event: any): Promise<any> {
 }
 
 export async function solveProfit(event: any): Promise<number[] | void> {
-  let revenue = await getRevenue(event);
-  if (!revenue && revenue !== 0) return;
-  let cost = await getCosts(event.transactionHash, event.blockNumber);
-  if (!cost) return;
-  let profit = revenue - cost;
-  return [profit, revenue, cost];
+  try {
+    let revenue = await getRevenue(event);
+    if (!revenue && revenue !== 0) return;
+    let cost = await getCosts(event.transactionHash, event.blockNumber);
+    if (!cost) return;
+    let profit = revenue - cost;
+    return [profit, revenue, cost];
+  } catch (err) {
+    console.log("err in solveProfit: ", err);
+    return;
+  }
 }
