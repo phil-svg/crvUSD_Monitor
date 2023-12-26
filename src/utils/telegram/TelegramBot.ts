@@ -29,10 +29,8 @@ function getBuyerURL(buyerAddress: string) {
 }
 
 function getProfitPrint(profit: any, revenue: any, cost: any) {
-  // if (Number(revenue) < Number(cost)) {
-  //   return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
-  // }
   if (profit > revenue * 0.5) return `Revenue: ¯⧵_(ツ)_/¯`;
+  if (profit === 0) return `Revenue: ¯⧵_(ツ)_/¯`;
   return `Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}`;
 }
 
