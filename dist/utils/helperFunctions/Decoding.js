@@ -401,6 +401,9 @@ export async function processTokenExchangeEvent(event, controllerAddress, collat
     if (!researchPositionHealth) {
         researchPositionHealth = await getPositionHealth(controllerAddress, MICH2, event.blockNumber);
     }
+    if (!researchPositionHealth) {
+        researchPositionHealth = 420.69;
+    }
     let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
     let collateralName = getSymbolFromCheatSheet(collateralAddress);
     let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);

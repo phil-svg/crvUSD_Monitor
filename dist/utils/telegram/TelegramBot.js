@@ -21,10 +21,9 @@ function getBuyerURL(buyerAddress) {
     return "https://etherscan.io/address/" + buyerAddress;
 }
 function getProfitPrint(profit, revenue, cost) {
-    // if (Number(revenue) < Number(cost)) {
-    //   return `Profit: ? | Revenue: ? | Cost: $${formatForPrint(cost)}`;
-    // }
     if (profit > revenue * 0.5)
+        return `Revenue: ¯⧵_(ツ)_/¯`;
+    if (profit === 0)
         return `Revenue: ¯⧵_(ツ)_/¯`;
     return `Profit: $${formatForPrint(profit)} | Revenue: $${formatForPrint(revenue)} | Cost: $${formatForPrint(cost)}`;
 }
@@ -300,6 +299,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 }
 export async function buildTokenExchangeMessage(formattedEventData) {
     let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, researchPositionHealth, borrowRate, } = formattedEventData;
+    console.log("entered buildTokenExchangeMessage with:", formattedEventData);
     const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
     if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase())
         return await buildSwapRouterMessage(formattedEventData);
@@ -335,6 +335,8 @@ export async function buildTokenExchangeMessage(formattedEventData) {
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     let researchPositionHealthPrint = `${formatForPrint(researchPositionHealth * 100)} 🔭`;
     if (!researchPositionHealth)
+        researchPositionHealthPrint = `— 🔭`;
+    if (researchPositionHealth === 420.69)
         researchPositionHealthPrint = `— 🔭`;
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}

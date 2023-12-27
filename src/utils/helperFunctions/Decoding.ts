@@ -445,6 +445,10 @@ export async function processTokenExchangeEvent(event: any, controllerAddress: s
     researchPositionHealth = await getPositionHealth(controllerAddress, MICH2, event.blockNumber);
   }
 
+  if (!researchPositionHealth) {
+    researchPositionHealth = 420.69;
+  }
+
   let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
 

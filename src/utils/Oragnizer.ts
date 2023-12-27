@@ -52,8 +52,8 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 18508875;
-  const END_BLOCK = 18508875;
+  const START_BLOCK = 18872267;
+  const END_BLOCK = 18879157;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
 
@@ -62,6 +62,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
   for (const AMM_EVENT of PAST_EVENTS_AMM_CONTRACT) {
     if ((AMM_EVENT as { event: string }).event !== "TokenExchange") continue;
     const formattedEventData = await processTokenExchangeEvent(AMM_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+    console.log("formattedEventData", formattedEventData);
     if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
     const message = await buildTokenExchangeMessage(formattedEventData);
     if (message === "don't print tiny liquidations") continue;
@@ -73,7 +74,10 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
   if (!(PAST_EVENTS_crvUSD_CONTROLLER instanceof Array)) return;
 
   for (const CONTROLLER_EVENT of PAST_EVENTS_crvUSD_CONTROLLER) {
+    console.log("processing CONTROLLER EVENT");
+
     if ((CONTROLLER_EVENT as { event: string }).event === "Borrow") {
+      console.log("Case: Borrow");
       const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in Borrow", formattedEventData);
       if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
@@ -82,6 +86,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
       if (message === "don't print tiny liquidations") continue;
       eventEmitter.emit("newMessage", message);
     } else if ((CONTROLLER_EVENT as { event: string }).event === "Repay") {
+      console.log("Case: Repay");
       let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, CONTROLLER_EVENT);
       if (liquidateEventQuestion == true) continue;
       const formattedEventData = await processRepayEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
@@ -91,6 +96,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
       const message = await buildRepayMessage(formattedEventData);
       eventEmitter.emit("newMessage", message);
     } else if ((CONTROLLER_EVENT as { event: string }).event === "RemoveCollateral") {
+      console.log("Case: RemoveCollateral");
       const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in RemoveCollateral", formattedEventData);
       if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
@@ -98,6 +104,7 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
       if (message === "don't print small amounts") continue;
       eventEmitter.emit("newMessage", message);
     } else if ((CONTROLLER_EVENT as { event: string }).event === "Liquidate") {
+      console.log("Case: Liquidate");
       const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
       console.log("formattedEventData in Liquidate", formattedEventData);
       if (Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;

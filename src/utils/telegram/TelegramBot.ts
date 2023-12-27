@@ -474,6 +474,8 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
     borrowRate,
   } = formattedEventData;
 
+  console.log("entered buildTokenExchangeMessage with:", formattedEventData);
+
   const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
   if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase()) return await buildSwapRouterMessage(formattedEventData);
 
@@ -519,6 +521,7 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
 
   let researchPositionHealthPrint = `${formatForPrint(researchPositionHealth * 100)} 🔭`;
   if (!researchPositionHealth) researchPositionHealthPrint = `— 🔭`;
+  if (researchPositionHealth === 420.69) researchPositionHealthPrint = `— 🔭`;
 
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
