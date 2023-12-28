@@ -470,7 +470,6 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
     profit,
     revenue,
     cost,
-    researchPositionHealth,
     borrowRate,
   } = formattedEventData;
 
@@ -519,14 +518,9 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
   }
   let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
 
-  let researchPositionHealthPrint = `${formatForPrint(researchPositionHealth * 100)} 🔭`;
-  if (!researchPositionHealth) researchPositionHealthPrint = `— 🔭`;
-  if (researchPositionHealth === 420.69) researchPositionHealthPrint = `— 🔭`;
-
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
 ${profitPrint}
-Research Pos. Health: ${researchPositionHealthPrint}
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙

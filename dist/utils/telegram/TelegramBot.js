@@ -298,7 +298,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 `;
 }
 export async function buildTokenExchangeMessage(formattedEventData) {
-    let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, researchPositionHealth, borrowRate, } = formattedEventData;
+    let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralName, numberOfcrvUSDper1_collat, collateral_price, soldAddress, boughtAddress, txHash, buyer, soldAmount, boughtAmount, dollarAmount, tokenSoldName, tokenBoughtName, crvUSDinCirculation, profit, revenue, cost, borrowRate, } = formattedEventData;
     console.log("entered buildTokenExchangeMessage with:", formattedEventData);
     const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
     if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase())
@@ -333,15 +333,9 @@ export async function buildTokenExchangeMessage(formattedEventData) {
         profitPrint = `Decoded 1Inch-Swap: Swap ${formatForPrint(_1Inchdetails.amountIn)} ${_1Inchdetails.tokenInName} to min. ${formatForPrint(_1Inchdetails.minReturnAmount)} ${_1Inchdetails.tokenOutName}`;
     }
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
-    let researchPositionHealthPrint = `${formatForPrint(researchPositionHealth * 100)} 🔭`;
-    if (!researchPositionHealth)
-        researchPositionHealthPrint = `— 🔭`;
-    if (researchPositionHealth === 420.69)
-        researchPositionHealthPrint = `— 🔭`;
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
 ${profitPrint}
-Research Pos. Health: ${researchPositionHealthPrint}
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙

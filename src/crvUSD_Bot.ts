@@ -8,7 +8,7 @@ import { handleLiveEvents, manageMarket } from "./utils/Oragnizer.js";
 console.clear();
 
 export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 100000;
-export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 20000;
+export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 40000;
 export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
 
 // export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 0;

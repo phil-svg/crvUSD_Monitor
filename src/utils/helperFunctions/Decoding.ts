@@ -1,5 +1,5 @@
 import fs from "fs";
-import { getWeb3HttpProvider, getWeb3WsProvider } from "./Web3.js";
+import { getWeb3HttpProvider } from "./Web3.js";
 import { getPastEvents, getWalletTokenBalance, web3Call } from "../web3Calls/generic.js";
 import { solveProfit } from "../profit/profit.js";
 import { getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
@@ -7,7 +7,6 @@ import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatChea
 import { AbiItem } from "web3-utils";
 import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
 import { getDollarValue } from "../../txValue/DefiLlama.js";
-import XLSX from "xlsx";
 
 async function getCollatPrice(controllerAddress: string, collateralAddress: string, blockNumber: number): Promise<number> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
@@ -436,19 +435,6 @@ export async function processTokenExchangeEvent(event: any, controllerAddress: s
   let [profit, revenue, cost] = (await solveProfit(event)) || [0, 0, 0];
   if (cost === 0) return;
 
-  const MICH1 = "0x7a16fF8270133F063aAb6C9977183D9e72835428";
-  const MICH2 = "0x425d16B0e08a28A3Ff9e4404AE99D78C0a076C5A";
-
-  let researchPositionHealth = await getPositionHealth(controllerAddress, MICH1, event.blockNumber);
-
-  if (!researchPositionHealth) {
-    researchPositionHealth = await getPositionHealth(controllerAddress, MICH2, event.blockNumber);
-  }
-
-  if (!researchPositionHealth) {
-    researchPositionHealth = 420.69;
-  }
-
   let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
   let collateralName = getSymbolFromCheatSheet(collateralAddress);
 
@@ -482,7 +468,6 @@ export async function processTokenExchangeEvent(event: any, controllerAddress: s
     profit,
     revenue,
     cost,
-    researchPositionHealth,
     borrowRate,
   };
 }

@@ -395,15 +395,6 @@ export async function processTokenExchangeEvent(event, controllerAddress, collat
     let [profit, revenue, cost] = (await solveProfit(event)) || [0, 0, 0];
     if (cost === 0)
         return;
-    const MICH1 = "0x7a16fF8270133F063aAb6C9977183D9e72835428";
-    const MICH2 = "0x425d16B0e08a28A3Ff9e4404AE99D78C0a076C5A";
-    let researchPositionHealth = await getPositionHealth(controllerAddress, MICH1, event.blockNumber);
-    if (!researchPositionHealth) {
-        researchPositionHealth = await getPositionHealth(controllerAddress, MICH2, event.blockNumber);
-    }
-    if (!researchPositionHealth) {
-        researchPositionHealth = 420.69;
-    }
     let borrowRate = await getBorrowRate(event, AMM_ADDRESS);
     let collateralName = getSymbolFromCheatSheet(collateralAddress);
     let qtyCollat = await getAmountOfCollatInMarket(collateralAddress, AMM_ADDRESS, event.blockNumber);
@@ -434,7 +425,6 @@ export async function processTokenExchangeEvent(event, controllerAddress, collat
         profit,
         revenue,
         cost,
-        researchPositionHealth,
         borrowRate,
     };
 }
