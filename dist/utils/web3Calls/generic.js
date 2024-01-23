@@ -1,6 +1,6 @@
 import { getWeb3WsProvider, getWeb3HttpProvider } from "../helperFunctions/Web3.js";
 const WEB3_WS_PROVIDER = getWeb3WsProvider();
-const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
+const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 function isCupsErr(err) {
     return err.message.includes("compute units per second capacity");
 }
@@ -21,6 +21,37 @@ export async function getCurrentBlockNumber() {
     while (shouldContinue && retries < maxRetries && !blockNumber) {
         try {
             blockNumber = await WEB3_HTTP_PROVIDER.eth.getBlockNumber();
+        }
+        catch (error) {
+            if (isError(error) && isCupsErr(error)) {
+                await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * (400 - 200 + 1) + 200)));
+            }
+            else {
+                if (isError(error)) {
+                    console.log("Error in getCurrentBlockNumber", blockNumber, error.message);
+                }
+                else {
+                    console.log("Error in getCurrentBlockNumber", blockNumber, "Unknown error");
+                }
+                shouldContinue = false;
+            }
+        }
+        retries++;
+        if (!blockNumber && shouldContinue) {
+            await delay();
+        }
+    }
+    return blockNumber;
+}
+export async function getCurrentBlockNumber2() {
+    const WEB3_WS_PROVIDER = getWeb3WsProvider();
+    let shouldContinue = true;
+    let retries = 0;
+    const maxRetries = 12;
+    let blockNumber = null;
+    while (shouldContinue && retries < maxRetries && !blockNumber) {
+        try {
+            blockNumber = await WEB3_WS_PROVIDER.eth.getBlockNumber();
         }
         catch (error) {
             if (isError(error) && isCupsErr(error)) {

@@ -174,6 +174,7 @@ export async function handleLiveEvents(eventEmitter: any) {
       // AMM EVENT
     } else if (EVENT.event === "TokenExchange") {
       const formattedEventData = await processTokenExchangeEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
+      console.log("formattedEventData in TokenExchange", formattedEventData);
       if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) return;
       const message = await buildTokenExchangeMessage(formattedEventData);
       if (message === "don't print tiny liquidations") return;

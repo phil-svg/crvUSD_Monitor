@@ -4,18 +4,14 @@ import axios from "axios";
 import Bottleneck from "bottleneck";
 import axiosRetry from "axios-retry";
 dotenv.config({ path: "../.env" });
-let web3WsProvider = null;
 export function getWeb3WsProvider() {
-    if (!web3WsProvider) {
-        web3WsProvider = new Web3(new Web3.providers.WebsocketProvider(process.env.WEB3_WSS));
-    }
+    let web3WsProvider = null;
+    web3WsProvider = new Web3(new Web3.providers.WebsocketProvider(process.env.WEB3_WSS));
     return web3WsProvider;
 }
-let web3HttpProvider = null;
 export function getWeb3HttpProvider() {
-    if (!web3HttpProvider) {
-        web3HttpProvider = new Web3(new Web3.providers.HttpProvider(process.env.WEB3_HTTP));
-    }
+    let web3HttpProvider = null;
+    web3HttpProvider = new Web3(new Web3.providers.HttpProvider(process.env.WEB3_HTTP));
     return web3HttpProvider;
 }
 export const ALCHEMY_KEY = process.env.WEB3_HTT;
@@ -70,6 +66,7 @@ export async function getCallTraceViaAlchemy(txHash) {
     return data.result;
 }
 export async function getTxWithLimiter(txHash) {
+    const web3 = getWeb3HttpProvider();
     const limiter = new Bottleneck({
         maxConcurrent: 1,
         minTime: 300,
@@ -89,7 +86,7 @@ export async function getTxWithLimiter(txHash) {
         const RETRY_DELAY = 5000;
         while (retries < MAX_RETRIES) {
             try {
-                const TX = await web3HttpProvider.eth.getTransaction(txHash);
+                const TX = await web3.eth.getTransaction(txHash);
                 return TX;
             }
             catch (error) {

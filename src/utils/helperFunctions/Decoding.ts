@@ -51,7 +51,6 @@ async function getPositionHealth(controllerAddress: string, userAddress: string,
 
 async function getBorrowRate(event: any, AMM_ADDRESS: string): Promise<number | null> {
   const RATE = await getBorrowRateForProvidedLlamma(AMM_ADDRESS, event.blockNumber);
-  if (!RATE) return null;
   return RATE;
 }
 
@@ -62,7 +61,7 @@ async function getAmountOfCollatInMarket(addressCollat: string, addressAmm: stri
 }
 
 async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
-  const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
+  const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
   const ADDRESS_crvUSD_ControllerFactory = "0xC9332fdCB1C491Dcc683bAe86Fe3cb70360738BC";
   const ABI_crvUSD_ControllerFactory = JSON.parse(fs.readFileSync("../JSONs/crvUSD_ControllerFactory.json", "utf8"));
   const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);

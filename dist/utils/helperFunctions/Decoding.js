@@ -41,8 +41,6 @@ async function getPositionHealth(controllerAddress, userAddress, blockNumber) {
 }
 async function getBorrowRate(event, AMM_ADDRESS) {
     const RATE = await getBorrowRateForProvidedLlamma(AMM_ADDRESS, event.blockNumber);
-    if (!RATE)
-        return null;
     return RATE;
 }
 async function getAmountOfCollatInMarket(addressCollat, addressAmm, blockNumber) {
@@ -51,7 +49,7 @@ async function getAmountOfCollatInMarket(addressCollat, addressAmm, blockNumber)
     return BALANCE / 10 ** DECIMALS;
 }
 async function getcrvUSDinCirculation(blockNumber) {
-    const WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
+    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const ADDRESS_crvUSD_ControllerFactory = "0xC9332fdCB1C491Dcc683bAe86Fe3cb70360738BC";
     const ABI_crvUSD_ControllerFactory = JSON.parse(fs.readFileSync("../JSONs/crvUSD_ControllerFactory.json", "utf8"));
     const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
