@@ -1,5 +1,5 @@
-import fs from "fs";
 import { getWeb3HttpProvider } from "./Web3.js";
+import { ABI_AMM } from "../abis/ABI_AMM.js";
 export function calculateInterest(rate) {
     rate = rate / 1e18;
     const SECONDS_IN_A_YEAR = 365 * 86400;
@@ -9,8 +9,6 @@ export function calculateInterest(rate) {
 }
 export async function getBorrowRateForProvidedLlamma(LLAMMA_ADDRESS, blockNumber) {
     const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
-    const ABI_AMM_RAW = fs.readFileSync("../JSONs/AmmAbi.json", "utf8");
-    const ABI_AMM = JSON.parse(ABI_AMM_RAW);
     const AMM = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_AMM, LLAMMA_ADDRESS);
     try {
         let rate = Number(await AMM.methods.rate().call(blockNumber));

@@ -186,6 +186,25 @@ export async function subscribeToEvents(CONTRACT: any, eventEmitter: EventEmitte
   }
 }
 
+export async function subscribeToPegkeeperEvents(CONTRACT: any, eventEmitter: EventEmitter) {
+  try {
+    const subscription = CONTRACT.events.allEvents();
+
+    subscription
+      .on("connected", () => {
+        console.log(CONTRACT._address, `subscribed to events successfully`);
+      })
+      .on("data", async (eventData: any) => {
+        eventEmitter.emit("newPegKeeperEvent", eventData);
+      })
+      .on("error", (error: Error) => {
+        console.error("Error in event subscription: ", error);
+      });
+  } catch (err: any) {
+    console.log("Error in fetching events:", err.message);
+  }
+}
+
 export async function getTxFromTxHash(txHash: string): Promise<any | null> {
   try {
     const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);

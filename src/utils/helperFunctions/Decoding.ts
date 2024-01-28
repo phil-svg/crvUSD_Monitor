@@ -1,4 +1,3 @@
-import fs from "fs";
 import { getWeb3HttpProvider } from "./Web3.js";
 import { getPastEvents, getWalletTokenBalance, web3Call } from "../web3Calls/generic.js";
 import { solveProfit } from "../profit/profit.js";
@@ -7,13 +6,20 @@ import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatChea
 import { AbiItem } from "web3-utils";
 import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
 import { getDollarValue } from "../../txValue/DefiLlama.js";
+import { ADDRESS_crvUSD, ADDRESS_crvUSD_ControllerFactory, NULL_ADDRESS, addressAggMonetary } from "../Constants.js";
+import { ABI_AggMonetaryPolicy } from "../abis/ABI_AggMonetaryPolicy.js";
+import { ABI_Controller } from "../abis/ABI_Controller.js";
+import { ABI_crvUSD_ControllerFactory } from "../abis/ABI_crvUSD_ControllerFactory.js";
+import { ABI_crvUSD } from "../abis/ABI_crvUSD.js";
+
+export function hasUndefinedOrNaNValues(data: Record<string, any>): boolean {
+  return Object.values(data).some((value) => value === undefined || Number.isNaN(value));
+}
 
 async function getCollatPrice(controllerAddress: string, collateralAddress: string, blockNumber: number): Promise<number> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 
-  const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
-  const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
+  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
 
   const PRICE = await web3Call(CONTROLLER, "amm_price", [], blockNumber);
   // const COLLAT_DECIMALS = getDecimalFromCheatSheet(collateralAddress);
@@ -22,10 +28,7 @@ async function getCollatPrice(controllerAddress: string, collateralAddress: stri
 
 async function getPositionHealthOfGeneralAddress(controllerAddress: string, userAddress: string, blockNumber: number): Promise<number | string | null> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
-
-  const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
-  const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
+  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
 
   try {
     const hasLoan = await web3Call(CONTROLLER, "loan_exists", [userAddress], blockNumber);
@@ -41,9 +44,7 @@ async function getPositionHealthOfGeneralAddress(controllerAddress: string, user
 async function getPositionHealth(controllerAddress: string, userAddress: string, blockNumber: number): Promise<number | null> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 
-  const ABI_CONTROLLER_RAW = fs.readFileSync("../JSONs/ControllerAbi.json", "utf8");
-  const ABI_CONTROLLER = JSON.parse(ABI_CONTROLLER_RAW);
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
+  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
 
   const HEALTH = await web3Call(CONTROLLER, "health", [userAddress], blockNumber);
   return Number(HEALTH / 1e18);
@@ -62,8 +63,6 @@ async function getAmountOfCollatInMarket(addressCollat: string, addressAmm: stri
 
 async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
-  const ADDRESS_crvUSD_ControllerFactory = "0xC9332fdCB1C491Dcc683bAe86Fe3cb70360738BC";
-  const ABI_crvUSD_ControllerFactory = JSON.parse(fs.readFileSync("../JSONs/crvUSD_ControllerFactory.json", "utf8"));
   const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
 
   const totalDebt = await web3Call(crvUSD_ControllerFactory, "total_debt", [], blockNumber);
@@ -72,9 +71,7 @@ async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
 
 async function getTotalMarketDebt(blockNumber: number, controllerAddress: string) {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
-
-  const ABI_CONTROLLER = JSON.parse(fs.readFileSync("../JSONs/ControllerAbi.json", "utf8"));
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_CONTROLLER, controllerAddress);
+  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
 
   const TOTAL_DEBT = await web3Call(CONTROLLER, "total_debt", [], blockNumber);
   return Number(TOTAL_DEBT / 1e18);
@@ -83,8 +80,6 @@ async function getTotalMarketDebt(blockNumber: number, controllerAddress: string
 async function getCrvUsdTranserAmount(event: any) {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 
-  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
-  const ABI_crvUSD = JSON.parse(fs.readFileSync("../JSONs/crvUSDAbi.json", "utf8"));
   const crvUSD = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
 
   let amounts = await getPastEvents(crvUSD, "Transfer", event.blockNumber, event.blockNumber);
@@ -100,8 +95,6 @@ async function getCrvUsdTranserAmount(event: any) {
 async function getPegKeepers(blockNumber: number) {
   let web3 = getWeb3HttpProvider();
 
-  const addressAggMonetary = "0xc684432FD6322c6D58b6bC5d28B18569aA0AD0A1";
-  const ABI_AggMonetaryPolicy = JSON.parse(fs.readFileSync("../JSONs/AggMonetaryPolicy.json", "utf8"));
   const AggMonetaryPolicy = new web3.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
 
   const pegKeeperAddresses = [];
@@ -110,7 +103,7 @@ async function getPegKeepers(blockNumber: number) {
   while (true) {
     try {
       const pegKeeperAddress = await web3Call(AggMonetaryPolicy, "peg_keepers", [index], blockNumber);
-      if (pegKeeperAddress === "0x0000000000000000000000000000000000000000") break;
+      if (pegKeeperAddress === NULL_ADDRESS) break;
       pegKeeperAddresses.push(pegKeeperAddress);
       index++;
     } catch (error) {
@@ -380,8 +373,6 @@ export async function processBorrowEvent(event: any, controllerAddress: string, 
 }
 
 export async function processTokenExchangeEvent(event: any, controllerAddress: string, collateralAddress: string, AMM_ADDRESS: string) {
-  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
-
   let txHash = event.transactionHash;
   let buyer = event.returnValues.buyer;
 

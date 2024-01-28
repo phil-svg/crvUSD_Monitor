@@ -1,3 +1,4 @@
+import { ETH_ADDRESS } from "../Constants.js";
 import { web3Call } from "../web3Calls/generic.js";
 import { getTxWithLimiter, getWeb3HttpProvider } from "./Web3.js";
 import { AbiItem } from "web3-utils";
@@ -860,7 +861,7 @@ interface ITokenInfo {
 }
 
 async function getTokenNameFromChain(address: string): Promise<string> {
-  if (address.toLowerCase() === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".toLowerCase()) return "ETH";
+  if (address.toLowerCase() === ETH_ADDRESS.toLowerCase()) return "ETH";
   let ABI_SYMBOL: AbiItem[] = [{ stateMutability: "view", type: "function", name: "symbol", inputs: [], outputs: [{ name: "", type: "string" }] }];
   const web3HTTP = getWeb3HttpProvider();
   let CONTRACT = new web3HTTP.eth.Contract(ABI_SYMBOL, address);
@@ -870,7 +871,7 @@ async function getTokenNameFromChain(address: string): Promise<string> {
 }
 
 async function getTokenDecimalsFromChain(address: string): Promise<number> {
-  if (address.toLowerCase() === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".toLowerCase()) return 18;
+  if (address.toLowerCase() === ETH_ADDRESS.toLowerCase()) return 18;
 
   let ABI_DECIMALS: AbiItem[] = [
     { constant: true, inputs: [], name: "decimals", outputs: [{ name: "", type: "uint256" }], payable: false, stateMutability: "view", type: "function" },

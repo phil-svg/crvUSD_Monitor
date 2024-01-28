@@ -160,6 +160,24 @@ export async function subscribeToEvents(CONTRACT, eventEmitter, Market) {
         console.log("Error in fetching events:", err.message);
     }
 }
+export async function subscribeToPegkeeperEvents(CONTRACT, eventEmitter) {
+    try {
+        const subscription = CONTRACT.events.allEvents();
+        subscription
+            .on("connected", () => {
+            console.log(CONTRACT._address, `subscribed to events successfully`);
+        })
+            .on("data", async (eventData) => {
+            eventEmitter.emit("newPegKeeperEvent", eventData);
+        })
+            .on("error", (error) => {
+            console.error("Error in event subscription: ", error);
+        });
+    }
+    catch (err) {
+        console.log("Error in fetching events:", err.message);
+    }
+}
 export async function getTxFromTxHash(txHash) {
     try {
         const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);

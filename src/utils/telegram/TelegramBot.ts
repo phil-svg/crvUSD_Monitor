@@ -2,10 +2,12 @@ import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
 import { labels } from "../../Labels.js";
-import { getTxReceipt, getTxWithLimiter } from "../helperFunctions/Web3.js";
-import { decode1Inch, get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
+import { get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from "../helperFunctions/1Inch.js";
 import { MIN_HARDLIQ_AMOUNT_WORTH_PRINTING, MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING, MIN_REPAYED_AMOUNT_WORTH_PRINTING } from "../../crvUSD_Bot.js";
-import { lastSeenTxHash, lastSeenTxTimestamp, readFileAsync } from "../Oragnizer.js";
+import { ADDRESS_crvUSD, SWAP_ROUTER } from "../Constants.js";
+import { readFile } from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
 dotenv.config({ path: "../.env" });
 
 function getTokenURL(tokenAddress: string) {
@@ -41,6 +43,15 @@ function getMarketHealthPrint(qtyCollat: number, collateralName: string, collatV
   return `Collateral: ${getShortenNumber(qtyCollat)} ${collateralName}${getDollarAddOn(collatValue)} | Borrowed: ${getShortenNumber(marketBorrowedAmount)} crvUSD`;
 }
 
+function calculateBips(priceBefore: number, priceAfter: number): number {
+  if (typeof priceBefore !== "number" || typeof priceAfter !== "number" || priceBefore === 0) {
+    throw new Error("Invalid input: priceBefore and priceAfter must be numbers, and priceBefore must not be 0.");
+  }
+
+  const bips: number = ((priceAfter - priceBefore) / priceBefore) * 10000;
+  return Number(bips.toFixed(4));
+}
+
 function formatForPrint(someNumber: any) {
   if (typeof someNumber === "string" && someNumber.includes(",")) return someNumber;
   //someNumber = Math.abs(someNumber);
@@ -71,6 +82,20 @@ function getShortenNumber(amountStr: any) {
     } else {
       return `${thousandAmount.toFixed(1)}k`;
     }
+  } else {
+    return `${amount.toFixed(2)}`;
+  }
+}
+
+function getShortenNumberFixed(amount: number): string {
+  if (amount >= 1_000_000) {
+    const millionAmount = amount / 1_000_000;
+    return `${millionAmount.toFixed(millionAmount % 1 === 0 ? 0 : 2)}M`;
+  } else if (amount >= 1000) {
+    const thousandAmount = amount / 1000;
+    return `${thousandAmount.toFixed(0)}k`;
+  } else if (amount === 0) {
+    return `${amount}`;
   } else {
     return `${amount.toFixed(2)}`;
   }
@@ -158,8 +183,6 @@ export async function buildLiquidateMessage(formattedEventData: any, controllerA
 
   if (stablecoin_received < MIN_HARDLIQ_AMOUNT_WORTH_PRINTING) return "don't print tiny hard-liquidations";
 
-  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
-
   const liquidatorURL = getBuyerURL(liquidator);
   const shortenLiquidator = getAddressName(liquidator);
   const userURL = getBuyerURL(user);
@@ -186,7 +209,7 @@ export async function buildLiquidateMessage(formattedEventData: any, controllerA
   let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
 
   return `
-  🚀${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(
+  User${hyperlink(liquidatorURL, shortenLiquidator)} ${liquidated} with ${formatForPrint(crvUSD_amount)}${hyperlink(crvUSD_URL, "crvUSD")} and ${formatForPrint(
     collateral_received
   )}${hyperlink(COLLATERAL_URL, collateralName)}
 The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyperlink(crvUSD_URL, "crvUSD")} to the${hyperlink(CONTROLLER_URL, "Controller")}
@@ -260,7 +283,6 @@ export async function buildRepayMessage(formattedEventData: any) {
     crvUSDinCirculation,
     borrowRate,
   } = formattedEventData;
-  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
 
   const buyerURL = getBuyerURL(buyer);
   const shortenBuyer = getAddressName(buyer);
@@ -308,8 +330,6 @@ export async function buildBorrowMessage(formattedEventData: any) {
     crvUSDinCirculation,
     borrowRate,
   } = formattedEventData;
-  const ADDRESS_crvUSD = "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E";
-
   const buyerURL = getBuyerURL(buyer);
   const shortenBuyer = getAddressName(buyer);
   const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
@@ -475,7 +495,6 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
 
   console.log("entered buildTokenExchangeMessage with:", formattedEventData);
 
-  const SWAP_ROUTER = "0x99a58482BD75cbab83b27EC03CA68fF489b5788f";
   if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase()) return await buildSwapRouterMessage(formattedEventData);
 
   let tokenInURL = getTokenURL(soldAddress);
@@ -527,9 +546,98 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 `;
 }
 
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+/////////////////// PEG-KEEPER /////////////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+
+export type PegKeeperMessageContext = {
+  event: "Provide" | "Withdraw"; // Assuming these are the only two event types
+  amount: number; // Total amount bought or sold
+  priceBefore: number; // Price of crvUSD before the event
+  priceAfter: number; // Price of crvUSD after the event
+};
+
+type PegKeeperDetail = {
+  coinSymbol: string | null;
+  address: string;
+  debtAtBlock: number | null;
+  debtAtPreviousBlock: number | null;
+};
+
+export function buildPegKeeperMessage(pegKeeperDetails: PegKeeperDetail[], context: PegKeeperMessageContext, txHash: string): string {
+  let messageParts: string[] = [];
+  let totalBefore = 0;
+  let totalAfter = 0;
+
+  const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
+  const crvUSD_Link = hyperlink(crvUSD_URL, "crvUSD");
+
+  // Find the first peg keeper with a change in debt
+  const significantPegKeeper = pegKeeperDetails.find(
+    (detail) => detail.debtAtBlock !== null && detail.debtAtPreviousBlock !== null && detail.debtAtBlock !== detail.debtAtPreviousBlock
+  );
+
+  // Generate a URL for the significant peg keeper, default to "#" if not found
+  const pegkeeperURL = significantPegKeeper ? getPoolURL(significantPegKeeper.address) : "#";
+  // Use the coin symbol of the significant peg keeper for the action line, default to "Pegkeeper/crvUSD" if not found
+  const actionLineCoinSymbol = significantPegKeeper?.coinSymbol ? `${significantPegKeeper.coinSymbol}/crvUSD` : "Pegkeeper/crvUSD";
+
+  // Formatting the first line based on the event type
+  const action = context.event === "Provide" ? "buffered" : "released";
+  const formattedAmount = getShortenNumberFixed(context.amount);
+
+  // Constructing the summary line with hyperlink
+  const summaryLine = `🛡 Pegkeeper${hyperlink(pegkeeperURL, actionLineCoinSymbol)} ${action} ${formattedAmount}${crvUSD_Link}\n`;
+
+  messageParts.push(summaryLine);
+
+  pegKeeperDetails.sort((a, b) => (a.coinSymbol || "").localeCompare(b.coinSymbol || ""));
+
+  for (const detail of pegKeeperDetails) {
+    if (detail.coinSymbol && detail.debtAtBlock !== null && detail.debtAtPreviousBlock !== null) {
+      const beforeDebt = detail.debtAtPreviousBlock;
+      const afterDebt = detail.debtAtBlock;
+      totalBefore += Number(detail.debtAtPreviousBlock);
+      totalAfter += Number(detail.debtAtBlock);
+
+      // Generate URL for each peg keeper detail
+      const detailURL = getPoolURL(detail.address);
+      let debtChangeMessage = `${hyperlink(detailURL, `${detail.coinSymbol}/crvUSD`)} ${getShortenNumberFixed(beforeDebt)}`;
+      if (detail.debtAtPreviousBlock !== detail.debtAtBlock) {
+        debtChangeMessage += ` ➠ ${getShortenNumberFixed(afterDebt)}`;
+      }
+
+      messageParts.push(debtChangeMessage);
+    }
+  }
+
+  const totalMessage = `\nTotal buffered: ${getShortenNumberFixed(totalBefore)} ➠ ${getShortenNumberFixed(totalAfter)}${crvUSD_Link}`;
+  messageParts.push(totalMessage);
+
+  const txHashURLfromEtherscan = getTxHashURLfromEtherscan(txHash);
+  const txHashLinkEtherscan = hyperlink(txHashURLfromEtherscan, "etherscan.io");
+  const txHashURLfromEigenPhi = getTxHashURLfromEigenPhi(txHash);
+  const txHashLinkEigenphi = hyperlink(txHashURLfromEigenPhi, "eigenphi.io");
+  const links = `Links:${txHashLinkEtherscan} |${txHashLinkEigenphi} 🦙🦙🦙`;
+  messageParts.push(links);
+
+  return messageParts.join("\n");
+}
+
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+/////////////////// PEG-KEEPER END//////////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+
 async function getLastSeenValues() {
   try {
-    const data = JSON.parse(await readFileAsync("lastSeen.json", "utf-8"));
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const filePath = path.join(__dirname, "../../../lastSeen.json");
+    const data = JSON.parse(await readFile(filePath, "utf-8"));
+
     return {
       txHash: data.txHash,
       txTimestamp: new Date(data.txTimestamp),

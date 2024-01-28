@@ -1,3 +1,4 @@
+import { ETH_ADDRESS } from "../Constants.js";
 import { web3Call } from "../web3Calls/generic.js";
 import { getTxWithLimiter, getWeb3HttpProvider } from "./Web3.js";
 const web3 = getWeb3HttpProvider();
@@ -832,7 +833,7 @@ export async function decode1InchV5(tx) {
     }
 }
 async function getTokenNameFromChain(address) {
-    if (address.toLowerCase() === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".toLowerCase())
+    if (address.toLowerCase() === ETH_ADDRESS.toLowerCase())
         return "ETH";
     let ABI_SYMBOL = [{ stateMutability: "view", type: "function", name: "symbol", inputs: [], outputs: [{ name: "", type: "string" }] }];
     const web3HTTP = getWeb3HttpProvider();
@@ -843,7 +844,7 @@ async function getTokenNameFromChain(address) {
     return name;
 }
 async function getTokenDecimalsFromChain(address) {
-    if (address.toLowerCase() === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".toLowerCase())
+    if (address.toLowerCase() === ETH_ADDRESS.toLowerCase())
         return 18;
     let ABI_DECIMALS = [
         { constant: true, inputs: [], name: "decimals", outputs: [{ name: "", type: "uint256" }], payable: false, stateMutability: "view", type: "function" },

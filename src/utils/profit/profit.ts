@@ -1,21 +1,15 @@
-import { getWeb3HttpProvider, getTxReceipt, getCallTraceViaAlchemy } from "../helperFunctions/Web3.js";
-import fs from "fs";
+import { getWeb3HttpProvider, getCallTraceViaAlchemy } from "../helperFunctions/Web3.js";
 import { TransactionReceipt } from "web3-eth";
 import { AbiItem } from "web3-utils";
 import Big from "big.js";
 import { getPrice } from "../priceAPI/priceAPI.js";
-import { getTxFromTxHash } from "../web3Calls/generic.js";
-
-const ADDRESS_ETH = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-const ADDRESS_WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+import { ABI_Tricrypto } from "../abis/ABI_Tricrypto.js";
+import { ETH_ADDRESS } from "../Constants.js";
 
 async function getEthPrice(blockNumber: number): Promise<number | null> {
-  let web3 = await getWeb3HttpProvider();
+  let web3 = getWeb3HttpProvider();
   const ADDRESS_TRICRYPTO = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
-  const ABI_TRICRYPTO_RAW = fs.readFileSync("../JSONs/TRICRYPTOAbi.json", "utf8");
-  const ABI_TRICRYPTO = JSON.parse(ABI_TRICRYPTO_RAW);
-
-  const TRICRYPTO = new web3.eth.Contract(ABI_TRICRYPTO, ADDRESS_TRICRYPTO);
+  const TRICRYPTO = new web3.eth.Contract(ABI_Tricrypto, ADDRESS_TRICRYPTO);
 
   try {
     return (await TRICRYPTO.methods.price_oracle(1).call(blockNumber)) / 1e18;
@@ -25,7 +19,7 @@ async function getEthPrice(blockNumber: number): Promise<number | null> {
 }
 
 async function getCosts(txHash: string, blockNumber: number): Promise<number | null> {
-  let web3 = await getWeb3HttpProvider();
+  let web3 = getWeb3HttpProvider();
   try {
     const txReceipt = await web3.eth.getTransactionReceipt(txHash);
     const gasUsed = txReceipt.gasUsed;
@@ -88,7 +82,7 @@ async function adjustBalancesForDecimals(balanceChanges: BalanceChange[]): Promi
 }
 
 export async function getTokenSymbol(tokenAddress: string): Promise<string | null> {
-  if (tokenAddress === ADDRESS_ETH) return "ETH";
+  if (tokenAddress === ETH_ADDRESS) return "ETH";
 
   let web3 = await getWeb3HttpProvider();
   const SYMBOL_ABI: AbiItem[] = [
@@ -116,8 +110,8 @@ export async function getTokenSymbol(tokenAddress: string): Promise<string | nul
 }
 
 export async function getTokenDecimals(tokenAddress: string): Promise<number | null> {
-  if (tokenAddress === ADDRESS_ETH) return 18;
-  let web3 = await getWeb3HttpProvider();
+  if (tokenAddress === ETH_ADDRESS) return 18;
+  let web3 = getWeb3HttpProvider();
   const DECIMALS_ABI: AbiItem[] = [
     {
       inputs: [],
@@ -240,7 +234,7 @@ function combineEvents(transferEvents: any[], withdrawalEvents: WithdrawalEvent[
 function addEthBalanceChange(balanceChanges: any[], ethBalanceChange: number): any[] {
   if (ethBalanceChange !== 0) {
     balanceChanges.push({
-      token: ADDRESS_ETH,
+      token: ETH_ADDRESS,
       balanceChange: ethBalanceChange,
     });
   }
