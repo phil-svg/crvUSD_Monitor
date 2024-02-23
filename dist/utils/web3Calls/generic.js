@@ -178,6 +178,24 @@ export async function subscribeToPegkeeperEvents(CONTRACT, eventEmitter) {
         console.log("Error in fetching events:", err.message);
     }
 }
+export async function subscribeToLendingMarketsEvents(CONTRACT, eventEmitter, type, lendingMarketAddress) {
+    try {
+        const subscription = CONTRACT.events.allEvents();
+        subscription
+            .on("connected", () => {
+            console.log(CONTRACT._address, `subscribed to events successfully`);
+        })
+            .on("data", async (event) => {
+            eventEmitter.emit("newLendingMarketsEvent", { event, type, CONTRACT, lendingMarketAddress });
+        })
+            .on("error", (error) => {
+            console.error("Error in event subscription: ", error);
+        });
+    }
+    catch (err) {
+        console.log("Error in fetching events:", err.message);
+    }
+}
 export async function getTxFromTxHash(txHash) {
     try {
         const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);

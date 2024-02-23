@@ -19,6 +19,22 @@ import { MIN_REPAYED_AMOUNT_WORTH_PRINTING } from "../crvUSD_Bot.js";
 import { ABI_AMM } from "./abis/ABI_AMM.js";
 import { ABI_Controller } from "./abis/ABI_Controller.js";
 
+export async function watchingForNewMarketOpenings(crvUSD_ControllerFactory: any, eventEmitter: any) {
+  const subscription = crvUSD_ControllerFactory.events.AddMarket();
+
+  subscription
+    .on("connected", () => {
+      console.log(crvUSD_ControllerFactory._address, `subscribed to new market event successfully`);
+    })
+    .on("data", async (marketCreation: any) => {
+      console.log("NEW MARKET!!!");
+      await manageMarket(marketCreation, eventEmitter);
+    })
+    .on("error", (error: Error) => {
+      console.error("Error in event subscription: ", error);
+    });
+}
+
 async function saveLastSeenToFile(hash: string, timestamp: Date) {
   try {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));

@@ -64,7 +64,7 @@ async function getPegkeeperCoin(poolAddress: string, WEB3_WS_PROVIDER: any): Pro
   return null;
 }
 
-async function getCoinSymbol(coinAddress: string, WEB3_WS_PROVIDER: any): Promise<string | null> {
+export async function getCoinSymbol(coinAddress: string, WEB3_WS_PROVIDER: any): Promise<string | null> {
   const COIN = new WEB3_WS_PROVIDER.eth.Contract(ABI_hacked_Symbol, coinAddress);
   let coinSymbol = await web3Call(COIN, "symbol", []);
   return coinSymbol;

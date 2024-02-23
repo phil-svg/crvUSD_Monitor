@@ -1,0 +1,46 @@
+import { web3Call } from "../web3Calls/generic.js";
+export function getVaultName(vaultAddress) {
+    const VAULT_wstETH_LONG_ADDRESS = "0xE21C518a09b26Bf65B16767B97249385f12780d9";
+    const VAULT_CRV_LONG_ADDRESS = "0x67A18c18709C09D48000B321c6E1cb09F7181211";
+    const VAULT_CRV_SHORT_ADDRESS = "0x044aC5160e5A04E09EBAE06D786fc151F2BA5ceD";
+    const inputAddressLowerCase = vaultAddress.toLowerCase();
+    if (inputAddressLowerCase === VAULT_wstETH_LONG_ADDRESS.toLowerCase()) {
+        return "wstETH Long Vault";
+    }
+    else if (inputAddressLowerCase === VAULT_CRV_LONG_ADDRESS.toLowerCase()) {
+        return "CRV Long Vault";
+    }
+    else if (inputAddressLowerCase === VAULT_CRV_SHORT_ADDRESS.toLowerCase()) {
+        return "CRV Short Vault";
+    }
+    return "Unknown Vault, dev?";
+}
+export async function getBorrowApr(contract, blockNumber) {
+    const res = await web3Call(contract, "borrow_apr", [], blockNumber);
+    return res / 1e18;
+}
+export async function getLendApr(contract, blockNumber) {
+    const res = await web3Call(contract, "lend_apr", [], blockNumber);
+    return res / 1e18;
+}
+export async function getTotalAssets(contract, blockNumber) {
+    const res = await web3Call(contract, "totalAssets", [], blockNumber);
+    return res / 1e18;
+}
+export async function getTotalDebtInMarket(contract, blockNumber) {
+    const res = await web3Call(contract, "total_debt", [], blockNumber);
+    return res / 1e18;
+}
+export async function getPositionHealth(contract, user, blockNumber) {
+    const res = await web3Call(contract, "health", [user], blockNumber);
+    return res / 1e16;
+}
+export async function getCollatDollarValue(contract, blockNumber) {
+    const res = await web3Call(contract, "amm_price", [], blockNumber);
+    return res / 1e18;
+}
+export async function getCollateralTokenAddress(contract) {
+    const res = await web3Call(contract, "collateral_token", []);
+    return res;
+}
+//# sourceMappingURL=Lending.js.map

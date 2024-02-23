@@ -7,6 +7,7 @@ import { ADDRESS_crvUSD, SWAP_ROUTER } from "../Constants.js";
 import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { getVaultName } from "../helperFunctions/Lending.js";
 dotenv.config({ path: "../.env" });
 function getTokenURL(tokenAddress) {
     return "https://etherscan.io/token/" + tokenAddress;
@@ -100,7 +101,10 @@ function getShortenNumberFixed(amount) {
     }
 }
 function getDollarAddOn(amountStr) {
-    let amount = parseFloat(amountStr.replace(/,/g, ""));
+    let amount = amountStr;
+    if (typeof amount === "string") {
+        amount = parseFloat(amountStr.replace(/,/g, ""));
+    }
     //amount = roundToNearest(amount);
     if (amount >= 1000000) {
         const millionAmount = amount / 1000000;
@@ -410,6 +414,88 @@ export function buildPegKeeperMessage(pegKeeperDetails, context, txHash) {
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 /////////////////// PEG-KEEPER END//////////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+/////////////////// LENDING-MARKET START////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+export function buildLendingMarketDepositMessage(lendingMarketAddress, txHash, agentAddress, parsedDepositAmount, borrowApr, lendApr, totalAssets) {
+    const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+    const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    const agentURL = getBuyerURL(agentAddress);
+    const shortenAgent = getAddressName(agentAddress);
+    const vaultURL = getPoolURL(lendingMarketAddress);
+    const vaultName = getVaultName(lendingMarketAddress);
+    const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
+    const crvUSD_Link = hyperlink(crvUSD_URL, "crvUSD");
+    return `
+  🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositAmount)}${crvUSD_Link} into${hyperlink(vaultURL, vaultName)}
+Borrow APR: ${borrowApr.toFixed(4)}  Lend APR: ${lendApr.toFixed(4)} 
+Total Assets: ${Number(totalAssets.toFixed(0)).toLocaleString()}${crvUSD_Link}
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+export function buildLendingMarketWithdrawMessage(txHash) {
+    const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+    const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    return `
+   Withdrawal happened 
+   (todo)
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+// CONTROLLER-MESSAGES
+export function buildLendingMarketBorrowMessage(txHash, agentAddress, parsedBorrowedAmount, parsedCollatAmount, collatName, collatAddress, positionHealth, lendingMarketAddress, totalDebtInMarket, collatDollarAmount) {
+    const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+    const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    const agentURL = getBuyerURL(agentAddress);
+    const shortenAgent = getAddressName(agentAddress);
+    const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
+    const crvUSD_Link = hyperlink(crvUSD_URL, "crvUSD");
+    const collat_URL = getTokenURL(collatAddress);
+    const collat_Link = hyperlink(collat_URL, collatName);
+    const vaultURL = getPoolURL(lendingMarketAddress);
+    const vaultName = getVaultName(lendingMarketAddress);
+    var dollarAddon = getDollarAddOn(collatDollarAmount);
+    return `
+  🚀${hyperlink(agentURL, shortenAgent)} borrowed ${formatForPrint(parsedBorrowedAmount)}${crvUSD_Link} against ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon}
+Health of Position: ${positionHealth.toFixed(2)}
+Total Debt in${hyperlink(vaultURL, vaultName)}: ${Number(totalDebtInMarket.toFixed(0)).toLocaleString()}${crvUSD_Link}
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+export function buildLendingMarketRepayMessage(txHash) {
+    const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+    const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    return `
+   Repay happened 
+   (todo)
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+export function buildLendingMarketRemoveCollateralMessage(txHash) {
+    const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+    const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    return `
+   Collat removal happened 
+   (todo)
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+export function buildLendingMarketLiquidateMessage(txHash) {
+    const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+    const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    return `
+   Liquidation happened 
+   (todo)
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+/////////////////// LENDING-MARKET END//////////////////
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 async function getLastSeenValues() {
