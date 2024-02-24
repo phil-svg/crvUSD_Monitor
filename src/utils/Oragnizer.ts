@@ -151,7 +151,7 @@ export async function handleLiveEvents(eventEmitter: any) {
   eventEmitter.on("newEvent", async ({ eventData: EVENT, Market: MARKET }: EventAndMarket) => {
     // for command checking when was the last seen tx.
     await saveLastSeenToFile(EVENT.transactionHash, new Date());
-    console.log("New Event picked up by the Emitter:", EVENT);
+    console.log("New Event picked up by the Emitter:", EVENT.transactionHash);
     const WEB3_WS_PROVIDER = getWeb3WsProvider();
     const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
     const ADDRESS_CONTROLLER = MARKET.returnValues.controller;

@@ -8,11 +8,11 @@ export function getVaultName(vaultAddress: string): string {
   const inputAddressLowerCase = vaultAddress.toLowerCase();
 
   if (inputAddressLowerCase === VAULT_wstETH_LONG_ADDRESS.toLowerCase()) {
-    return "wstETH Long Vault";
+    return "wstETH Long";
   } else if (inputAddressLowerCase === VAULT_CRV_LONG_ADDRESS.toLowerCase()) {
-    return "CRV Long Vault";
+    return "CRV Long";
   } else if (inputAddressLowerCase === VAULT_CRV_SHORT_ADDRESS.toLowerCase()) {
-    return "CRV Short Vault";
+    return "CRV Short";
   }
 
   return "Unknown Vault, dev?";

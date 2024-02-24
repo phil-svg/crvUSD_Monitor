@@ -497,7 +497,7 @@ export async function buildTokenExchangeMessage(formattedEventData: any) {
     borrowRate,
   } = formattedEventData;
 
-  console.log("entered buildTokenExchangeMessage with:", formattedEventData);
+  // console.log("entered buildTokenExchangeMessage with:", formattedEventData);
 
   if (buyer.toLowerCase() === SWAP_ROUTER.toLowerCase()) return await buildSwapRouterMessage(formattedEventData);
 
@@ -642,6 +642,12 @@ export function buildPegKeeperMessage(pegKeeperDetails: PegKeeperDetail[], conte
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
+function getLlamaLendPositionHealthLine(positionHealth: number): string {
+  if (!positionHealth) return `Health of Position: no loan`;
+  if (positionHealth > 100) return `Health of Position: no loan`;
+  return `Health of Position: ${positionHealth.toFixed(2)}`;
+}
+
 export function buildLendingMarketDepositMessage(
   lendingMarketAddress: string,
   txHash: string,
@@ -693,7 +699,8 @@ export function buildLendingMarketBorrowMessage(
   positionHealth: number,
   lendingMarketAddress: string,
   totalDebtInMarket: number,
-  collatDollarAmount: number
+  collatDollarAmount: number,
+  dollarAmountBorrow: number
 ): string {
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
   const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -709,45 +716,170 @@ export function buildLendingMarketBorrowMessage(
   const vaultURL = getPoolURL(lendingMarketAddress);
   const vaultName = getVaultName(lendingMarketAddress);
 
-  var dollarAddon = getDollarAddOn(collatDollarAmount);
+  const dollarAddon = getDollarAddOn(collatDollarAmount);
+  const dollarAddonBorrow = getDollarAddOn(dollarAmountBorrow);
+
+  let userLine;
+  if (parsedCollatAmount < 1) {
+    userLine = `User${hyperlink(agentURL, shortenAgent)} borrowed ${formatForPrint(parsedBorrowedAmount)}${crvUSD_Link}${dollarAddonBorrow}`;
+  } else if (parsedBorrowedAmount < 1) {
+    userLine = `User${hyperlink(agentURL, shortenAgent)} added ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon}`;
+  } else {
+    userLine = `User${hyperlink(agentURL, shortenAgent)} borrowed ${formatForPrint(parsedBorrowedAmount)}${crvUSD_Link} and added ${formatForPrint(
+      parsedCollatAmount
+    )}${collat_Link}${dollarAddon}`;
+  }
+
+  const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
 
   return `
-  🚀${hyperlink(agentURL, shortenAgent)} borrowed ${formatForPrint(parsedBorrowedAmount)}${crvUSD_Link} against ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon}
-Health of Position: ${positionHealth.toFixed(2)}
+  LlamaLend event in${hyperlink(vaultURL, vaultName)} 📪
+
+${userLine}
+${positionHealthLine}
 Total Debt in${hyperlink(vaultURL, vaultName)}: ${Number(totalDebtInMarket.toFixed(0)).toLocaleString()}${crvUSD_Link}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
-export function buildLendingMarketRepayMessage(txHash: string): string {
+export function buildLendingMarketRepayMessage(
+  txHash: string,
+  lendingMarketAddress: string,
+  positionHealth: number,
+  totalDebtInMarket: number,
+  agentAddress: string,
+  parsedRepayAmount: number,
+  collatName: string,
+  collatAddress: string,
+  collatDollarAmount: number,
+  parsedCollatAmount: number,
+  repayDollarAmount: number
+): string {
+  const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+  const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+
+  const vaultURL = getPoolURL(lendingMarketAddress);
+  const vaultName = getVaultName(lendingMarketAddress);
+
+  const agentURL = getBuyerURL(agentAddress);
+  const shortenAgent = getAddressName(agentAddress);
+
+  const collat_URL = getTokenURL(collatAddress);
+  const collat_Link = hyperlink(collat_URL, collatName);
+
+  const collatDollarAddon = getDollarAddOn(collatDollarAmount);
+  const repayDollarAddon = getDollarAddOn(repayDollarAmount);
+
+  const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
+  const crvUSD_Link = hyperlink(crvUSD_URL, "crvUSD");
+
+  let userLine;
+  userLine = `User${hyperlink(agentURL, shortenAgent)} repaid ${Number(parsedRepayAmount.toFixed(0)).toLocaleString()}${crvUSD_Link}${repayDollarAddon} and received ${Number(
+    parsedCollatAmount.toFixed(0)
+  ).toLocaleString()}${collat_Link}${collatDollarAddon}`;
+
+  const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
+
+  return `
+  LlamaLend event in${hyperlink(vaultURL, vaultName)} 📪
+
+${userLine}
+${positionHealthLine}
+Total Debt in${hyperlink(vaultURL, vaultName)}: ${Number(totalDebtInMarket.toFixed(0)).toLocaleString()}${crvUSD_Link}
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+
+export function buildLendingMarketRemoveCollateralMessage(
+  parsedCollatRemovalAmount: number,
+  txHash: string,
+  lendingMarketAddress: string,
+  agentAddress: string,
+  positionHealth: number,
+  collatDollarAmount: number,
+  collatAddress: string,
+  collatName: string,
+  totalDebtInMarket: number
+): string {
+  const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+  const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+
+  const vaultURL = getPoolURL(lendingMarketAddress);
+  const vaultName = getVaultName(lendingMarketAddress);
+
+  const agentURL = getBuyerURL(agentAddress);
+  const shortenAgent = getAddressName(agentAddress);
+
+  const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
+
+  const collat_URL = getTokenURL(collatAddress);
+  const collat_Link = hyperlink(collat_URL, collatName);
+
+  const collatDollarAddOn = getDollarAddOn(collatDollarAmount);
+
+  const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
+  const crvUSD_Link = hyperlink(crvUSD_URL, "crvUSD");
+
+  return `
+LlamaLend event in${hyperlink(vaultURL, vaultName)} 📪
+
+User${hyperlink(agentURL, shortenAgent)} removed ${Number(parsedCollatRemovalAmount.toFixed(0)).toLocaleString()}${collat_Link}${collatDollarAddOn}
+${positionHealthLine}
+Total Debt in${hyperlink(vaultURL, vaultName)}: ${Number(totalDebtInMarket.toFixed(0)).toLocaleString()}${crvUSD_Link}
+Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+`;
+}
+
+export function buildLendingMarketHardLiquidateMessage(txHash: string): string {
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
   const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
 
   return `
-   Repay happened 
+   Hard-Liquidation happened 
    (todo)
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
 
-export function buildLendingMarketRemoveCollateralMessage(txHash: string): string {
+export function buildSoftLiquidateMessage(
+  txHash: string,
+  lendingMarketAddress: string,
+  agentAddress: string,
+  parsedSoftLiquidatedAmount: number,
+  collatAddress: string,
+  collatName: string,
+  collatDollarAmount: number,
+  parsedRepaidAmount: number,
+  repaidCrvUSDDollarAmount: number
+): string {
+  const vaultURL = getPoolURL(lendingMarketAddress);
+  const vaultName = getVaultName(lendingMarketAddress);
+
   const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
   const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
 
-  return `
-   Collat removal happened 
-   (todo)
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
-`;
-}
+  const agentURL = getBuyerURL(agentAddress);
+  const shortenAgent = getAddressName(agentAddress);
 
-export function buildLendingMarketLiquidateMessage(txHash: string): string {
-  const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
-  const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+  const collat_URL = getTokenURL(collatAddress);
+  const collat_Link = hyperlink(collat_URL, collatName);
+
+  const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
+  const crvUSD_Link = hyperlink(crvUSD_URL, "crvUSD");
+
+  const collatDollarAddOn = getDollarAddOn(collatDollarAmount);
+
+  const repaidTokenDollarAddOn = getDollarAddOn(repaidCrvUSDDollarAmount);
+
+  const discountAmount = collatDollarAmount - repaidCrvUSDDollarAmount;
 
   return `
-   Liquidation happened 
-   (todo)
+LlamaLend event in${hyperlink(vaultURL, vaultName)} 📪
+
+User${hyperlink(agentURL, shortenAgent)} soft-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link}${collatDollarAddOn} with ${Number(
+    parsedRepaidAmount.toFixed(0)
+  ).toLocaleString()}${crvUSD_Link}${repaidTokenDollarAddOn}
+Discount: $${Number(discountAmount.toFixed(0)).toLocaleString()}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }

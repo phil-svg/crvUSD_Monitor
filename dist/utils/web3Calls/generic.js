@@ -186,6 +186,7 @@ export async function subscribeToLendingMarketsEvents(CONTRACT, eventEmitter, ty
             console.log(CONTRACT._address, `subscribed to events successfully`);
         })
             .on("data", async (event) => {
+            console.log("LLAMMA LEND Event", event);
             eventEmitter.emit("newLendingMarketsEvent", { event, type, CONTRACT, lendingMarketAddress });
         })
             .on("error", (error) => {
@@ -231,5 +232,61 @@ export async function getWalletTokenBalance(walletAddress, tokenAddress, blockNu
     const TOKEN = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_BALANCE_OF, tokenAddress);
     const BALANCE = await web3Call(TOKEN, "balanceOf", [walletAddress], blockNumber);
     return BALANCE;
+}
+export async function checkWsConnectionViaNewBlocks(startTime = Date.now()) {
+    const RETRY_INTERVAL_MS = 10000; // Retry every 10 seconds
+    const MAX_RETRY_DURATION_MS = 120000; // Total retry duration of 2 minutes (120 seconds)
+    const BLOCK_INTERVAL_TIMEOUT_MS = 30000; // 30 seconds to wait for a new block
+    let blockTimeout; // Define a timeout variable to track the 30-second interval
+    // Function to reset/start the 30-second block watch timeout
+    const resetBlockTimeout = () => {
+        // Clear the existing timeout
+        if (blockTimeout)
+            clearTimeout(blockTimeout);
+        // Set a new timeout
+        blockTimeout = setTimeout(() => {
+            console.log("No new block has been seen in the last 30 seconds");
+        }, BLOCK_INTERVAL_TIMEOUT_MS);
+    };
+    try {
+        // Initialize the block watch timeout
+        resetBlockTimeout();
+        // Subscribe to new block headers
+        WEB3_WS_PROVIDER.eth
+            .subscribe("newBlockHeaders", async (error, blockHeader) => {
+            if (error) {
+                console.error(`Error subscribing to new block headers: ${error}`);
+                if (error.message.includes("connection not open")) {
+                    const currentTime = Date.now();
+                    if (currentTime - startTime < MAX_RETRY_DURATION_MS) {
+                        console.log(`Retrying to subscribe in ${RETRY_INTERVAL_MS / 1000} seconds...`);
+                        setTimeout(() => checkWsConnectionViaNewBlocks(startTime), RETRY_INTERVAL_MS);
+                    }
+                    else {
+                        console.error("Failed to subscribe to new block headers after 2 minutes.");
+                    }
+                }
+                return;
+            }
+            // Resetting the 30-second timeout each time a new block is received
+            resetBlockTimeout();
+            if (blockHeader.number !== null) {
+                const newBlockNumber = blockHeader.number;
+                // console.log("New block number:", newBlockNumber);
+            }
+        })
+            .on("error", console.error);
+    }
+    catch (err) {
+        console.error(`An error occurred in subscribeToNewBlocks: ${err.message}`);
+        const currentTime = Date.now();
+        if (currentTime - startTime < MAX_RETRY_DURATION_MS) {
+            console.log(`Retrying to subscribe in ${RETRY_INTERVAL_MS / 1000} seconds...`);
+            setTimeout(() => checkWsConnectionViaNewBlocks(startTime), RETRY_INTERVAL_MS);
+        }
+        else {
+            console.error("Failed to subscribe to new block headers after 2 minutes.");
+        }
+    }
 }
 //# sourceMappingURL=generic.js.map

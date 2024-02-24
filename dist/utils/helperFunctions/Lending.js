@@ -5,13 +5,13 @@ export function getVaultName(vaultAddress) {
     const VAULT_CRV_SHORT_ADDRESS = "0x044aC5160e5A04E09EBAE06D786fc151F2BA5ceD";
     const inputAddressLowerCase = vaultAddress.toLowerCase();
     if (inputAddressLowerCase === VAULT_wstETH_LONG_ADDRESS.toLowerCase()) {
-        return "wstETH Long Vault";
+        return "wstETH Long";
     }
     else if (inputAddressLowerCase === VAULT_CRV_LONG_ADDRESS.toLowerCase()) {
-        return "CRV Long Vault";
+        return "CRV Long";
     }
     else if (inputAddressLowerCase === VAULT_CRV_SHORT_ADDRESS.toLowerCase()) {
-        return "CRV Short Vault";
+        return "CRV Short";
     }
     return "Unknown Vault, dev?";
 }

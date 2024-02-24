@@ -37,6 +37,7 @@ async function launchClassicCrvUSDMonitoring() {
 async function main() {
     await telegramBotMain(ENV, eventEmitter);
     await launchCurveLendingMonitoring(eventEmitter);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     await launchClassicCrvUSDMonitoring();
 }
 await main();
