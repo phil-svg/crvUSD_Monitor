@@ -438,9 +438,11 @@ export function buildLendingMarketDepositMessage(lendingMarketAddress, txHash, a
     const crvUSD_URL = getTokenURL(ADDRESS_crvUSD);
     const crvUSD_Link = hyperlink(crvUSD_URL, "crvUSD");
     return `
-  🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositAmount)}${crvUSD_Link} into${hyperlink(vaultURL, vaultName)}
-Borrow APR: ${borrowApr.toFixed(4)}  Lend APR: ${lendApr.toFixed(4)} 
-Total Assets: ${Number(totalAssets.toFixed(0)).toLocaleString()}${crvUSD_Link}
+  LlamaLend event in${hyperlink(vaultURL, vaultName)} 📪
+
+🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositAmount)}${crvUSD_Link} into${hyperlink(vaultURL, vaultName)}
+Borrow APR: ${borrowApr.toFixed(2)}% | Lend APR: ${lendApr.toFixed(2)}%
+Total Assets in ${vaultName}: ${Number(totalAssets.toFixed(0)).toLocaleString()}${crvUSD_Link}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
@@ -557,10 +559,17 @@ export function buildSoftLiquidateMessage(txHash, lendingMarketAddress, agentAdd
     const collatDollarAddOn = getDollarAddOn(collatDollarAmount);
     const repaidTokenDollarAddOn = getDollarAddOn(repaidCrvUSDDollarAmount);
     const discountAmount = collatDollarAmount - repaidCrvUSDDollarAmount;
+    let direction;
+    if (collatDollarAmount > repaidCrvUSDDollarAmount) {
+        direction = "soft";
+    }
+    else {
+        direction = "de";
+    }
     return `
 LlamaLend event in${hyperlink(vaultURL, vaultName)} 📪
 
-User${hyperlink(agentURL, shortenAgent)} soft-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link}${collatDollarAddOn} with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${crvUSD_Link}${repaidTokenDollarAddOn}
+User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link}${collatDollarAddOn} with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${crvUSD_Link}${repaidTokenDollarAddOn}
 Discount: $${Number(discountAmount.toFixed(0)).toLocaleString()}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;

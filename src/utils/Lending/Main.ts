@@ -29,6 +29,29 @@ interface LendingMarketEventPayload {
   lendingMarketAddress: string;
 }
 
+interface EthereumEvent {
+  address: string;
+  blockHash: string;
+  blockNumber: number;
+  logIndex: number;
+  removed: boolean;
+  transactionHash: string;
+  transactionIndex: number;
+  id: string;
+  event: string;
+  signature: string;
+  returnValues: {
+    [key: string]: any; // This allows for flexibility in what returnValues can contain
+    user?: string;
+    collateral_increase?: string;
+    loan_increase?: string;
+  };
+  raw: {
+    data: string;
+    topics: string[];
+  };
+}
+
 async function processSingleVaultEvent(lendingMarketContract: any, lendingMarketAddress: string, event: any, eventEmitter: any): Promise<void> {
   console.log("event.event", event.event, event);
   if (event.event === "Deposit") {
@@ -180,115 +203,118 @@ async function processSingleAmmEvent(controllerContract: any, lendingMarketAddre
 }
 
 async function histoMode(eventEmitter: any) {
-  let web3 = getWeb3HttpProvider();
+  let Web3HttpProvider = getWeb3HttpProvider();
 
   const LENDING_LAUNCH_BLOCK = 19290923;
   const PRESENT = await getCurrentBlockNumber();
 
-  const START_BLOCK = LENDING_LAUNCH_BLOCK;
-  const END_BLOCK = PRESENT;
+  // const START_BLOCK = LENDING_LAUNCH_BLOCK;
+  // const END_BLOCK = PRESENT;
+
+  const START_BLOCK = 19302183;
+  const END_BLOCK = 19302183; //de-liq.
 
   // const START_BLOCK = 19298210;
-  // const END_BLOCK = 19298210;
+  // const END_BLOCK = 19298210; //soft-liq.
 
   // ###################################################### CRV LONG #######################################################
-  // const VAULT_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS);
-  // const PAST_EVENTS_VAULT_CRV_LONG = await getPastEvents(VAULT_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_VAULT_CRV_LONG)) {
-  //   for (const event of PAST_EVENTS_VAULT_CRV_LONG) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     await processSingleVaultEvent(VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
-  //     console.log("\n\n new Event in VAULT_CRV_LONG:", event);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const VAULT_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS);
+  const PAST_EVENTS_VAULT_CRV_LONG = await getPastEvents(VAULT_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_VAULT_CRV_LONG)) {
+    for (const event of PAST_EVENTS_VAULT_CRV_LONG) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      await processSingleVaultEvent(VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
+      console.log("\n\n new Event in VAULT_CRV_LONG:", event);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
-  // const CONTROLLER_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_CONTROLLER_CRV_LONG, CONTROLLER_CRV_LONG_ADDRESS);
-  // const PAST_EVENTS_CONTROLLER_CRV_LONG = await getPastEvents(CONTROLLER_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_CONTROLLER_CRV_LONG)) {
-  //   for (const event of PAST_EVENTS_CONTROLLER_CRV_LONG as EthereumEvent[]) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     console.log("\n\n new Event in CONTROLLER_CRV_LONG:", event);
-  //     await processSingleControllerEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const CONTROLLER_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_CONTROLLER_CRV_LONG, CONTROLLER_CRV_LONG_ADDRESS);
+  const PAST_EVENTS_CONTROLLER_CRV_LONG = await getPastEvents(CONTROLLER_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_CONTROLLER_CRV_LONG)) {
+    for (const event of PAST_EVENTS_CONTROLLER_CRV_LONG as EthereumEvent[]) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      console.log("\n\n new Event in CONTROLLER_CRV_LONG:", event);
+      await processSingleControllerEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
-  // const LLAMMA_CRVUSD_AMM_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_LONG_ADDRESS);
-  // const PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG = await getPastEvents(LLAMMA_CRVUSD_AMM_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG)) {
-  //   for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     await processSingleAmmEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const LLAMMA_CRVUSD_AMM_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_LONG_ADDRESS);
+  const PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG = await getPastEvents(LLAMMA_CRVUSD_AMM_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG)) {
+    for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      await processSingleAmmEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
   // ###################################################### wstETH LONG #######################################################
-  // const VAULT_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS);
-  // const PAST_EVENTS_VAULT_wstETH_LONG = await getPastEvents(VAULT_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_VAULT_wstETH_LONG)) {
-  //   for (const event of PAST_EVENTS_VAULT_wstETH_LONG) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     await processSingleVaultEvent(VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
-  //     console.log("\n\n new Event in VAULT_wstETH_LONG:", event);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const VAULT_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS);
+  const PAST_EVENTS_VAULT_wstETH_LONG = await getPastEvents(VAULT_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_VAULT_wstETH_LONG)) {
+    for (const event of PAST_EVENTS_VAULT_wstETH_LONG) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      await processSingleVaultEvent(VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
+      console.log("\n\n new Event in VAULT_wstETH_LONG:", event);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
-  // const CONTROLLER_wstETH_LONG = new Web3HttpProvider.eth.Contract(CONTROLLER_ABI_VAULT_wstETH_LONG, CONTROLLER_VAULT_wstETH_LONG_ADDRESS);
-  // const PAST_EVENTS_CONTROLLER_wstETH_LONG = await getPastEvents(CONTROLLER_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_CONTROLLER_wstETH_LONG)) {
-  //   for (const event of PAST_EVENTS_CONTROLLER_wstETH_LONG as EthereumEvent[]) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     console.log("\n\n new Event in CONTROLLER_wstETH_LONG:", event);
-  //     await processSingleControllerEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const CONTROLLER_wstETH_LONG = new Web3HttpProvider.eth.Contract(CONTROLLER_ABI_VAULT_wstETH_LONG, CONTROLLER_VAULT_wstETH_LONG_ADDRESS);
+  const PAST_EVENTS_CONTROLLER_wstETH_LONG = await getPastEvents(CONTROLLER_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_CONTROLLER_wstETH_LONG)) {
+    for (const event of PAST_EVENTS_CONTROLLER_wstETH_LONG as EthereumEvent[]) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      console.log("\n\n new Event in CONTROLLER_wstETH_LONG:", event);
+      await processSingleControllerEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
-  // const LLAMMA_CRVUSD_AMM_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_wstETH_LONG_ADDRESS);
-  // const PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG = await getPastEvents(LLAMMA_CRVUSD_AMM_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG)) {
-  //   for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     await processSingleAmmEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const LLAMMA_CRVUSD_AMM_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_wstETH_LONG_ADDRESS);
+  const PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG = await getPastEvents(LLAMMA_CRVUSD_AMM_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG)) {
+    for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      await processSingleAmmEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
   // ###################################################### CRV SHORT #######################################################
-  // const VAULT_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS);
-  // const PAST_EVENTS_VAULT_CRV_SHORT = await getPastEvents(VAULT_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_VAULT_CRV_SHORT)) {
-  //   for (const event of PAST_EVENTS_VAULT_CRV_SHORT) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     await processSingleVaultEvent(VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
-  //     console.log("\n\n new Event in VAULT_CRV_SHORT:", event);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const VAULT_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS);
+  const PAST_EVENTS_VAULT_CRV_SHORT = await getPastEvents(VAULT_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_VAULT_CRV_SHORT)) {
+    for (const event of PAST_EVENTS_VAULT_CRV_SHORT) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      await processSingleVaultEvent(VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
+      console.log("\n\n new Event in VAULT_CRV_SHORT:", event);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
-  // const CONTROLLER_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_CONTROLER_VAULT_CRV_SHORT, CONTROLER_VAULT_CRV_SHORT_ADDRESS);
-  // const PAST_EVENTS_CONTROLLER_CRV_SHORT = await getPastEvents(CONTROLLER_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_CONTROLLER_CRV_SHORT)) {
-  //   for (const event of PAST_EVENTS_CONTROLLER_CRV_SHORT as EthereumEvent[]) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     console.log("\n\n new Event in CONTROLLER_CRV_SHORT:", event);
-  //     await processSingleControllerEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const CONTROLLER_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_CONTROLER_VAULT_CRV_SHORT, CONTROLER_VAULT_CRV_SHORT_ADDRESS);
+  const PAST_EVENTS_CONTROLLER_CRV_SHORT = await getPastEvents(CONTROLLER_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_CONTROLLER_CRV_SHORT)) {
+    for (const event of PAST_EVENTS_CONTROLLER_CRV_SHORT as EthereumEvent[]) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      console.log("\n\n new Event in CONTROLLER_CRV_SHORT:", event);
+      await processSingleControllerEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
-  // const LLAMMA_CRVUSD_AMM_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_SHORT_ADDRESS);
-  // const PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT = await getPastEvents(LLAMMA_CRVUSD_AMM_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
-  // if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT)) {
-  //   for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT) {
-  //     // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-  //     await processSingleAmmEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-  //   }
-  // }
+  const LLAMMA_CRVUSD_AMM_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_SHORT_ADDRESS);
+  const PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT = await getPastEvents(LLAMMA_CRVUSD_AMM_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
+  if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT)) {
+    for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT) {
+      // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
+      await processSingleAmmEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
   console.log("done");
   await new Promise((resolve) => setTimeout(resolve, 500));

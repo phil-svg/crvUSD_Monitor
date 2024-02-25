@@ -20,12 +20,12 @@ export function getVaultName(vaultAddress: string): string {
 
 export async function getBorrowApr(contract: any, blockNumber: number) {
   const res = await web3Call(contract, "borrow_apr", [], blockNumber);
-  return res / 1e18;
+  return res / 1e16;
 }
 
 export async function getLendApr(contract: any, blockNumber: number) {
   const res = await web3Call(contract, "lend_apr", [], blockNumber);
-  return res / 1e18;
+  return res / 1e16;
 }
 
 export async function getTotalAssets(contract: any, blockNumber: number) {

@@ -17,11 +17,11 @@ export function getVaultName(vaultAddress) {
 }
 export async function getBorrowApr(contract, blockNumber) {
     const res = await web3Call(contract, "borrow_apr", [], blockNumber);
-    return res / 1e18;
+    return res / 1e16;
 }
 export async function getLendApr(contract, blockNumber) {
     const res = await web3Call(contract, "lend_apr", [], blockNumber);
-    return res / 1e18;
+    return res / 1e16;
 }
 export async function getTotalAssets(contract, blockNumber) {
     const res = await web3Call(contract, "totalAssets", [], blockNumber);
