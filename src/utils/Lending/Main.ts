@@ -22,22 +22,11 @@ import {
   CONTROLLER_ABI_VAULT_wstETH_LONG,
 } from "./Abis.js";
 
-interface EthereumEvent {
-  address: string;
-  blockHash: string;
-  blockNumber: number;
-  logIndex: number;
-  removed: boolean;
-  transactionHash: string;
-  transactionIndex: number;
-  id: string;
-  event: string;
-  signature: string;
-  returnValues: { [key: string]: any };
-  raw: {
-    data: string;
-    topics: string[];
-  };
+interface LendingMarketEventPayload {
+  event: any;
+  type: "Vault" | "Controller" | "Amm";
+  contract: any;
+  lendingMarketAddress: string;
 }
 
 async function processSingleVaultEvent(lendingMarketContract: any, lendingMarketAddress: string, event: any, eventEmitter: any): Promise<void> {
@@ -190,7 +179,9 @@ async function processSingleAmmEvent(controllerContract: any, lendingMarketAddre
   }
 }
 
-async function histoMode(Web3HttpProvider: any, eventEmitter: any) {
+async function histoMode(eventEmitter: any) {
+  let web3 = getWeb3HttpProvider();
+
   const LENDING_LAUNCH_BLOCK = 19290923;
   const PRESENT = await getCurrentBlockNumber();
 
@@ -344,15 +335,13 @@ async function liveMode(eventEmitter: any) {
   const LLAMMA_CRVUSD_AMM_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_SHORT_ADDRESS);
   subscribeToLendingMarketsEvents(LLAMMA_CRVUSD_AMM_CRV_SHORT, eventEmitter, "Amm", VAULT_CRV_SHORT_ADDRESS);
 
-  eventEmitter.on("newLendingMarketsEvent", async ({ event: event, type: type, contract: contract, lendingMarketAddress: lendingMarketAddress }: any) => {
-    console.log("new event in lending market:", lendingMarketAddress, ":", event);
+  eventEmitter.on("newLendingMarketsEvent", async ({ event, type, contract, lendingMarketAddress }: LendingMarketEventPayload) => {
+    console.log("\n\n\n\nnew event in lending market:", lendingMarketAddress, ":", event, "type:", type, "contract", contract);
     if (type === "Vault") {
       await processSingleVaultEvent(contract, lendingMarketAddress, event, eventEmitter);
-    }
-    if (type === "Controller") {
+    } else if (type === "Controller") {
       await processSingleControllerEvent(contract, lendingMarketAddress, event, eventEmitter);
-    }
-    if (type === "Amm") {
+    } else if (type === "Amm") {
       await processSingleAmmEvent(contract, lendingMarketAddress, event, eventEmitter);
     }
   });
@@ -385,7 +374,6 @@ const CONTROLER_VAULT_CRV_SHORT_ADDRESS = "0x43fc0f246F952ff12B757341A91cF404071
 const GAUGE_VAULT_CRV_SHORT_ADDRESS = "0x270100d0D9D26E16F458cC4F71224490Ebc8F234";
 
 export async function launchCurveLendingMonitoring(eventEmitter: any) {
-  let web3 = getWeb3HttpProvider();
-  // await histoMode(web3, eventEmitter);
+  // await histoMode(eventEmitter);
   await liveMode(eventEmitter);
 }

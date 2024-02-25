@@ -205,17 +205,17 @@ export async function subscribeToPegkeeperEvents(CONTRACT: any, eventEmitter: Ev
   }
 }
 
-export async function subscribeToLendingMarketsEvents(CONTRACT: any, eventEmitter: EventEmitter, type: "Vault" | "Controller" | "Amm", lendingMarketAddress: string) {
+export async function subscribeToLendingMarketsEvents(contract: any, eventEmitter: EventEmitter, type: "Vault" | "Controller" | "Amm", lendingMarketAddress: string) {
   try {
-    const subscription = CONTRACT.events.allEvents();
+    const subscription = contract.events.allEvents();
 
     subscription
       .on("connected", () => {
-        console.log(CONTRACT._address, `subscribed to events successfully`);
+        console.log(contract._address, `subscribed to LLammaLend events successfully`);
       })
       .on("data", async (event: any) => {
         console.log("LLAMMA LEND Event", event);
-        eventEmitter.emit("newLendingMarketsEvent", { event, type, CONTRACT, lendingMarketAddress });
+        eventEmitter.emit("newLendingMarketsEvent", { event, type, contract, lendingMarketAddress });
       })
       .on("error", (error: Error) => {
         console.error("Error in event subscription: ", error);

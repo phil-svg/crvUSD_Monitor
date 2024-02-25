@@ -105,7 +105,8 @@ async function processSingleAmmEvent(controllerContract, lendingMarketAddress, e
         eventEmitter.emit("newMessage", message);
     }
 }
-async function histoMode(Web3HttpProvider, eventEmitter) {
+async function histoMode(eventEmitter) {
+    let web3 = getWeb3HttpProvider();
     const LENDING_LAUNCH_BLOCK = 19290923;
     const PRESENT = await getCurrentBlockNumber();
     const START_BLOCK = LENDING_LAUNCH_BLOCK;
@@ -236,15 +237,15 @@ async function liveMode(eventEmitter) {
     // CRV SHORT
     const LLAMMA_CRVUSD_AMM_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_SHORT_ADDRESS);
     subscribeToLendingMarketsEvents(LLAMMA_CRVUSD_AMM_CRV_SHORT, eventEmitter, "Amm", VAULT_CRV_SHORT_ADDRESS);
-    eventEmitter.on("newLendingMarketsEvent", async ({ event: event, type: type, contract: contract, lendingMarketAddress: lendingMarketAddress }) => {
-        console.log("new event in lending market:", lendingMarketAddress, ":", event);
+    eventEmitter.on("newLendingMarketsEvent", async ({ event, type, contract, lendingMarketAddress }) => {
+        console.log("\n\n\n\nnew event in lending market:", lendingMarketAddress, ":", event, "type:", type, "contract", contract);
         if (type === "Vault") {
             await processSingleVaultEvent(contract, lendingMarketAddress, event, eventEmitter);
         }
-        if (type === "Controller") {
+        else if (type === "Controller") {
             await processSingleControllerEvent(contract, lendingMarketAddress, event, eventEmitter);
         }
-        if (type === "Amm") {
+        else if (type === "Amm") {
             await processSingleAmmEvent(contract, lendingMarketAddress, event, eventEmitter);
         }
     });
@@ -271,8 +272,7 @@ const AMM_CRV_SHORT_ADDRESS = "0x93e8F1F0e322c92E3cA3d2399823214991b47CB5";
 const CONTROLER_VAULT_CRV_SHORT_ADDRESS = "0x43fc0f246F952ff12B757341A91cF4040711dDE9";
 const GAUGE_VAULT_CRV_SHORT_ADDRESS = "0x270100d0D9D26E16F458cC4F71224490Ebc8F234";
 export async function launchCurveLendingMonitoring(eventEmitter) {
-    let web3 = getWeb3HttpProvider();
-    // await histoMode(web3, eventEmitter);
+    // await histoMode(eventEmitter);
     await liveMode(eventEmitter);
 }
 //# sourceMappingURL=Main.js.map

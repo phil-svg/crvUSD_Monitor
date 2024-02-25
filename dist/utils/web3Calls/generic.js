@@ -178,16 +178,16 @@ export async function subscribeToPegkeeperEvents(CONTRACT, eventEmitter) {
         console.log("Error in fetching events:", err.message);
     }
 }
-export async function subscribeToLendingMarketsEvents(CONTRACT, eventEmitter, type, lendingMarketAddress) {
+export async function subscribeToLendingMarketsEvents(contract, eventEmitter, type, lendingMarketAddress) {
     try {
-        const subscription = CONTRACT.events.allEvents();
+        const subscription = contract.events.allEvents();
         subscription
             .on("connected", () => {
-            console.log(CONTRACT._address, `subscribed to events successfully`);
+            console.log(contract._address, `subscribed to LLammaLend events successfully`);
         })
             .on("data", async (event) => {
             console.log("LLAMMA LEND Event", event);
-            eventEmitter.emit("newLendingMarketsEvent", { event, type, CONTRACT, lendingMarketAddress });
+            eventEmitter.emit("newLendingMarketsEvent", { event, type, contract, lendingMarketAddress });
         })
             .on("error", (error) => {
             console.error("Error in event subscription: ", error);
