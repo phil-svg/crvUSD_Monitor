@@ -3,7 +3,7 @@ import { ADDRESS_crvUSD, NULL_ADDRESS, addressAggMonetary } from "../Constants.j
 import { getPastEvents, subscribeToPegkeeperEvents, web3Call } from "../web3Calls/generic.js";
 import { ABI_AggMonetaryPolicy } from "../abis/ABI_AggMonetaryPolicy.js";
 import { ABI_Pegkeeper } from "../abis/ABI_Pegkeeper.js";
-import { ABI_hacked_Coins, ABI_hacked_Symbol } from "../abis/ABI_Hacked.js";
+import { ABI_hacked_Coins, ABI_hacked_Decimals, ABI_hacked_Symbol } from "../abis/ABI_Hacked.js";
 import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
 import { PegKeeperMessageContext, buildPegKeeperMessage } from "../telegram/TelegramBot.js";
 
@@ -64,10 +64,48 @@ async function getPegkeeperCoin(poolAddress: string, WEB3_WS_PROVIDER: any): Pro
   return null;
 }
 
+async function fetchDataWithRetry<T>(fetchFunction: () => Promise<T | null>, attempts: number = 3, delay: number = 200): Promise<T | null> {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const result = await fetchFunction();
+      if (result !== null) {
+        return result;
+      } else {
+        console.log(`Attempt ${attempt} returned null, retrying after ${delay}ms...`);
+      }
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed with error: ${error}. Retrying after ${delay}ms...`);
+    }
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+  console.log("Failed to fetch data after maximum retry attempts");
+  return null;
+}
+
 export async function getCoinSymbol(coinAddress: string, web3: any): Promise<string | null> {
-  const COIN = new web3.eth.Contract(ABI_hacked_Symbol, coinAddress);
-  let coinSymbol = await web3Call(COIN, "symbol", []);
-  return coinSymbol;
+  return fetchDataWithRetry(async () => {
+    const COIN = new web3.eth.Contract(ABI_hacked_Symbol, coinAddress);
+    try {
+      let coinSymbol = await web3Call(COIN, "symbol", []);
+      return coinSymbol;
+    } catch (error) {
+      console.error(`Failed to fetch symbol for address ${coinAddress}:`, error);
+      return null;
+    }
+  });
+}
+
+export async function getCoinDecimals(coinAddress: string, web3: any): Promise<string | null> {
+  return fetchDataWithRetry(async () => {
+    const COIN = new web3.eth.Contract(ABI_hacked_Decimals, coinAddress);
+    try {
+      let coinDecimals = await web3Call(COIN, "decimals", []);
+      return coinDecimals;
+    } catch (error) {
+      console.error(`Failed to fetch decimals for address ${coinAddress}:`, error);
+      return null;
+    }
+  });
 }
 
 async function getPegkeeperDebt(PEG_KEEPER_CONTRACT: any, blockNumber: number): Promise<number | null> {

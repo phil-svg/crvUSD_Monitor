@@ -19,6 +19,9 @@ export function getWeb3HttpProvider(): Web3 {
 
 export const ALCHEMY_KEY = process.env.WEB3_HTT!;
 
+export const web3HttpProvider = getWeb3HttpProvider();
+export const webWsProvider = getWeb3WsProvider();
+
 export async function getTxReceipt(txHash: string): Promise<any> {
   try {
     const response = await axios.post(

@@ -1,6 +1,7 @@
 import { Contract } from "web3-eth-contract";
 import { getWeb3WsProvider, getWeb3HttpProvider } from "../helperFunctions/Web3.js";
 import { EventEmitter } from "stream";
+import { EnrichedLendingMarketEvent } from "../Interfaces.js";
 
 const WEB3_WS_PROVIDER = getWeb3WsProvider();
 const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
@@ -205,7 +206,23 @@ export async function subscribeToPegkeeperEvents(CONTRACT: any, eventEmitter: Ev
   }
 }
 
-export async function subscribeToLendingMarketsEvents(contract: any, eventEmitter: EventEmitter, type: "Vault" | "Controller" | "Amm", llamaLendVaultAddress: string) {
+export async function subscribeToLendingMarketsEvents(
+  market: EnrichedLendingMarketEvent,
+  vaultContract: any,
+  controllerContact: any,
+  ammContract: any,
+  eventEmitter: EventEmitter,
+  type: "Vault" | "Controller" | "Amm"
+) {
+  let contract: any;
+  if (type === "Vault") {
+    contract = vaultContract;
+  } else if (type === "Controller") {
+    contract = controllerContact;
+  } else {
+    contract = ammContract;
+  }
+
   try {
     const subscription = contract.events.allEvents();
 
@@ -215,7 +232,7 @@ export async function subscribeToLendingMarketsEvents(contract: any, eventEmitte
       })
       .on("data", async (event: any) => {
         console.log("LLAMMA LEND Event", event);
-        eventEmitter.emit("newLendingMarketsEvent", { event, type, contract, llamaLendVaultAddress });
+        eventEmitter.emit("newLendingMarketsEvent", { market, event, type, vaultContract, controllerContact });
       })
       .on("error", (error: Error) => {
         console.error("Error in event subscription: ", error);

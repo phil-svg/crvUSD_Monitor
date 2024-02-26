@@ -5,3 +5,5 @@ export const ABI_hacked_Coins: AbiItem[] = [
 ];
 
 export const ABI_hacked_Symbol: AbiItem[] = [{ stateMutability: "view", type: "function", name: "symbol", inputs: [], outputs: [{ name: "", type: "string" }] }];
+
+export const ABI_hacked_Decimals: AbiItem[] = [{ stateMutability: "view", type: "function", name: "decimals", inputs: [], outputs: [{ name: "", type: "uint8" }] }];
