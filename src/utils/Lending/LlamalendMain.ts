@@ -128,12 +128,19 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
     let web3 = getWeb3HttpProvider();
     const txHash = event.transactionHash;
     const agentAddress = event.returnValues.buyer;
-    const parsedSoftLiquidatedAmount = event.returnValues.tokens_bought / 1e18;
+    let parsedSoftLiquidatedAmount;
+    let parsedRepaidAmount;
+    if (event.returnValues.sold_id === "0") {
+      parsedSoftLiquidatedAmount = event.returnValues.tokens_bought / 10 ** market.borrowed_token_decimals;
+      parsedRepaidAmount = event.returnValues.tokens_sold / 10 ** market.collateral_token_decimals;
+    } else {
+      parsedSoftLiquidatedAmount = event.returnValues.tokens_sold / 10 ** market.collateral_token_decimals;
+      parsedRepaidAmount = event.returnValues.tokens_bought / 10 ** market.borrowed_token_decimals;
+    }
     const collatDollarValue = await getCollatDollarValue(market, controllerContract, event.blockNumber);
     const collatDollarAmount = collatDollarValue * parsedSoftLiquidatedAmount;
-    const parsedRepaidAmount = event.returnValues.tokens_sold / 1e18;
     const crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
-    const repaidCrvUSDDollarAmount = parsedRepaidAmount * crvUSDPrice!;
+    const repaidBorrrowTokenDollarAmount = parsedRepaidAmount * crvUSDPrice!;
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
     const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
@@ -146,7 +153,7 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
       parsedSoftLiquidatedAmount,
       collatDollarAmount,
       parsedRepaidAmount,
-      repaidCrvUSDDollarAmount,
+      repaidBorrrowTokenDollarAmount,
       borrowApr,
       lendApr,
       totalDebtInMarket,
@@ -182,11 +189,11 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   const LENDING_LAUNCH_BLOCK = 19290923;
   const PRESENT = await getCurrentBlockNumber();
 
-  const START_BLOCK = LENDING_LAUNCH_BLOCK;
-  const END_BLOCK = PRESENT;
+  // const START_BLOCK = LENDING_LAUNCH_BLOCK;
+  // const END_BLOCK = PRESENT;
 
-  // const START_BLOCK = 19310990;
-  // const END_BLOCK = 19310990;
+  const START_BLOCK = 19310990;
+  const END_BLOCK = 19310990;
 
   for (const market of allLendingMarkets) {
     // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm

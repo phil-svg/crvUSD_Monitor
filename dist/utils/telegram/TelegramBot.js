@@ -562,7 +562,7 @@ export function buildLendingMarketHardLiquidateMessage(txHash) {
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
-export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidCrvUSDDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets) {
+export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets) {
     const vaultURL = getPoolURL(market.vault);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -572,9 +572,9 @@ export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSo
     const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
     const borrowedTokenURL = getTokenURL(market.borrowed_token);
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
-    const discountAmount = collatDollarAmount - repaidCrvUSDDollarAmount;
+    const discountAmount = Math.abs(collatDollarAmount - repaidBorrrowTokenDollarAmount);
     let direction;
-    if (collatDollarAmount > repaidCrvUSDDollarAmount) {
+    if (collatDollarAmount > repaidBorrrowTokenDollarAmount) {
         direction = "soft";
     }
     else {
@@ -583,7 +583,7 @@ export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSo
     return `
 LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
-User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link} ($${Number(collatDollarAmount.toFixed(0)).toLocaleString()}) with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink} ($${Number(repaidCrvUSDDollarAmount.toFixed(0)).toLocaleString()})
+User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link} ($${Number(collatDollarAmount.toFixed(0)).toLocaleString()}) with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink} ($${Number(repaidBorrrowTokenDollarAmount.toFixed(0)).toLocaleString()})
 Discount: $${Number(discountAmount.toFixed(0)).toLocaleString()}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
 Total Assets: ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink} | Total Debt: ${getShortenNumberFixed(totalDebtInMarket)}${borrowedTokenLink}

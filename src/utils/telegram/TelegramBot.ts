@@ -876,7 +876,7 @@ export function buildSoftLiquidateMessage(
   parsedSoftLiquidatedAmount: number,
   collatDollarAmount: number,
   parsedRepaidAmount: number,
-  repaidCrvUSDDollarAmount: number,
+  repaidBorrrowTokenDollarAmount: number,
   borrowApr: number,
   lendApr: number,
   totalDebtInMarket: number,
@@ -896,10 +896,10 @@ export function buildSoftLiquidateMessage(
   const borrowedTokenURL = getTokenURL(market.borrowed_token);
   const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
 
-  const discountAmount = collatDollarAmount - repaidCrvUSDDollarAmount;
+  const discountAmount = Math.abs(collatDollarAmount - repaidBorrrowTokenDollarAmount);
 
   let direction;
-  if (collatDollarAmount > repaidCrvUSDDollarAmount) {
+  if (collatDollarAmount > repaidBorrrowTokenDollarAmount) {
     direction = "soft";
   } else {
     direction = "de";
@@ -910,7 +910,7 @@ LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
 User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link} ($${Number(
     collatDollarAmount.toFixed(0)
-  ).toLocaleString()}) with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink} ($${Number(repaidCrvUSDDollarAmount.toFixed(0)).toLocaleString()})
+  ).toLocaleString()}) with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink} ($${Number(repaidBorrrowTokenDollarAmount.toFixed(0)).toLocaleString()})
 Discount: $${Number(discountAmount.toFixed(0)).toLocaleString()}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
 Total Assets: ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink} | Total Debt: ${getShortenNumberFixed(totalDebtInMarket)}${borrowedTokenLink}
