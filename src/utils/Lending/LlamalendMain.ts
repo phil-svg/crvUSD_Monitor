@@ -1,3 +1,4 @@
+import { EthereumEvent, LendingMarketEventPayload } from "../Interfaces.js";
 import { getBorrowApr, getCollatDollarValue, getCollateralTokenAddress, getLendApr, getPositionHealth, getTotalAssets, getTotalDebtInMarket } from "../helperFunctions/Lending.js";
 import { getWeb3HttpProvider, getWeb3WsProvider } from "../helperFunctions/Web3.js";
 import { getCoinSymbol } from "../pegkeeper/Pegkeeper.js";
@@ -12,81 +13,46 @@ import {
   buildSoftLiquidateMessage,
 } from "../telegram/TelegramBot.js";
 import { checkWsConnectionViaNewBlocks, getCurrentBlockNumber, getPastEvents, subscribeToLendingMarketsEvents } from "../web3Calls/generic.js";
-import {
-  ABI_CONTROLER_VAULT_CRV_SHORT,
-  ABI_CONTROLLER_CRV_LONG,
-  ABI_LLAMMA_LENDING_AMM,
-  ABI_VAULT_CRV_LONG,
-  ABI_VAULT_CRV_SHORT,
-  ABI_VAULT_wstETH_LONG,
-  CONTROLLER_ABI_VAULT_wstETH_LONG,
-} from "./Abis.js";
+import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_VAULT } from "./Abis.js";
 
-interface LendingMarketEventPayload {
-  event: any;
-  type: "Vault" | "Controller" | "Amm";
-  contract: any;
-  lendingMarketAddress: string;
-}
-
-interface EthereumEvent {
-  address: string;
-  blockHash: string;
-  blockNumber: number;
-  logIndex: number;
-  removed: boolean;
-  transactionHash: string;
-  transactionIndex: number;
-  id: string;
-  event: string;
-  signature: string;
-  returnValues: {
-    [key: string]: any; // This allows for flexibility in what returnValues can contain
-    user?: string;
-    collateral_increase?: string;
-    loan_increase?: string;
-  };
-  raw: {
-    data: string;
-    topics: string[];
-  };
-}
-
-async function processSingleVaultEvent(lendingMarketContract: any, lendingMarketAddress: string, event: any, eventEmitter: any): Promise<void> {
+async function processLlamalendVaultEvent(llamalendVaultContract: any, llamaLendVaultAddress: string, event: any, eventEmitter: any): Promise<void> {
   console.log("event.event", event.event, event);
   if (event.event === "Deposit") {
     const txHash = event.transactionHash;
-    const AGENT = event.returnValues.sender;
-    const PARSED_DEPOSIT_AMOUNT = event.returnValues.assets / 1e18;
-    const BORROW_APR = await getBorrowApr(lendingMarketContract, event.blockNumber);
-    const LEND_APR = await getLendApr(lendingMarketContract, event.blockNumber);
-    const TOTAL_ASSETS = await getTotalAssets(lendingMarketContract, event.blockNumber);
-    const message = buildLendingMarketDepositMessage(lendingMarketAddress, txHash, AGENT, PARSED_DEPOSIT_AMOUNT, BORROW_APR, LEND_APR, TOTAL_ASSETS);
-    console.log("Sending Message (Via processSingleVaultEvent)");
+    const agentAddress = event.returnValues.sender;
+    const parsedDepositAmount = event.returnValues.assets / 1e18;
+    const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
+    const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
+    const totalAssets = await getTotalAssets(llamalendVaultContract, event.blockNumber);
+    const message = buildLendingMarketDepositMessage(llamaLendVaultAddress, txHash, agentAddress, parsedDepositAmount, borrowApr, lendApr, totalAssets);
+    console.log("Sending Message (Via processLlamalendVaultEvent)");
     eventEmitter.emit("newMessage", message);
   }
   if (event.event === "Withdraw") {
     // todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo
     const txHash = event.transactionHash;
     const message = buildLendingMarketWithdrawMessage(txHash);
-    console.log("Sending Message (Via processSingleVaultEvent)");
+    console.log("Sending Message (Via processLlamalendVaultEvent)");
     eventEmitter.emit("newMessage", message);
   }
 }
 
-async function processSingleControllerEvent(controllerContract: any, lendingMarketAddress: string, event: any, eventEmitter: any) {
+async function processLlamalendControllerEvent(controllerContract: any, llamaLendVaultAddress: string, event: any, eventEmitter: any) {
   let web3 = getWeb3HttpProvider();
+  const llamalendVaultContract = new web3.eth.Contract(ABI_LLAMALEND_VAULT, llamaLendVaultAddress);
+  const txHash = event.transactionHash;
+  const agentAddress = event.returnValues.user;
+  const collatAddress = await getCollateralTokenAddress(controllerContract);
+  const collatName = await getCoinSymbol(collatAddress, web3);
+  const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
+  const totalDebtInMarket = await getTotalDebtInMarket(controllerContract, event.blockNumber);
+  const collatDollarValue = await getCollatDollarValue(controllerContract, event.blockNumber);
+  const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
+  const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
 
   if (event.event === "Borrow") {
-    const txHash = event.transactionHash;
-    const agentAddress = event.returnValues.user;
     const parsedBorrowedAmount = event.returnValues.loan_increase / 1e18;
     const parsedCollatAmount = event.returnValues.collateral_increase / 1e18;
-    const collatAddress = await getCollateralTokenAddress(controllerContract);
-    const collatName = await getCoinSymbol(collatAddress, web3);
-    const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
-    const totalDebtInMarket = await getTotalDebtInMarket(controllerContract, event.blockNumber);
-    const collatDollarValue = await getCollatDollarValue(controllerContract, event.blockNumber);
     const collatDollarAmount = collatDollarValue * parsedCollatAmount;
     const crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
     const dollarAmountBorrow = parsedBorrowedAmount * crvUSDPrice!;
@@ -98,30 +64,25 @@ async function processSingleControllerEvent(controllerContract: any, lendingMark
       collatName!,
       collatAddress,
       positionHealth,
-      lendingMarketAddress,
+      llamaLendVaultAddress,
       totalDebtInMarket,
       collatDollarAmount,
-      dollarAmountBorrow
+      dollarAmountBorrow,
+      borrowApr,
+      lendApr
     );
-    console.log("Sending Message (Via processSingleControllerEvent)");
+    console.log("Sending Message (Via processLlamalendControllerEvent)");
     eventEmitter.emit("newMessage", message);
   }
   if (event.event === "Repay") {
-    const txHash = event.transactionHash;
-    const agentAddress = event.returnValues.user;
-    const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
-    const totalDebtInMarket = await getTotalDebtInMarket(controllerContract, event.blockNumber);
     const parsedRepayAmount = event.returnValues.loan_decrease / 1e18;
-    const collatAddress = await getCollateralTokenAddress(controllerContract);
-    const collatName = await getCoinSymbol(collatAddress, web3);
-    const collatDollarValue = await getCollatDollarValue(controllerContract, event.blockNumber);
     const parsedCollatAmount = event.returnValues.collateral_decrease / 1e18;
     const collatDollarAmount = collatDollarValue * parsedCollatAmount;
     const crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
     const repayDollarAmount = parsedRepayAmount * crvUSDPrice!;
     const message = buildLendingMarketRepayMessage(
       txHash,
-      lendingMarketAddress,
+      llamaLendVaultAddress,
       positionHealth,
       totalDebtInMarket,
       agentAddress,
@@ -130,47 +91,43 @@ async function processSingleControllerEvent(controllerContract: any, lendingMark
       collatAddress,
       collatDollarAmount,
       parsedCollatAmount,
-      repayDollarAmount
+      repayDollarAmount,
+      borrowApr,
+      lendApr
     );
-    console.log("Sending Message (Via processSingleControllerEvent)");
+    console.log("Sending Message (Via processLlamalendControllerEvent)");
     eventEmitter.emit("newMessage", message);
   }
   if (event.event === "RemoveCollateral") {
-    const txHash = event.transactionHash;
-    const parsedCollatRemovalAmount = event.returnValues.collateral_decrease / 1e18;
-    const agentAddress = event.returnValues.user;
-    const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
-    const collatDollarValue = await getCollatDollarValue(controllerContract, event.blockNumber);
-    const collatDollarAmount = collatDollarValue * parsedCollatRemovalAmount;
-    const collatAddress = await getCollateralTokenAddress(controllerContract);
-    const collatName = await getCoinSymbol(collatAddress, web3);
-    const totalDebtInMarket = await getTotalDebtInMarket(controllerContract, event.blockNumber);
+    const parsedCollatAmount = event.returnValues.collateral_decrease / 1e18;
+    const collatDollarAmount = collatDollarValue * parsedCollatAmount;
     const message = buildLendingMarketRemoveCollateralMessage(
-      parsedCollatRemovalAmount,
+      parsedCollatAmount,
       txHash,
-      lendingMarketAddress,
+      llamaLendVaultAddress,
       agentAddress,
       positionHealth,
       collatDollarAmount,
       collatAddress,
       collatName!,
-      totalDebtInMarket
+      totalDebtInMarket,
+      borrowApr,
+      lendApr
     );
-    console.log("Sending Message (Via processSingleControllerEvent)");
+    console.log("Sending Message (Via processLlamalendControllerEvent)");
     eventEmitter.emit("newMessage", message);
   }
 
   // HARD-LIQUIDATION
   if (event.event === "Liquidate") {
     // todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo// todo
-    const txHash = event.transactionHash;
     const message = buildLendingMarketHardLiquidateMessage(txHash);
-    console.log("Sending Message (Via processSingleControllerEvent)");
+    console.log("Sending Message (Via processLlamalendControllerEvent)");
     eventEmitter.emit("newMessage", message);
   }
 }
 
-async function processSingleAmmEvent(controllerContract: any, lendingMarketAddress: string, event: any, eventEmitter: any) {
+async function processLlamalendAmmEvent(controllerContract: any, llamaLendVaultAddress: string, event: any, eventEmitter: any) {
   if (event.event === "TokenExchange") {
     console.log("Soft Liquidation spotted");
     console.log("\n\n new Event in LLAMMA_CRVUSD_AMM:", event);
@@ -186,18 +143,26 @@ async function processSingleAmmEvent(controllerContract: any, lendingMarketAddre
     const parsedRepaidAmount = event.returnValues.tokens_sold / 1e18;
     const crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
     const repaidCrvUSDDollarAmount = parsedRepaidAmount * crvUSDPrice!;
+    const totalDebtInMarket = await getTotalDebtInMarket(controllerContract, event.blockNumber);
+    const llamalendVaultContract = new web3.eth.Contract(ABI_LLAMALEND_VAULT, llamaLendVaultAddress);
+    const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
+    const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
+
     const message = buildSoftLiquidateMessage(
       txHash,
-      lendingMarketAddress,
+      llamaLendVaultAddress,
       agentAddress,
       parsedSoftLiquidatedAmount,
       collatAddress,
       collatName!,
       collatDollarAmount,
       parsedRepaidAmount,
-      repaidCrvUSDDollarAmount
+      repaidCrvUSDDollarAmount,
+      borrowApr,
+      lendApr,
+      totalDebtInMarket
     );
-    console.log("Sending Message (Via processSingleAmmEvent)");
+    console.log("Sending Message (Via processLlamalendAmmEvent)");
     eventEmitter.emit("newMessage", message);
   }
 }
@@ -208,110 +173,107 @@ async function histoMode(eventEmitter: any) {
   const LENDING_LAUNCH_BLOCK = 19290923;
   const PRESENT = await getCurrentBlockNumber();
 
-  // const START_BLOCK = LENDING_LAUNCH_BLOCK;
-  // const END_BLOCK = PRESENT;
+  const START_BLOCK = LENDING_LAUNCH_BLOCK;
+  const END_BLOCK = PRESENT;
 
-  const START_BLOCK = 19302183;
-  const END_BLOCK = 19302183; //de-liq.
-
-  // const START_BLOCK = 19298210;
-  // const END_BLOCK = 19298210; //soft-liq.
+  // const START_BLOCK = 19302429;
+  // const END_BLOCK = 19302429;
 
   // ###################################################### CRV LONG #######################################################
-  const VAULT_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS);
+  const VAULT_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_VAULT, VAULT_CRV_LONG_ADDRESS);
   const PAST_EVENTS_VAULT_CRV_LONG = await getPastEvents(VAULT_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_VAULT_CRV_LONG)) {
     for (const event of PAST_EVENTS_VAULT_CRV_LONG) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-      await processSingleVaultEvent(VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
+      await processLlamalendVaultEvent(VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
       console.log("\n\n new Event in VAULT_CRV_LONG:", event);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
-  const CONTROLLER_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_CONTROLLER_CRV_LONG, CONTROLLER_CRV_LONG_ADDRESS);
+  const CONTROLLER_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_CONTROLLER, CONTROLLER_CRV_LONG_ADDRESS);
   const PAST_EVENTS_CONTROLLER_CRV_LONG = await getPastEvents(CONTROLLER_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_CONTROLLER_CRV_LONG)) {
     for (const event of PAST_EVENTS_CONTROLLER_CRV_LONG as EthereumEvent[]) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
       console.log("\n\n new Event in CONTROLLER_CRV_LONG:", event);
-      await processSingleControllerEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
+      await processLlamalendControllerEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
-  const LLAMMA_CRVUSD_AMM_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_LONG_ADDRESS);
+  const LLAMMA_CRVUSD_AMM_CRV_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, AMM_CRV_LONG_ADDRESS);
   const PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG = await getPastEvents(LLAMMA_CRVUSD_AMM_CRV_LONG, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG)) {
     for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_LONG) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-      await processSingleAmmEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
+      await processLlamalendAmmEvent(CONTROLLER_CRV_LONG, VAULT_CRV_LONG_ADDRESS, event, eventEmitter);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
   // ###################################################### wstETH LONG #######################################################
-  const VAULT_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS);
+  const VAULT_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_VAULT, VAULT_wstETH_LONG_ADDRESS);
   const PAST_EVENTS_VAULT_wstETH_LONG = await getPastEvents(VAULT_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_VAULT_wstETH_LONG)) {
     for (const event of PAST_EVENTS_VAULT_wstETH_LONG) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-      await processSingleVaultEvent(VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
+      await processLlamalendVaultEvent(VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
       console.log("\n\n new Event in VAULT_wstETH_LONG:", event);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
-  const CONTROLLER_wstETH_LONG = new Web3HttpProvider.eth.Contract(CONTROLLER_ABI_VAULT_wstETH_LONG, CONTROLLER_VAULT_wstETH_LONG_ADDRESS);
+  const CONTROLLER_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_CONTROLLER, CONTROLLER_VAULT_wstETH_LONG_ADDRESS);
   const PAST_EVENTS_CONTROLLER_wstETH_LONG = await getPastEvents(CONTROLLER_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_CONTROLLER_wstETH_LONG)) {
     for (const event of PAST_EVENTS_CONTROLLER_wstETH_LONG as EthereumEvent[]) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
       console.log("\n\n new Event in CONTROLLER_wstETH_LONG:", event);
-      await processSingleControllerEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
+      await processLlamalendControllerEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
-  const LLAMMA_CRVUSD_AMM_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_wstETH_LONG_ADDRESS);
+  const LLAMMA_CRVUSD_AMM_wstETH_LONG = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, AMM_wstETH_LONG_ADDRESS);
   const PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG = await getPastEvents(LLAMMA_CRVUSD_AMM_wstETH_LONG, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG)) {
     for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_wstETH_LONG) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-      await processSingleAmmEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
+      await processLlamalendAmmEvent(CONTROLLER_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS, event, eventEmitter);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
   // ###################################################### CRV SHORT #######################################################
-  const VAULT_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS);
+  const VAULT_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_VAULT, VAULT_CRV_SHORT_ADDRESS);
   const PAST_EVENTS_VAULT_CRV_SHORT = await getPastEvents(VAULT_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_VAULT_CRV_SHORT)) {
     for (const event of PAST_EVENTS_VAULT_CRV_SHORT) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-      await processSingleVaultEvent(VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
+      await processLlamalendVaultEvent(VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
       console.log("\n\n new Event in VAULT_CRV_SHORT:", event);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
-  const CONTROLLER_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_CONTROLER_VAULT_CRV_SHORT, CONTROLER_VAULT_CRV_SHORT_ADDRESS);
+  const CONTROLLER_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_CONTROLLER, CONTROLER_VAULT_CRV_SHORT_ADDRESS);
   const PAST_EVENTS_CONTROLLER_CRV_SHORT = await getPastEvents(CONTROLLER_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_CONTROLLER_CRV_SHORT)) {
     for (const event of PAST_EVENTS_CONTROLLER_CRV_SHORT as EthereumEvent[]) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
       console.log("\n\n new Event in CONTROLLER_CRV_SHORT:", event);
-      await processSingleControllerEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
+      await processLlamalendControllerEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
-  const LLAMMA_CRVUSD_AMM_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_SHORT_ADDRESS);
+  const LLAMMA_CRVUSD_AMM_CRV_SHORT = new Web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, AMM_CRV_SHORT_ADDRESS);
   const PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT = await getPastEvents(LLAMMA_CRVUSD_AMM_CRV_SHORT, "allEvents", START_BLOCK, END_BLOCK);
   if (Array.isArray(PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT)) {
     for (const event of PAST_EVENTS_LLAMMA_CRVUSD_AMM_CRV_SHORT) {
       // if ((event as EthereumEvent).transactionHash !== "0x3d71d787c1bbfd465b437688222309e461653298323d978f7a8219140aebbdba") continue;
-      await processSingleAmmEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
+      await processLlamalendAmmEvent(CONTROLLER_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS, event, eventEmitter);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
@@ -326,67 +288,57 @@ async function liveMode(eventEmitter: any) {
   await checkWsConnectionViaNewBlocks();
 
   // CRV LONG
-  const VAULT_CRV_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_VAULT_CRV_LONG, VAULT_CRV_LONG_ADDRESS);
+  const VAULT_CRV_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_VAULT, VAULT_CRV_LONG_ADDRESS);
   subscribeToLendingMarketsEvents(VAULT_CRV_LONG, eventEmitter, "Vault", VAULT_CRV_LONG_ADDRESS);
 
   // CRV LONG
-  const CONTROLLER_CRV_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLLER_CRV_LONG, CONTROLLER_CRV_LONG_ADDRESS);
+  const CONTROLLER_CRV_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_CONTROLLER, CONTROLLER_CRV_LONG_ADDRESS);
   subscribeToLendingMarketsEvents(CONTROLLER_CRV_LONG, eventEmitter, "Controller", VAULT_CRV_LONG_ADDRESS);
 
   // CRV LONG
-  const LLAMMA_CRVUSD_AMM_CRV_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_LONG_ADDRESS);
+  const LLAMMA_CRVUSD_AMM_CRV_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, AMM_CRV_LONG_ADDRESS);
   subscribeToLendingMarketsEvents(LLAMMA_CRVUSD_AMM_CRV_LONG, eventEmitter, "Amm", VAULT_CRV_LONG_ADDRESS);
 
   // wsETH LONG
-  const VAULT_wstETH_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_VAULT_wstETH_LONG, VAULT_wstETH_LONG_ADDRESS);
+  const VAULT_wstETH_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_VAULT, VAULT_wstETH_LONG_ADDRESS);
   subscribeToLendingMarketsEvents(VAULT_wstETH_LONG, eventEmitter, "Vault", VAULT_wstETH_LONG_ADDRESS);
 
   // wsETH LONG
-  const CONTROLLER_VAULT_wstETH_LONG = new WEB3_WS_PROVIDER.eth.Contract(CONTROLLER_ABI_VAULT_wstETH_LONG, CONTROLLER_VAULT_wstETH_LONG_ADDRESS);
+  const CONTROLLER_VAULT_wstETH_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_CONTROLLER, CONTROLLER_VAULT_wstETH_LONG_ADDRESS);
   subscribeToLendingMarketsEvents(CONTROLLER_VAULT_wstETH_LONG, eventEmitter, "Controller", VAULT_wstETH_LONG_ADDRESS);
 
   // wsETH LONG
-  const LLAMMA_CRVUSD_AMM_wstETH_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_wstETH_LONG_ADDRESS);
+  const LLAMMA_CRVUSD_AMM_wstETH_LONG = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, AMM_wstETH_LONG_ADDRESS);
   subscribeToLendingMarketsEvents(LLAMMA_CRVUSD_AMM_wstETH_LONG, eventEmitter, "Amm", VAULT_wstETH_LONG_ADDRESS);
 
   // CRV SHORT
-  const VAULT_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_VAULT_CRV_SHORT, VAULT_CRV_SHORT_ADDRESS);
+  const VAULT_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_VAULT, VAULT_CRV_SHORT_ADDRESS);
   subscribeToLendingMarketsEvents(VAULT_CRV_SHORT, eventEmitter, "Vault", VAULT_CRV_SHORT_ADDRESS);
 
   // CRV SHORT
-  const CONTROLER_VAULT_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_CONTROLER_VAULT_CRV_SHORT, CONTROLER_VAULT_CRV_SHORT_ADDRESS);
+  const CONTROLER_VAULT_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_CONTROLLER, CONTROLER_VAULT_CRV_SHORT_ADDRESS);
   subscribeToLendingMarketsEvents(CONTROLER_VAULT_CRV_SHORT, eventEmitter, "Controller", VAULT_CRV_SHORT_ADDRESS);
 
   // CRV SHORT
-  const LLAMMA_CRVUSD_AMM_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMMA_LENDING_AMM, AMM_CRV_SHORT_ADDRESS);
+  const LLAMMA_CRVUSD_AMM_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, AMM_CRV_SHORT_ADDRESS);
   subscribeToLendingMarketsEvents(LLAMMA_CRVUSD_AMM_CRV_SHORT, eventEmitter, "Amm", VAULT_CRV_SHORT_ADDRESS);
 
-  eventEmitter.on("newLendingMarketsEvent", async ({ event, type, contract, lendingMarketAddress }: LendingMarketEventPayload) => {
-    console.log("\n\n\n\nnew event in lending market:", lendingMarketAddress, ":", event, "type:", type, "contract", contract);
+  eventEmitter.on("newLendingMarketsEvent", async ({ event, type, contract, llamaLendVaultAddress }: LendingMarketEventPayload) => {
+    console.log("\n\n\n\nnew event in lending market:", llamaLendVaultAddress, ":", event, "type:", type, "contract", contract);
     if (type === "Vault") {
-      await processSingleVaultEvent(contract, lendingMarketAddress, event, eventEmitter);
+      await processLlamalendVaultEvent(contract, llamaLendVaultAddress, event, eventEmitter);
     } else if (type === "Controller") {
-      await processSingleControllerEvent(contract, lendingMarketAddress, event, eventEmitter);
+      await processLlamalendControllerEvent(contract, llamaLendVaultAddress, event, eventEmitter);
     } else if (type === "Amm") {
-      await processSingleAmmEvent(contract, lendingMarketAddress, event, eventEmitter);
+      await processLlamalendAmmEvent(contract, llamaLendVaultAddress, event, eventEmitter);
     }
   });
 }
 
-const LLAMMA_CRVUSD_AMM_ADDRESS = "0xafC1ab86045Cb2a07C23399dbE64b56D1B8B3239";
-// const LLAMMA_CRVUSD_AMM_ADDRESS = "0x4f37395BdFbE3A0dca124ad3C9DbFe6A6cbc31D6"; ?
-
-const crvUSD_CONTROLLER_ADDRESS = "0x5473B1BcBbC45d38d8fBb50a18a73aFb8B0637A7";
-const VAULT_ADDRESS = "0x596F8E49acE6fC8e09B561972360DC216f1c2A1f";
-const CryptoFromPool_ADDRESS = "0x9164e210d123e6566DaF113136a73684C4AB01e2";
-const SEMI_LOG_MONETARY_POLICY_ADDRESS = "0xa7E98815c0193E01165720C3abea43B885ae67FD";
-const LIQUIDITY_GAUGE_V6_ADDRESS = "0x00B71A425Db7C8B65a46CF39c23A188e10A2DE99";
-const ONE_WAY_LENDING_FACTORY_ADDRESS = "0xc67a44D958eeF0ff316C3a7c9E14FB96f6DedAA3";
-
 // Markets:
-const VAULT_CRV_LONG_ADDRESS = "0x67A18c18709C09D48000B321c6E1cb09F7181211"; // txHit Mich deposit
+const VAULT_CRV_LONG_ADDRESS = "0x67A18c18709C09D48000B321c6E1cb09F7181211";
 const AMM_CRV_LONG_ADDRESS = "0xafC1ab86045Cb2a07C23399dbE64b56D1B8B3239";
-const CONTROLLER_CRV_LONG_ADDRESS = "0x7443944962D04720f8c220C0D25f56F869d6EfD4"; // taking loans from controller
+const CONTROLLER_CRV_LONG_ADDRESS = "0x7443944962D04720f8c220C0D25f56F869d6EfD4";
 const GAUGE_VAULT_CRV_LONG_ADDRESS = "0xAA90BE8bd52aeA49314dFc6e385e21A4e9c4ea0c";
 
 const VAULT_wstETH_LONG_ADDRESS = "0xE21C518a09b26Bf65B16767B97249385f12780d9";

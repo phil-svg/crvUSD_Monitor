@@ -15,6 +15,9 @@ export function getVaultName(vaultAddress) {
     }
     return "Unknown Vault, dev?";
 }
+function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 export async function getBorrowApr(contract, blockNumber) {
     const res = await web3Call(contract, "borrow_apr", [], blockNumber);
     return res / 1e16;

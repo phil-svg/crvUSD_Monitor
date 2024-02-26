@@ -6,7 +6,7 @@ import { handleLiveEvents, manageMarket, watchingForNewMarketOpenings } from "./
 import { ADDRESS_crvUSD_ControllerFactory } from "./utils/Constants.js";
 import { livemodePegKeepers } from "./utils/pegkeeper/Pegkeeper.js";
 import { ABI_crvUSD_ControllerFactory } from "./utils/abis/ABI_crvUSD_ControllerFactory.js";
-import { launchCurveLendingMonitoring } from "./utils/Lending/Main.js";
+import { launchCurveLendingMonitoring } from "./utils/Lending/LlamalendMain.js";
 console.clear();
 export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 100000;
 export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 28000;
