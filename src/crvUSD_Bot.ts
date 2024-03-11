@@ -39,6 +39,7 @@ async function launchClassicCrvUSDMonitoring() {
   if (!(ADDED_MARKET_EVENTS instanceof Array)) return;
   for (const MARKET_CREATION of ADDED_MARKET_EVENTS) {
     await manageMarket(MARKET_CREATION, eventEmitter);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   await watchingForNewMarketOpenings(crvUSD_ControllerFactory, eventEmitter);
   await handleLiveEvents(eventEmitter);

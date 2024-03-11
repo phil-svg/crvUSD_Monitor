@@ -7,6 +7,7 @@ import { ADDRESS_crvUSD, SWAP_ROUTER } from "../Constants.js";
 import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { generateDefiSaverUrl } from "../defisaver/DefiSaver.js";
 dotenv.config({ path: "../.env" });
 function getTokenURL(tokenAddress) {
     return "https://etherscan.io/token/" + tokenAddress;
@@ -201,7 +202,7 @@ Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${g
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
-export async function buildRemoveCollateralMessage(formattedEventData) {
+export async function buildRemoveCollateralMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, collateral_decrease, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     if (dollarAmount < MIN_REPAYED_AMOUNT_WORTH_PRINTING)
         return "don't print small amounts";
@@ -216,16 +217,27 @@ export async function buildRemoveCollateralMessage(formattedEventData) {
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     if (borrowerHealth !== "no loan")
         borrowerHealth = formatForPrint(borrowerHealth * 100);
+    let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
+    if (isManualSmartWalletTx) {
+        const url = generateDefiSaverUrl(defiSaverUser);
+        healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Manually via${hyperlink(url, "defisaver.com")} 🛟`;
+    }
+    else if (isDefiSaverAutomatedTx) {
+        const url = generateDefiSaverUrl(defiSaverUser);
+        healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Automated via${hyperlink(url, "defisaver.com")} 🛟`;
+    }
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
-Health of Borrower: ${borrowerHealth}
+${healthAndDefiSaverLine}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
-export async function buildRepayMessage(formattedEventData) {
+export async function buildRepayMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_decrease, loan_decrease, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = getAddressName(buyer);
@@ -241,16 +253,27 @@ export async function buildRepayMessage(formattedEventData) {
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     if (borrowerHealth !== "no loan")
         borrowerHealth = formatForPrint(borrowerHealth * 100);
+    let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
+    if (isManualSmartWalletTx) {
+        const url = generateDefiSaverUrl(defiSaverUser);
+        healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Manually via${hyperlink(url, "defisaver.com")} 🛟`;
+    }
+    else if (isDefiSaverAutomatedTx) {
+        const url = generateDefiSaverUrl(defiSaverUser);
+        healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Automated via${hyperlink(url, "defisaver.com")} 🛟`;
+    }
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
-Health of Borrower: ${borrowerHealth}
+${healthAndDefiSaverLine}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
   `;
 }
-export async function buildBorrowMessage(formattedEventData) {
+export async function buildBorrowMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser) {
     let { crvUSD_price, borrowerHealth, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, collateral_increase, collateral_increase_value, loan_increase, txHash, buyer, crvUSDinCirculation, borrowRate, } = formattedEventData;
     const buyerURL = getBuyerURL(buyer);
     const shortenBuyer = getAddressName(buyer);
@@ -275,9 +298,20 @@ export async function buildBorrowMessage(formattedEventData) {
     let marketHealthPrint = getMarketHealthPrint(qtyCollat, collateralName, collatValue, marketBorrowedAmount);
     if (borrowerHealth !== "no loan")
         borrowerHealth = formatForPrint(borrowerHealth * 100);
+    let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
+    if (isManualSmartWalletTx) {
+        const url = generateDefiSaverUrl(defiSaverUser);
+        healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Manually via${hyperlink(url, "defisaver.com")} 🛟`;
+    }
+    else if (isDefiSaverAutomatedTx) {
+        const url = generateDefiSaverUrl(defiSaverUser);
+        healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Automated via${hyperlink(url, "defisaver.com")} 🛟`;
+    }
     return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
-Health of Borrower: ${borrowerHealth}
+${healthAndDefiSaverLine}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  

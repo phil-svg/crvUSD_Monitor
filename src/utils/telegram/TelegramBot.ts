@@ -9,6 +9,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { EnrichedLendingMarketEvent } from "../Interfaces.js";
+import { generateDefiSaverUrl } from "../defisaver/DefiSaver.js";
 dotenv.config({ path: "../.env" });
 
 function getTokenURL(tokenAddress: string) {
@@ -241,7 +242,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 `;
 }
 
-export async function buildRemoveCollateralMessage(formattedEventData: any) {
+export async function buildRemoveCollateralMessage(formattedEventData: any, isDefiSaverAutomatedTx: boolean, isManualSmartWalletTx: boolean, defiSaverUser: string) {
   let {
     crvUSD_price,
     borrowerHealth,
@@ -276,9 +277,20 @@ export async function buildRemoveCollateralMessage(formattedEventData: any) {
 
   if (borrowerHealth !== "no loan") borrowerHealth = formatForPrint(borrowerHealth * 100);
 
+  let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
+  if (isManualSmartWalletTx) {
+    const url = generateDefiSaverUrl(defiSaverUser);
+    healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Manually via${hyperlink(url, "defisaver.com")} 🛟`;
+  } else if (isDefiSaverAutomatedTx) {
+    const url = generateDefiSaverUrl(defiSaverUser);
+    healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Automated via${hyperlink(url, "defisaver.com")} 🛟`;
+  }
+
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
-Health of Borrower: ${borrowerHealth}
+${healthAndDefiSaverLine}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
@@ -286,7 +298,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
 `;
 }
 
-export async function buildRepayMessage(formattedEventData: any) {
+export async function buildRepayMessage(formattedEventData: any, isDefiSaverAutomatedTx: boolean, isManualSmartWalletTx: boolean, defiSaverUser: string) {
   let {
     crvUSD_price,
     borrowerHealth,
@@ -322,9 +334,20 @@ export async function buildRepayMessage(formattedEventData: any) {
 
   if (borrowerHealth !== "no loan") borrowerHealth = formatForPrint(borrowerHealth * 100);
 
+  let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
+  if (isManualSmartWalletTx) {
+    const url = generateDefiSaverUrl(defiSaverUser);
+    healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Manually via${hyperlink(url, "defisaver.com")} 🛟`;
+  } else if (isDefiSaverAutomatedTx) {
+    const url = generateDefiSaverUrl(defiSaverUser);
+    healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Automated via${hyperlink(url, "defisaver.com")} 🛟`;
+  }
+
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
-Health of Borrower: ${borrowerHealth}
+${healthAndDefiSaverLine}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
@@ -332,7 +355,7 @@ Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_U
   `;
 }
 
-export async function buildBorrowMessage(formattedEventData: any) {
+export async function buildBorrowMessage(formattedEventData: any, isDefiSaverAutomatedTx: boolean, isManualSmartWalletTx: boolean, defiSaverUser: string) {
   let {
     crvUSD_price,
     borrowerHealth,
@@ -377,9 +400,20 @@ export async function buildBorrowMessage(formattedEventData: any) {
 
   if (borrowerHealth !== "no loan") borrowerHealth = formatForPrint(borrowerHealth * 100);
 
+  let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
+  if (isManualSmartWalletTx) {
+    const url = generateDefiSaverUrl(defiSaverUser);
+    healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Manually via${hyperlink(url, "defisaver.com")} 🛟`;
+  } else if (isDefiSaverAutomatedTx) {
+    const url = generateDefiSaverUrl(defiSaverUser);
+    healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
+Automated via${hyperlink(url, "defisaver.com")} 🛟`;
+  }
+
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
-Health of Borrower: ${borrowerHealth}
+${healthAndDefiSaverLine}
 Borrow Rate: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
