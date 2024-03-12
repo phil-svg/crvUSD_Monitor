@@ -106,6 +106,7 @@ const DSProxyFactory_ABI: AbiItem[] = [
 ];
 
 export function generateDefiSaverUrl(address: string, collateralName: string): string {
+  if (collateralName === "WETH") collateralName = "ETH";
   const baseUrl = `https://app.defisaver.com/curveUSD/smart-wallet/${collateralName}/manage`;
   const chainId = 1; // Assuming the chainId is always 1 for this URL structure
   return `${baseUrl}?trackAddress=${address}&chainId=${chainId}`;
