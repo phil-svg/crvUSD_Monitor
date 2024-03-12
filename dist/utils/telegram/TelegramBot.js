@@ -481,23 +481,33 @@ export function buildLendingMarketDepositMessage(market, txHash, agentAddress, p
     const borrowedTokenURL = getTokenURL(market.borrowed_token);
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
     const vaultURL = getPoolURL(market.vault);
-    const asset_URL = getTokenURL(market.collateral_token);
-    const asset_Link = hyperlink(asset_URL, market.collateral_token_symbol);
+    const asset_URL = getTokenURL(market.borrowed_token);
+    const asset_Link = hyperlink(asset_URL, market.borrowed_token_symbol);
     return `
   LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
 🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositedCollateralAmount)}${asset_Link}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
-Total Assets: ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink} | Total Debt: ${getShortenNumberFixed(totalDebtInMarket)}${borrowedTokenLink}
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketWithdrawMessage(txHash) {
+export function buildLendingMarketWithdrawMessage(market, txHash, agentAddress, parsedAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    const agentURL = getBuyerURL(agentAddress);
+    const shortenAgent = getAddressName(agentAddress);
+    const borrowedTokenURL = getTokenURL(market.borrowed_token);
+    const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
+    const vaultURL = getPoolURL(market.vault);
+    const asset_URL = getTokenURL(market.borrowed_token);
+    const asset_Link = hyperlink(asset_URL, market.borrowed_token_symbol);
     return `
-   Withdrawal happened 
-   (todo)
+  LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
+
+User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedAmount)}${asset_Link}
+Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
@@ -531,7 +541,7 @@ export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, pa
 ${userLine}
 ${positionHealthLine}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
-Total Assets: ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink} | Total Debt: ${getShortenNumberFixed(totalDebtInMarket)}${borrowedTokenLink}
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
@@ -561,7 +571,7 @@ export function buildLendingMarketRepayMessage(market, txHash, positionHealth, t
 ${userLine}
 ${positionHealthLine}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
-Total Assets: ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink} | Total Debt: ${getShortenNumberFixed(totalDebtInMarket)}${borrowedTokenLink}
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
@@ -583,16 +593,24 @@ LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 User${hyperlink(agentURL, shortenAgent)} removed ${Number(parsedCollatAmount.toFixed(0)).toLocaleString()}${collat_Link}${collatDollarAddOn}
 ${positionHealthLine}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
-Total Assets: ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink} | Total Debt: ${getShortenNumberFixed(totalDebtInMarket)}${borrowedTokenLink}
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketHardLiquidateMessage(txHash) {
+export function buildLendingMarketHardLiquidateMessage(market, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+    const vaultURL = getPoolURL(market.vault);
+    const borrowedTokenURL = getTokenURL(market.borrowed_token);
+    const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
+    const liquidatorURL = getBuyerURL(liquidatorAddress);
+    const poorFellaURL = getBuyerURL(poorFellaAddress);
     return `
-   Hard-Liquidation happened 
-   (todo)
+LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
+
+${hyperlink(liquidatorURL, getAddressName(liquidatorAddress))} hard-liquidated ${hyperlink(poorFellaURL, getAddressName(poorFellaAddress))}
+Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
@@ -620,7 +638,7 @@ LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link} ($${Number(collatDollarAmount.toFixed(0)).toLocaleString()}) with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink} ($${Number(repaidBorrrowTokenDollarAmount.toFixed(0)).toLocaleString()})
 Discount: $${Number(discountAmount.toFixed(0)).toLocaleString()}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
-Total Assets: ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink} | Total Debt: ${getShortenNumberFixed(totalDebtInMarket)}${borrowedTokenLink}
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
 }
