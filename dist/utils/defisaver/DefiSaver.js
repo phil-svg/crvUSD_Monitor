@@ -100,8 +100,8 @@ const DSProxyFactory_ABI = [
         type: "event",
     },
 ];
-export function generateDefiSaverUrl(address) {
-    const baseUrl = "https://app.defisaver.com/curveUSD/smart-wallet/ETH/manage";
+export function generateDefiSaverUrl(address, collateralName) {
+    const baseUrl = `https://app.defisaver.com/curveUSD/smart-wallet/${collateralName}/manage`;
     const chainId = 1; // Assuming the chainId is always 1 for this URL structure
     return `${baseUrl}?trackAddress=${address}&chainId=${chainId}`;
 }

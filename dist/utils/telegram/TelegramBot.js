@@ -219,12 +219,12 @@ export async function buildRemoveCollateralMessage(formattedEventData, isDefiSav
         borrowerHealth = formatForPrint(borrowerHealth * 100);
     let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
     if (isManualSmartWalletTx) {
-        const url = generateDefiSaverUrl(defiSaverUser);
+        const url = generateDefiSaverUrl(defiSaverUser, collateralName);
         healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
 Manually via${hyperlink(url, "defisaver.com")} 🛟`;
     }
     else if (isDefiSaverAutomatedTx) {
-        const url = generateDefiSaverUrl(defiSaverUser);
+        const url = generateDefiSaverUrl(defiSaverUser, collateralName);
         healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
 Automated via${hyperlink(url, "defisaver.com")} 🛟`;
     }
@@ -255,12 +255,12 @@ export async function buildRepayMessage(formattedEventData, isDefiSaverAutomated
         borrowerHealth = formatForPrint(borrowerHealth * 100);
     let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
     if (isManualSmartWalletTx) {
-        const url = generateDefiSaverUrl(defiSaverUser);
+        const url = generateDefiSaverUrl(defiSaverUser, collateralName);
         healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
 Manually via${hyperlink(url, "defisaver.com")} 🛟`;
     }
     else if (isDefiSaverAutomatedTx) {
-        const url = generateDefiSaverUrl(defiSaverUser);
+        const url = generateDefiSaverUrl(defiSaverUser, collateralName);
         healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
 Automated via${hyperlink(url, "defisaver.com")} 🛟`;
     }
@@ -300,12 +300,12 @@ export async function buildBorrowMessage(formattedEventData, isDefiSaverAutomate
         borrowerHealth = formatForPrint(borrowerHealth * 100);
     let healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}`;
     if (isManualSmartWalletTx) {
-        const url = generateDefiSaverUrl(defiSaverUser);
+        const url = generateDefiSaverUrl(defiSaverUser, collateralName);
         healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
 Manually via${hyperlink(url, "defisaver.com")} 🛟`;
     }
     else if (isDefiSaverAutomatedTx) {
-        const url = generateDefiSaverUrl(defiSaverUser);
+        const url = generateDefiSaverUrl(defiSaverUser, collateralName);
         healthAndDefiSaverLine = `Health of Borrower: ${borrowerHealth}
 Automated via${hyperlink(url, "defisaver.com")} 🛟`;
     }
