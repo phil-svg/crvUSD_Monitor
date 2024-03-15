@@ -198,11 +198,11 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   const LENDING_LAUNCH_BLOCK = 19415827; // v2
   const PRESENT = await getCurrentBlockNumber();
 
-  const START_BLOCK = LENDING_LAUNCH_BLOCK;
-  const END_BLOCK = PRESENT;
+  // const START_BLOCK = LENDING_LAUNCH_BLOCK;
+  // const END_BLOCK = PRESENT;
 
-  // const START_BLOCK = 19336508;
-  // const END_BLOCK = 19336508;
+  const START_BLOCK = 19441045;
+  const END_BLOCK = 19441045;
 
   console.log("start");
 
@@ -220,7 +220,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
     if (Array.isArray(pastEventsVault)) {
       for (const event of pastEventsVault) {
         await processLlamalendVaultEvent(market, vaultContract, controllerContact, event, eventEmitter);
-        console.log("\n\n new Event in foo:", event);
+        console.log("\n\n new Event in Vault:", event);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
@@ -228,7 +228,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
     const pastEventsController = await getPastEvents(controllerContact, "allEvents", START_BLOCK, END_BLOCK);
     if (Array.isArray(pastEventsController)) {
       for (const event of pastEventsController as EthereumEvent[] as EthereumEvent[]) {
-        console.log("\n\n new Event in foo:", event);
+        console.log("\n\n new Event in Controller:", event);
         await processLlamalendControllerEvent(market, vaultContract, controllerContact, event, eventEmitter);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
@@ -237,7 +237,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
     const pastEventsAmm = await getPastEvents(ammContract, "allEvents", START_BLOCK, END_BLOCK);
     if (Array.isArray(pastEventsAmm)) {
       for (const event of pastEventsAmm as EthereumEvent[]) {
-        console.log("\n\n new Event in foo:", event);
+        console.log("\n\n new Event in Amm:", event);
         await processLlamalendAmmEvent(market, vaultContract, controllerContact, event, eventEmitter);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }

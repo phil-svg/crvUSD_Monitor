@@ -126,10 +126,10 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     // const LENDING_LAUNCH_BLOCK_V1 = 19290923; // v1
     const LENDING_LAUNCH_BLOCK = 19415827; // v2
     const PRESENT = await getCurrentBlockNumber();
-    const START_BLOCK = LENDING_LAUNCH_BLOCK;
-    const END_BLOCK = PRESENT;
-    // const START_BLOCK = 19336508;
-    // const END_BLOCK = 19336508;
+    // const START_BLOCK = LENDING_LAUNCH_BLOCK;
+    // const END_BLOCK = PRESENT;
+    const START_BLOCK = 19441045;
+    const END_BLOCK = 19441045;
     console.log("start");
     for (const market of allLendingMarkets) {
         // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm
@@ -142,14 +142,14 @@ async function histoMode(allLendingMarkets, eventEmitter) {
         if (Array.isArray(pastEventsVault)) {
             for (const event of pastEventsVault) {
                 await processLlamalendVaultEvent(market, vaultContract, controllerContact, event, eventEmitter);
-                console.log("\n\n new Event in foo:", event);
+                console.log("\n\n new Event in Vault:", event);
                 await new Promise((resolve) => setTimeout(resolve, 500));
             }
         }
         const pastEventsController = await getPastEvents(controllerContact, "allEvents", START_BLOCK, END_BLOCK);
         if (Array.isArray(pastEventsController)) {
             for (const event of pastEventsController) {
-                console.log("\n\n new Event in foo:", event);
+                console.log("\n\n new Event in Controller:", event);
                 await processLlamalendControllerEvent(market, vaultContract, controllerContact, event, eventEmitter);
                 await new Promise((resolve) => setTimeout(resolve, 500));
             }
@@ -157,7 +157,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
         const pastEventsAmm = await getPastEvents(ammContract, "allEvents", START_BLOCK, END_BLOCK);
         if (Array.isArray(pastEventsAmm)) {
             for (const event of pastEventsAmm) {
-                console.log("\n\n new Event in foo:", event);
+                console.log("\n\n new Event in Amm:", event);
                 await processLlamalendAmmEvent(market, vaultContract, controllerContact, event, eventEmitter);
                 await new Promise((resolve) => setTimeout(resolve, 500));
             }

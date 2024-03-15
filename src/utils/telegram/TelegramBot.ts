@@ -906,7 +906,7 @@ export function buildLendingMarketRemoveCollateralMessage(
   return `
 LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
-User${hyperlink(agentURL, shortenAgent)} removed ${Number(parsedCollatAmount.toFixed(0)).toLocaleString()}${collat_Link}${collatDollarAddOn}
+User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedCollatAmount)}${collat_Link}${collatDollarAddOn}
 ${positionHealthLine}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
@@ -984,10 +984,10 @@ export function buildSoftLiquidateMessage(
   return `
 LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
-User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${Number(parsedSoftLiquidatedAmount.toFixed(0)).toLocaleString()}${collat_Link} ($${Number(
+User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${formatForPrint(parsedSoftLiquidatedAmount)}${collat_Link} ($${Number(
     collatDollarAmount.toFixed(0)
-  ).toLocaleString()}) with ${Number(parsedRepaidAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink} ($${Number(repaidBorrrowTokenDollarAmount.toFixed(0)).toLocaleString()})
-Discount: $${Number(discountAmount.toFixed(0)).toLocaleString()}
+  ).toLocaleString()}) with ${formatForPrint(parsedRepaidAmount)}${borrowedTokenLink} ($${formatForPrint(repaidBorrrowTokenDollarAmount)})
+Discount: $${formatForPrint(discountAmount)}
 Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
