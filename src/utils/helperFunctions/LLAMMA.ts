@@ -9,6 +9,13 @@ export function calculateInterest(rate: number): number {
   return percentageRate;
 }
 
+export function calculateAPYFromAPR(apr: number): number {
+  const rateAsDecimal = apr / 100;
+  const e = Math.E;
+  let apy = (Math.pow(e, rateAsDecimal) - 1) * 100;
+  return apy;
+}
+
 export async function getBorrowRateForProvidedLlamma(LLAMMA_ADDRESS: string, blockNumber: number): Promise<number | null> {
   const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
 

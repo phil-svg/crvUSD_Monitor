@@ -128,8 +128,8 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     const PRESENT = await getCurrentBlockNumber();
     // const START_BLOCK = LENDING_LAUNCH_BLOCK;
     // const END_BLOCK = PRESENT;
-    const START_BLOCK = 19441045;
-    const END_BLOCK = 19441045;
+    const START_BLOCK = 19454217;
+    const END_BLOCK = 19454217;
     console.log("start");
     for (const market of allLendingMarkets) {
         // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm

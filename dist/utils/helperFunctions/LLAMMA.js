@@ -7,6 +7,12 @@ export function calculateInterest(rate) {
     let percentageRate = (Math.pow(e, rate * SECONDS_IN_A_YEAR) - 1) * 100;
     return percentageRate;
 }
+export function calculateAPYFromAPR(apr) {
+    const rateAsDecimal = apr / 100;
+    const e = Math.E;
+    let apy = (Math.pow(e, rateAsDecimal) - 1) * 100;
+    return apy;
+}
 export async function getBorrowRateForProvidedLlamma(LLAMMA_ADDRESS, blockNumber) {
     const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const AMM = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_AMM, LLAMMA_ADDRESS);

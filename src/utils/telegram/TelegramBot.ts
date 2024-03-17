@@ -10,6 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { EnrichedLendingMarketEvent } from "../Interfaces.js";
 import { generateDefiSaverUrl } from "../defisaver/DefiSaver.js";
+import { calculateAPYFromAPR } from "../helperFunctions/LLAMMA.js";
 dotenv.config({ path: "../.env" });
 
 function getTokenURL(tokenAddress: string) {
@@ -235,7 +236,7 @@ export async function buildLiquidateMessage(formattedEventData: any, controllerA
   )}${hyperlink(COLLATERAL_URL, collateralName)}
 The${hyperlink(AMM_URL, "AMM")} send ${formatForPrint(stablecoin_received)}${hyperlink(crvUSD_URL, "crvUSD")} to the${hyperlink(CONTROLLER_URL, "Controller")}
 ${revOrLossMessage}
-Borrow Rate: ${formatForPrint(borrowRate)}%
+Borrow APY: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
@@ -291,7 +292,7 @@ Automated via${hyperlink(url, "defisaver.com")} 🛟`;
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
 ${healthAndDefiSaverLine}
-Borrow Rate: ${formatForPrint(borrowRate)}%
+Borrow APY: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
@@ -348,7 +349,7 @@ Automated via${hyperlink(url, "defisaver.com")} 🛟`;
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
 ${healthAndDefiSaverLine}
-Borrow Rate: ${formatForPrint(borrowRate)}%
+Borrow APY: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
@@ -414,7 +415,7 @@ Automated via${hyperlink(url, "defisaver.com")} 🛟`;
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${didWhat}
 ${healthAndDefiSaverLine}
-Borrow Rate: ${formatForPrint(borrowRate)}%
+Borrow APY: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
@@ -455,7 +456,7 @@ export async function buildDepositMessage(formattedEventData: any) {
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} deposited ${borrowedAmount}${hyperlink(COLLATERAL_URL, collateralName)}
 Health of Borrower: ${borrowerHealth}
-Borrow Rate: ${formatForPrint(borrowRate)}%
+Borrow APY: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
@@ -514,7 +515,7 @@ async function buildSwapRouterMessage(formattedEventData: any) {
   return `
   🚀${hyperlink(buyerURL, shortenBuyer)} ${swappedWhat}
 1 ${collateralName} ➛ ${formatForPrint(collateral_price)} Dollar | ${formatForPrint(numberOfcrvUSDper1_collat)} crvUSD
-Borrow Rate: ${formatForPrint(borrowRate)}%
+Borrow APY: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}
 Marketcap: ${getShortenNumber(formatForPrint(marketCap))}  | Total borrowed: ${getShortenNumber(formatForPrint(crvUSDinCirculation))} | Price: ${crvUSD_price.toFixed(4)}  
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
@@ -725,7 +726,7 @@ export function buildLendingMarketDepositMessage(
   LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
 🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositedCollateralAmount)}${asset_Link}
-Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
@@ -758,7 +759,7 @@ export function buildLendingMarketWithdrawMessage(
   LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
 User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedAmount)}${asset_Link}
-Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
@@ -814,7 +815,7 @@ export function buildLendingMarketBorrowMessage(
 
 ${userLine}
 ${positionHealthLine}
-Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
@@ -867,7 +868,7 @@ export function buildLendingMarketRepayMessage(
 
 ${userLine}
 ${positionHealthLine}
-Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
@@ -908,7 +909,7 @@ LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
 User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedCollatAmount)}${collat_Link}${collatDollarAddOn}
 ${positionHealthLine}
-Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
@@ -939,7 +940,7 @@ export function buildLendingMarketHardLiquidateMessage(
 LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
 
 ${hyperlink(liquidatorURL, getAddressName(liquidatorAddress))} hard-liquidated ${hyperlink(poorFellaURL, getAddressName(poorFellaAddress))}
-Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
@@ -988,7 +989,7 @@ User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${formatForPrin
     collatDollarAmount.toFixed(0)
   ).toLocaleString()}) with ${formatForPrint(parsedRepaidAmount)}${borrowedTokenLink} ($${formatForPrint(repaidBorrrowTokenDollarAmount)})
 Discount: $${formatForPrint(discountAmount)}
-Deposit Rate: ${lendApr.toFixed(2)}% | Borrow Rate: ${borrowApr.toFixed(2)}%
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
 `;
