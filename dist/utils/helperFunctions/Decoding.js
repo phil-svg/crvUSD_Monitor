@@ -157,6 +157,8 @@ export async function processLiquidateEvent(event, controllerAddress, collateral
     let user = event.returnValues.user;
     let stablecoin_received = event.returnValues.stablecoin_received;
     stablecoin_received /= 1e18;
+    let debt = event.returnValues.debt;
+    debt /= 1e18;
     let collateral_received = event.returnValues.collateral_received;
     let collateralDecimals = getDecimalFromCheatSheet(collateralAddress);
     collateral_received /= 10 ** collateralDecimals;
@@ -171,6 +173,7 @@ export async function processLiquidateEvent(event, controllerAddress, collateral
     let crvUSDinCirculation = await getcrvUSDinCirculation(event.blockNumber);
     const marketCap = crvUSDinCirculation + (await getMarketCap(event.blockNumber));
     const crvUSD_price = await getPriceOf_crvUSD(event.blockNumber);
+    const botRevenue = dollarAmount - (debt - stablecoin_received);
     return {
         crvUSD_price,
         marketCap,
@@ -188,6 +191,7 @@ export async function processLiquidateEvent(event, controllerAddress, collateral
         txHash,
         crvUSDinCirculation,
         borrowRate,
+        botRevenue,
     };
 }
 export async function processRemoveCollateralEvent(event, controllerAddress, collateralAddress, AMM_ADDRESS) {

@@ -171,7 +171,7 @@ function getAddressName(address) {
     return labelObject ? labelObject.Label : shortenAddress(address);
 }
 export async function buildLiquidateMessage(formattedEventData, controllerAddress, ammAddress) {
-    let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate, } = formattedEventData;
+    let { crvUSD_price, marketCap, qtyCollat, collatValue, marketBorrowedAmount, collateralAddress, collateralName, dollarAmount, liquidator, crvUSD_amount, user, stablecoin_received, collateral_received, txHash, crvUSDinCirculation, borrowRate, botRevenue, } = formattedEventData;
     if (stablecoin_received < MIN_HARDLIQ_AMOUNT_WORTH_PRINTING)
         return "don't print tiny hard-liquidations";
     const liquidatorURL = getBuyerURL(liquidator);
@@ -184,10 +184,9 @@ export async function buildLiquidateMessage(formattedEventData, controllerAddres
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const AMM_URL = getPoolURL(controllerAddress);
     const CONTROLLER_URL = getPoolURL(ammAddress);
-    const botRevenue = formatForPrint(dollarAmount - crvUSD_amount * crvUSD_price);
     crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
     let liquidated = `hard-liquidated ${hyperlink(userURL, shortenUser)}`;
-    let revOrLossMessage = `Bot Revenue: $${botRevenue}`;
+    let revOrLossMessage = `Bot Revenue: $${formatForPrint(botRevenue)}`;
     if (liquidator === user) {
         liquidated = `self-liquidated`;
         revOrLossMessage = `User loss: ¯⧵_(ツ)_/¯`;

@@ -201,6 +201,7 @@ export async function buildLiquidateMessage(formattedEventData: any, controllerA
     txHash,
     crvUSDinCirculation,
     borrowRate,
+    botRevenue,
   } = formattedEventData;
 
   if (stablecoin_received < MIN_HARDLIQ_AMOUNT_WORTH_PRINTING) return "don't print tiny hard-liquidations";
@@ -216,12 +217,10 @@ export async function buildLiquidateMessage(formattedEventData: any, controllerA
   const AMM_URL = getPoolURL(controllerAddress);
   const CONTROLLER_URL = getPoolURL(ammAddress);
 
-  const botRevenue = formatForPrint(dollarAmount - crvUSD_amount * crvUSD_price);
-
   crvUSDinCirculation = formatForPrint(crvUSDinCirculation);
 
   let liquidated = `hard-liquidated ${hyperlink(userURL, shortenUser)}`;
-  let revOrLossMessage = `Bot Revenue: $${botRevenue}`;
+  let revOrLossMessage = `Bot Revenue: $${formatForPrint(botRevenue)}`;
 
   if (liquidator === user) {
     liquidated = `self-liquidated`;
