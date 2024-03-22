@@ -4,6 +4,7 @@ export interface LendingMarketEventPayload {
   type: "Vault" | "Controller" | "Amm";
   vaultContract: any;
   controllerContact: any;
+  ammContract: any;
 }
 
 export interface EthereumEvent {

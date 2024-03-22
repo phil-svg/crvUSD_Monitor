@@ -1,5 +1,5 @@
 import { getBorrowApr, getCollatDollarValue, getLendApr, getPositionHealth, getTotalAssets, getTotalDebtInMarket } from "../helperFunctions/Lending.js";
-import { getWeb3HttpProvider, web3HttpProvider, webWsProvider } from "../helperFunctions/Web3.js";
+import { web3HttpProvider, webWsProvider } from "../helperFunctions/Web3.js";
 import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
 import { buildLendingMarketBorrowMessage, buildLendingMarketDepositMessage, buildLendingMarketHardLiquidateMessage, buildLendingMarketRemoveCollateralMessage, buildLendingMarketRepayMessage, buildLendingMarketWithdrawMessage, buildSoftLiquidateMessage, } from "../telegram/TelegramBot.js";
 import { checkWsConnectionViaNewBlocks, getCurrentBlockNumber, getPastEvents, subscribeToLendingMarketsEvents } from "../web3Calls/generic.js";
@@ -30,12 +30,14 @@ async function processLlamalendVaultEvent(market, llamalendVaultContract, contro
         eventEmitter.emit("newMessage", message);
     }
 }
-async function processLlamalendControllerEvent(market, llamalendVaultContract, controllerContract, event, eventEmitter) {
+async function processLlamalendControllerEvent(market, llamalendVaultContract, controllerContract, ammContract, event, eventEmitter) {
+    if (!["Borrow", "Repay", "RemoveCollateral", "Liquidate"].includes(event.event))
+        return;
     const txHash = event.transactionHash;
     const agentAddress = event.returnValues.user;
     const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
-    const collatDollarValue = await getCollatDollarValue(market, controllerContract, event.blockNumber);
+    const collatDollarValue = await getCollatDollarValue(market, ammContract, event.blockNumber);
     const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
     const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
@@ -75,11 +77,10 @@ async function processLlamalendControllerEvent(market, llamalendVaultContract, c
         eventEmitter.emit("newMessage", message);
     }
 }
-async function processLlamalendAmmEvent(market, llamalendVaultContract, controllerContract, event, eventEmitter) {
+async function processLlamalendAmmEvent(market, llamalendVaultContract, controllerContract, ammContract, event, eventEmitter) {
     if (event.event === "TokenExchange") {
         console.log("Soft Liquidation spotted");
         console.log("\n\n new Event in LLAMMA_CRVUSD_AMM:", event);
-        let web3 = getWeb3HttpProvider();
         const txHash = event.transactionHash;
         const agentAddress = event.returnValues.buyer;
         let parsedSoftLiquidatedAmount;
@@ -92,7 +93,7 @@ async function processLlamalendAmmEvent(market, llamalendVaultContract, controll
             parsedSoftLiquidatedAmount = event.returnValues.tokens_sold / 10 ** market.collateral_token_decimals;
             parsedRepaidAmount = event.returnValues.tokens_bought / 10 ** market.borrowed_token_decimals;
         }
-        const collatDollarValue = await getCollatDollarValue(market, controllerContract, event.blockNumber);
+        const collatDollarValue = await getCollatDollarValue(market, ammContract, event.blockNumber);
         const collatDollarAmount = collatDollarValue * parsedSoftLiquidatedAmount;
         const crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
         const repaidBorrrowTokenDollarAmount = parsedRepaidAmount * crvUSDPrice;
@@ -128,8 +129,8 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     const PRESENT = await getCurrentBlockNumber();
     // const START_BLOCK = LENDING_LAUNCH_BLOCK;
     // const END_BLOCK = PRESENT;
-    const START_BLOCK = 19454217;
-    const END_BLOCK = 19454217;
+    const START_BLOCK = 19486981;
+    const END_BLOCK = 19486981;
     console.log("start");
     for (const market of allLendingMarkets) {
         // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm
@@ -150,7 +151,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
         if (Array.isArray(pastEventsController)) {
             for (const event of pastEventsController) {
                 console.log("\n\n new Event in Controller:", event);
-                await processLlamalendControllerEvent(market, vaultContract, controllerContact, event, eventEmitter);
+                await processLlamalendControllerEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
                 await new Promise((resolve) => setTimeout(resolve, 500));
             }
         }
@@ -158,7 +159,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
         if (Array.isArray(pastEventsAmm)) {
             for (const event of pastEventsAmm) {
                 console.log("\n\n new Event in Amm:", event);
-                await processLlamalendAmmEvent(market, vaultContract, controllerContact, event, eventEmitter);
+                await processLlamalendAmmEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
                 await new Promise((resolve) => setTimeout(resolve, 500));
             }
         }
@@ -178,16 +179,16 @@ async function liveMode(allLendingMarkets, eventEmitter) {
         subscribeToLendingMarketsEvents(market, vaultContract, controllerContact, ammContract, eventEmitter, "Controller");
         subscribeToLendingMarketsEvents(market, vaultContract, controllerContact, ammContract, eventEmitter, "Amm");
     }
-    eventEmitter.on("newLendingMarketsEvent", async ({ market, event, type, vaultContract, controllerContact }) => {
+    eventEmitter.on("newLendingMarketsEvent", async ({ market, event, type, vaultContract, controllerContact, ammContract }) => {
         console.log("\n\n\n\nnew event in lending market:", market.vault, ":", event, "type:", type);
         if (type === "Vault") {
             await processLlamalendVaultEvent(market, vaultContract, controllerContact, event, eventEmitter);
         }
         else if (type === "Controller") {
-            await processLlamalendControllerEvent(market, vaultContract, controllerContact, event, eventEmitter);
+            await processLlamalendControllerEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
         }
         else if (type === "Amm") {
-            await processLlamalendAmmEvent(market, vaultContract, controllerContact, event, eventEmitter);
+            await processLlamalendAmmEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
         }
     });
 }

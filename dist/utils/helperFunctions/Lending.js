@@ -19,8 +19,8 @@ export async function getPositionHealth(controllerContact, user, blockNumber) {
     const res = await web3Call(controllerContact, "health", [user], blockNumber);
     return res / 1e16;
 }
-export async function getCollatDollarValue(market, controllerContact, blockNumber) {
-    const res = await web3Call(controllerContact, "amm_price", [], blockNumber);
+export async function getCollatDollarValue(market, ammContract, blockNumber) {
+    const res = await web3Call(ammContract, "price_oracle", [], blockNumber);
     return res / 10 ** market.collateral_token_decimals;
 }
 //# sourceMappingURL=Lending.js.map
