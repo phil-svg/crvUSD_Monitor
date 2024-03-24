@@ -25,6 +25,9 @@ function getTxHashURLfromEigenPhi(txHash) {
 function getBuyerURL(buyerAddress) {
     return "https://etherscan.io/address/" + buyerAddress;
 }
+function getCurveLendingURL(id) {
+    return `https://lend.curve.fi/#/ethereum/markets/one-way-market-${id}/create/`;
+}
 function getProfitPrint(profit, revenue, cost) {
     if (profit > revenue * 0.5)
         return `Revenue: ¯⧵_(ツ)_/¯`;
@@ -473,7 +476,7 @@ function getLlamaLendPositionHealthLine(positionHealth) {
         return `Health of Position: no loan`;
     return `Health of Position: ${positionHealth.toFixed(2)}`;
 }
-export function buildLendingMarketDepositMessage(market, txHash, agentAddress, parsedDepositedCollateralAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket) {
+export function buildLendingMarketDepositMessage(market, txHash, dollarAmount, agentAddress, parsedDepositedBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -483,16 +486,19 @@ export function buildLendingMarketDepositMessage(market, txHash, agentAddress, p
     const vaultURL = getPoolURL(market.vault);
     const asset_URL = getTokenURL(market.borrowed_token);
     const asset_Link = hyperlink(asset_URL, market.borrowed_token_symbol);
+    const dollarAddon = getDollarAddOn(dollarAmount);
+    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+    const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+    const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
     return `
-  LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
-
-🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositedCollateralAmount)}${asset_Link}
+🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositedBorrowTokenAmount)}${asset_Link}${dollarAddon}
+Market:${hyperlink(vaultURL, market.market_name)}
 Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketWithdrawMessage(market, txHash, agentAddress, parsedAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket) {
+export function buildLendingMarketWithdrawMessage(market, txHash, dollarAmount, agentAddress, parsedWithdrawnBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -502,13 +508,16 @@ export function buildLendingMarketWithdrawMessage(market, txHash, agentAddress, 
     const vaultURL = getPoolURL(market.vault);
     const asset_URL = getTokenURL(market.borrowed_token);
     const asset_Link = hyperlink(asset_URL, market.borrowed_token_symbol);
+    const dollarAddon = getDollarAddOn(dollarAmount);
+    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+    const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+    const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
     return `
-  LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
-
-User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedAmount)}${asset_Link}
+User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedWithdrawnBorrowTokenAmount)}${asset_Link}${dollarAddon}
+Market:${hyperlink(vaultURL, market.market_name)}
 Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 // CONTROLLER-MESSAGES
@@ -524,25 +533,27 @@ export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, pa
     const vaultURL = getPoolURL(market.vault);
     const dollarAddon = getDollarAddOn(collatDollarAmount);
     const dollarAddonBorrow = getDollarAddOn(dollarAmountBorrow);
+    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+    const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+    const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
     let userLine;
-    if (parsedCollatAmount < 1) {
-        userLine = `User${hyperlink(agentURL, shortenAgent)} borrowed ${formatForPrint(parsedBorrowedAmount)}${borrowedTokenLink}${dollarAddonBorrow}`;
+    if (collatDollarAmount < 1) {
+        userLine = `🚀${hyperlink(agentURL, shortenAgent)} borrowed ${formatForPrint(parsedBorrowedAmount)}${borrowedTokenLink}${dollarAddonBorrow}`;
     }
-    else if (parsedBorrowedAmount < 1) {
-        userLine = `User${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon}`;
+    else if (dollarAmountBorrow < 1) {
+        userLine = `🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon}`;
     }
     else {
-        userLine = `User${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon} and borrowed ${formatForPrint(parsedBorrowedAmount)}${borrowedTokenLink}`;
+        userLine = `🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon} and borrowed ${formatForPrint(parsedBorrowedAmount)}${borrowedTokenLink}${dollarAddonBorrow}`;
     }
     const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
     return `
-  LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
-
 ${userLine}
+Market:${hyperlink(vaultURL, market.market_name)}
 ${positionHealthLine}
 Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 export function buildLendingMarketRepayMessage(market, txHash, positionHealth, totalDebtInMarket, agentAddress, parsedRepayAmount, collatDollarAmount, parsedCollatAmount, repayDollarAmount, borrowApr, lendApr, totalAssets) {
@@ -565,14 +576,16 @@ export function buildLendingMarketRepayMessage(market, txHash, positionHealth, t
         userLine = `User${hyperlink(agentURL, shortenAgent)} returned ${Number(parsedRepayAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink}${repayDollarAddon}`;
     }
     const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
+    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+    const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+    const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
     return `
-  LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
-
 ${userLine}
+Market:${hyperlink(vaultURL, market.market_name)}
 ${positionHealthLine}
 Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAmount, txHash, agentAddress, positionHealth, collatDollarAmount, totalDebtInMarket, borrowApr, lendApr, totalAssets) {
@@ -587,17 +600,19 @@ export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAm
     const collatDollarAddOn = getDollarAddOn(collatDollarAmount);
     const borrowedTokenURL = getTokenURL(market.borrowed_token);
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
+    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+    const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+    const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
     return `
-LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
-
 User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedCollatAmount)}${collat_Link}${collatDollarAddOn}
 ${positionHealthLine}
+Market:${hyperlink(vaultURL, market.market_name)}
 Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketHardLiquidateMessage(market, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress) {
+export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -605,13 +620,20 @@ export function buildLendingMarketHardLiquidateMessage(market, txHash, totalDebt
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
     const liquidatorURL = getBuyerURL(liquidatorAddress);
     const poorFellaURL = getBuyerURL(poorFellaAddress);
+    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+    const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+    const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
+    const discountAmount = Math.abs(collarDollarValue - borrowTokenDollarAmount);
+    const collat_URL = getTokenURL(market.collateral_token);
+    const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
     return `
-LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
-
-${hyperlink(liquidatorURL, getAddressName(liquidatorAddress))} hard-liquidated ${hyperlink(poorFellaURL, getAddressName(poorFellaAddress))}
+⚰️${hyperlink(liquidatorURL, shortenAddress(liquidatorAddress))} hard-liquidated ${formatForPrint(parsedCollatAmount)}${collat_Link} ($${Number(collarDollarValue.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation)}${borrowedTokenLink} ($${formatForPrint(borrowTokenDollarAmount)})
+Market:${hyperlink(vaultURL, market.market_name)}
+Discount: $${formatForPrint(discountAmount)}
+Affected User:${hyperlink(poorFellaURL, shortenAddress(poorFellaAddress))}
 Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets) {
@@ -632,14 +654,16 @@ export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSo
     else {
         direction = "de";
     }
+    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+    const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+    const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
     return `
-LlamaLend event in${hyperlink(vaultURL, market.market_name)} 📪
-
 User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${formatForPrint(parsedSoftLiquidatedAmount)}${collat_Link} ($${Number(collatDollarAmount.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedRepaidAmount)}${borrowedTokenLink} ($${formatForPrint(repaidBorrrowTokenDollarAmount)})
+Market:${hyperlink(vaultURL, market.market_name)}
 Discount: $${formatForPrint(discountAmount)}
 Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
-Links:${hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io")} |${hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io")} 🦙🦙🦙
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 ////////////////////////////////////////////////////////

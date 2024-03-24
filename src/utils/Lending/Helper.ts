@@ -1,12 +1,41 @@
 import { dir } from "console";
-import { EnrichedLendingMarketEvent, EthereumEvent, LendingMarketEvent } from "../Interfaces.js";
+import { EnrichedLendingMarketEvent, EthereumEvent, LendingMarketEvent, TransactionReceipt } from "../Interfaces.js";
 import { web3HttpProvider } from "../helperFunctions/Web3.js";
 import { getCoinDecimals, getCoinSymbol } from "../pegkeeper/Pegkeeper.js";
+
+export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation(receipt: TransactionReceipt | null, market: EnrichedLendingMarketEvent): number | null {
+  if (!receipt) return null;
+  const transferSignature = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+  const senderAddress = receipt.from.toLowerCase().replace("0x", "");
+  const controllerAddress = market.controller.toLowerCase().replace("0x", "");
+
+  const logEntry = receipt.logs.find(
+    (log) =>
+      log.topics[0] === transferSignature &&
+      log.topics[1].toLowerCase().replace("0x000000000000000000000000", "") === senderAddress &&
+      log.topics[2].toLowerCase().replace("0x000000000000000000000000", "") === controllerAddress
+  );
+
+  if (logEntry) {
+    const hexValue = logEntry.data;
+    const relevantHexValue = hexValue.slice(2);
+    const decimalValue = parseInt(relevantHexValue, 16);
+    return decimalValue / 10 ** market.borrowed_token_decimals;
+  } else {
+    console.log("No matching log entry found.");
+    return null;
+  }
+}
 
 export function filterForOnly(targetAddress: string, market: LendingMarketEvent): boolean {
   const normalizedTargetAddress = targetAddress.toLowerCase();
   const marketValues = Object.values(market);
-  return marketValues.some((value) => value.toLowerCase() === normalizedTargetAddress);
+  return marketValues.some((value) => {
+    if (typeof value === "string") {
+      return value.toLowerCase() === normalizedTargetAddress;
+    }
+    return false;
+  });
 }
 
 export async function handleEvent(event: EthereumEvent): Promise<LendingMarketEvent> {

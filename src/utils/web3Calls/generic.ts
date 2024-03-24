@@ -1,7 +1,7 @@
 import { Contract } from "web3-eth-contract";
 import { getWeb3WsProvider, getWeb3HttpProvider } from "../helperFunctions/Web3.js";
 import { EventEmitter } from "stream";
-import { EnrichedLendingMarketEvent } from "../Interfaces.js";
+import { EnrichedLendingMarketEvent, TransactionReceipt } from "../Interfaces.js";
 
 const WEB3_WS_PROVIDER = getWeb3WsProvider();
 const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
@@ -335,5 +335,15 @@ export async function checkWsConnectionViaNewBlocks(startTime = Date.now()): Pro
     } else {
       console.error("Failed to subscribe to new block headers after 2 minutes.");
     }
+  }
+}
+
+export async function getTxReceiptClassic(txHash: string): Promise<TransactionReceipt | null> {
+  try {
+    let txReceipt = await WEB3_HTTP_PROVIDER.eth.getTransactionReceipt(txHash);
+    return txReceipt;
+  } catch (error: any) {
+    console.error(`Failed to fetch transaction receipt for hash: ${txHash}. Error: ${error.message}`);
+    return null;
   }
 }

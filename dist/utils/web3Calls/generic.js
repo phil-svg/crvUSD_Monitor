@@ -299,4 +299,14 @@ export async function checkWsConnectionViaNewBlocks(startTime = Date.now()) {
         }
     }
 }
+export async function getTxReceiptClassic(txHash) {
+    try {
+        let txReceipt = await WEB3_HTTP_PROVIDER.eth.getTransactionReceipt(txHash);
+        return txReceipt;
+    }
+    catch (error) {
+        console.error(`Failed to fetch transaction receipt for hash: ${txHash}. Error: ${error.message}`);
+        return null;
+    }
+}
 //# sourceMappingURL=generic.js.map

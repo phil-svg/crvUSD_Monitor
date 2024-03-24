@@ -281,7 +281,7 @@ async function liveMode(eventEmitter) {
   const LLAMMA_CRVUSD_AMM_CRV_SHORT = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, AMM_CRV_SHORT_ADDRESS);
   subscribeToLendingMarketsEvents(LLAMMA_CRVUSD_AMM_CRV_SHORT, eventEmitter, "Amm", VAULT_CRV_SHORT_ADDRESS);
   eventEmitter.on("newLendingMarketsEvent", async ({ event, type, contract, llamaLendVaultAddress }) => {
-    console.log("\n\n\n\nnew event in lending market:", llamaLendVaultAddress, ":", event, "type:", type, "contract", contract);
+    console.log("\n\n\n\nnew event in Market:", llamaLendVaultAddress, ":", event, "type:", type, "contract", contract);
     if (type === "Vault") {
       await processLlamalendVaultEvent(contract, llamaLendVaultAddress, event, eventEmitter);
     } else if (type === "Controller") {
