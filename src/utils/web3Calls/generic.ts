@@ -232,7 +232,7 @@ export async function subscribeToLendingMarketsEvents(
       })
       .on("data", async (event: any) => {
         console.log("LLAMMA LEND Event", event);
-        eventEmitter.emit("newLendingMarketsEvent", { market, event, type, vaultContract, controllerContact });
+        eventEmitter.emit("newLendingMarketsEvent", { market, event, type, vaultContract, controllerContact, ammContract });
       })
       .on("error", (error: Error) => {
         console.error("Error in event subscription: ", error);
