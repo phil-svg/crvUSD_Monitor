@@ -8,6 +8,7 @@ import {
   buildLendingMarketHardLiquidateMessage,
   buildLendingMarketRemoveCollateralMessage,
   buildLendingMarketRepayMessage,
+  buildLendingMarketSelfLiquidateMessage,
   buildLendingMarketWithdrawMessage,
   buildSoftLiquidateMessage,
 } from "../telegram/TelegramBot.js";
@@ -185,21 +186,38 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_received / 10 ** market.collateral_token_decimals;
     const collarDollarValue = parsedCollatAmount * collatTokenDollarPricePerUnit;
 
-    const message = buildLendingMarketHardLiquidateMessage(
-      market,
-      parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation,
-      borrowTokenDollarAmount,
-      parsedCollatAmount,
-      collarDollarValue,
-      txHash,
-      totalDebtInMarket,
-      borrowApr,
-      lendApr,
-      totalAssets,
-      liquidatorAddress,
-      poorFellaAddress
-    );
-    eventEmitter.emit("newMessage", message);
+    if (poorFellaAddress.toLowerCase() === liquidatorAddress.toLowerCase()) {
+      const message = buildLendingMarketSelfLiquidateMessage(
+        market,
+        parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation,
+        borrowTokenDollarAmount,
+        parsedCollatAmount,
+        collarDollarValue,
+        txHash,
+        totalDebtInMarket,
+        borrowApr,
+        lendApr,
+        totalAssets,
+        liquidatorAddress
+      );
+      eventEmitter.emit("newMessage", message);
+    } else {
+      const message = buildLendingMarketHardLiquidateMessage(
+        market,
+        parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation,
+        borrowTokenDollarAmount,
+        parsedCollatAmount,
+        collarDollarValue,
+        txHash,
+        totalDebtInMarket,
+        borrowApr,
+        lendApr,
+        totalAssets,
+        liquidatorAddress,
+        poorFellaAddress
+      );
+      eventEmitter.emit("newMessage", message);
+    }
   }
 }
 
@@ -207,6 +225,21 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
   if (event.event === "TokenExchange") {
     console.log("Soft Liquidation spotted");
     console.log("\n\n new Event in LLAMMA_CRVUSD_AMM:", event);
+
+    const isLongPosition = market.market_name.endsWith("Long");
+    let crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
+    if (!crvUSDPrice) return;
+    const otherTokenDollarValue = await getCollatDollarValue(market, ammContract, event.blockNumber);
+
+    let borrowedTokenDollarPricePerUnit = 0;
+    let collatTokenDollarPricePerUnit = 0;
+    if (isLongPosition) {
+      collatTokenDollarPricePerUnit = otherTokenDollarValue;
+      borrowedTokenDollarPricePerUnit = crvUSDPrice;
+    } else {
+      borrowedTokenDollarPricePerUnit = otherTokenDollarValue;
+      collatTokenDollarPricePerUnit = crvUSDPrice;
+    }
 
     const txHash = event.transactionHash;
     const agentAddress = event.returnValues.buyer;
@@ -219,10 +252,8 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
       parsedSoftLiquidatedAmount = event.returnValues.tokens_sold / 10 ** market.collateral_token_decimals;
       parsedRepaidAmount = event.returnValues.tokens_bought / 10 ** market.borrowed_token_decimals;
     }
-    const collatDollarValue = await getCollatDollarValue(market, ammContract, event.blockNumber);
-    const collatDollarAmount = collatDollarValue * parsedSoftLiquidatedAmount;
-    const crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
-    const repaidBorrrowTokenDollarAmount = parsedRepaidAmount * crvUSDPrice!;
+    const collatDollarAmount = collatTokenDollarPricePerUnit * parsedSoftLiquidatedAmount;
+    const repaidBorrrowTokenDollarAmount = parsedRepaidAmount * borrowedTokenDollarPricePerUnit;
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
     const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
@@ -276,8 +307,8 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = PRESENT;
 
-  const START_BLOCK = 19506787;
-  const END_BLOCK = 19506787;
+  const START_BLOCK = 19509299;
+  const END_BLOCK = 19509299;
 
   console.log("start");
 

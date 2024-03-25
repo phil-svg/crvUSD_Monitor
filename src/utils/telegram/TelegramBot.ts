@@ -939,6 +939,47 @@ Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 
+export function buildLendingMarketSelfLiquidateMessage(
+  market: EnrichedLendingMarketEvent,
+  parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation: number,
+  borrowTokenDollarAmount: number,
+  parsedCollatAmount: number,
+  collarDollarValue: number,
+  txHash: string,
+  totalDebtInMarket: number,
+  borrowApr: number,
+  lendApr: number,
+  totalAssets: number,
+  liquidatorAddress: string
+): string {
+  const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
+  const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
+
+  const vaultURL = getPoolURL(market.vault);
+
+  const borrowedTokenURL = getTokenURL(market.borrowed_token);
+  const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
+
+  const liquidatorURL = getBuyerURL(liquidatorAddress);
+
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+  const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+  const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
+
+  const collat_URL = getTokenURL(market.collateral_token);
+  const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
+
+  return `
+User${hyperlink(liquidatorURL, shortenAddress(liquidatorAddress))} self-liquidated ${formatForPrint(parsedCollatAmount)}${collat_Link} ($${Number(
+    collarDollarValue.toFixed(0)
+  ).toLocaleString()}) with ${formatForPrint(parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation)}${borrowedTokenLink} ($${formatForPrint(borrowTokenDollarAmount)})
+Market:${hyperlink(vaultURL, market.market_name)}
+Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
+Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
+`;
+}
+
 export function buildLendingMarketHardLiquidateMessage(
   market: EnrichedLendingMarketEvent,
   parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation: number,
@@ -1015,16 +1056,16 @@ export function buildSoftLiquidateMessage(
 
   const discountAmount = Math.abs(collatDollarAmount - repaidBorrrowTokenDollarAmount);
 
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
+  const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
+  const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
+
   let direction;
   if (collatDollarAmount > repaidBorrrowTokenDollarAmount) {
     direction = "soft";
   } else {
     direction = "de";
   }
-
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
-  const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
-  const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
 
   return `
 User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${formatForPrint(parsedSoftLiquidatedAmount)}${collat_Link} ($${Number(

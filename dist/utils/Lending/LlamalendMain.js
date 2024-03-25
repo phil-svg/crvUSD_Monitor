@@ -1,7 +1,7 @@
 import { getBorrowApr, getCollatDollarValue, getLendApr, getPositionHealth, getTotalAssets, getTotalDebtInMarket } from "../helperFunctions/Lending.js";
 import { web3HttpProvider, webWsProvider } from "../helperFunctions/Web3.js";
 import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
-import { buildLendingMarketBorrowMessage, buildLendingMarketDepositMessage, buildLendingMarketHardLiquidateMessage, buildLendingMarketRemoveCollateralMessage, buildLendingMarketRepayMessage, buildLendingMarketWithdrawMessage, buildSoftLiquidateMessage, } from "../telegram/TelegramBot.js";
+import { buildLendingMarketBorrowMessage, buildLendingMarketDepositMessage, buildLendingMarketHardLiquidateMessage, buildLendingMarketRemoveCollateralMessage, buildLendingMarketRepayMessage, buildLendingMarketSelfLiquidateMessage, buildLendingMarketWithdrawMessage, buildSoftLiquidateMessage, } from "../telegram/TelegramBot.js";
 import { checkWsConnectionViaNewBlocks, getCurrentBlockNumber, getPastEvents, getTxReceiptClassic, subscribeToLendingMarketsEvents } from "../web3Calls/generic.js";
 import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_FACTORY, ABI_LLAMALEND_VAULT } from "./Abis.js";
 import { enrichMarketData, extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, handleEvent } from "./Helper.js";
@@ -101,14 +101,35 @@ async function processLlamalendControllerEvent(market, llamalendVaultContract, c
         const poorFellaAddress = event.returnValues.user;
         const parsedCollatAmount = event.returnValues.collateral_received / 10 ** market.collateral_token_decimals;
         const collarDollarValue = parsedCollatAmount * collatTokenDollarPricePerUnit;
-        const message = buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress);
-        eventEmitter.emit("newMessage", message);
+        if (poorFellaAddress.toLowerCase() === liquidatorAddress.toLowerCase()) {
+            const message = buildLendingMarketSelfLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress);
+            eventEmitter.emit("newMessage", message);
+        }
+        else {
+            const message = buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress);
+            eventEmitter.emit("newMessage", message);
+        }
     }
 }
 async function processLlamalendAmmEvent(market, llamalendVaultContract, controllerContract, ammContract, event, eventEmitter) {
     if (event.event === "TokenExchange") {
         console.log("Soft Liquidation spotted");
         console.log("\n\n new Event in LLAMMA_CRVUSD_AMM:", event);
+        const isLongPosition = market.market_name.endsWith("Long");
+        let crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
+        if (!crvUSDPrice)
+            return;
+        const otherTokenDollarValue = await getCollatDollarValue(market, ammContract, event.blockNumber);
+        let borrowedTokenDollarPricePerUnit = 0;
+        let collatTokenDollarPricePerUnit = 0;
+        if (isLongPosition) {
+            collatTokenDollarPricePerUnit = otherTokenDollarValue;
+            borrowedTokenDollarPricePerUnit = crvUSDPrice;
+        }
+        else {
+            borrowedTokenDollarPricePerUnit = otherTokenDollarValue;
+            collatTokenDollarPricePerUnit = crvUSDPrice;
+        }
         const txHash = event.transactionHash;
         const agentAddress = event.returnValues.buyer;
         let parsedSoftLiquidatedAmount;
@@ -121,10 +142,8 @@ async function processLlamalendAmmEvent(market, llamalendVaultContract, controll
             parsedSoftLiquidatedAmount = event.returnValues.tokens_sold / 10 ** market.collateral_token_decimals;
             parsedRepaidAmount = event.returnValues.tokens_bought / 10 ** market.borrowed_token_decimals;
         }
-        const collatDollarValue = await getCollatDollarValue(market, ammContract, event.blockNumber);
-        const collatDollarAmount = collatDollarValue * parsedSoftLiquidatedAmount;
-        const crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
-        const repaidBorrrowTokenDollarAmount = parsedRepaidAmount * crvUSDPrice;
+        const collatDollarAmount = collatTokenDollarPricePerUnit * parsedSoftLiquidatedAmount;
+        const repaidBorrrowTokenDollarAmount = parsedRepaidAmount * borrowedTokenDollarPricePerUnit;
         const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
         const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
         const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
@@ -156,8 +175,8 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     const PRESENT = await getCurrentBlockNumber();
     // const START_BLOCK = LENDING_LAUNCH_BLOCK;
     // const END_BLOCK = PRESENT;
-    const START_BLOCK = 19506787;
-    const END_BLOCK = 19506787;
+    const START_BLOCK = 19509299;
+    const END_BLOCK = 19509299;
     console.log("start");
     for (const market of allLendingMarkets) {
         // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm
