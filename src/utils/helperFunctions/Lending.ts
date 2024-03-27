@@ -28,7 +28,7 @@ export async function getPositionHealth(controllerContact: any, user: string, bl
 
 export async function getCollatDollarValue(market: EnrichedLendingMarketEvent, ammContract: any, blockNumber: number): Promise<number> {
   let res = await web3Call(ammContract, "price_oracle", [], blockNumber);
-  res = res / 10 ** market.collateral_token_decimals;
+  res = res / 1e18;
   const isLongPosition = market.market_name.endsWith("Long");
 
   if (isLongPosition) return res;

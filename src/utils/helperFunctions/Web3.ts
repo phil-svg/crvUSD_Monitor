@@ -17,15 +17,13 @@ export function getWeb3HttpProvider(): Web3 {
   return web3HttpProvider;
 }
 
-export const ALCHEMY_KEY = process.env.WEB3_HTT!;
-
 export const web3HttpProvider = getWeb3HttpProvider();
 export const webWsProvider = getWeb3WsProvider();
 
 export async function getTxReceipt(txHash: string): Promise<any> {
   try {
     const response = await axios.post(
-      `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY!}`,
+      `${process.env.ALCHEMY_API!}`,
       {
         id: 1,
         jsonrpc: "2.0",
@@ -56,10 +54,7 @@ export async function getTxReceipt(txHash: string): Promise<any> {
 }
 
 export async function getCallTraceViaAlchemy(txHash: string): Promise<any> {
-  const API_KEY = process.env.ALCHEMY;
-  const url = `https://eth-mainnet.g.alchemy.com/v2/${API_KEY}`;
-
-  const response = await fetch(url, {
+  const response = await fetch(process.env.WEB3_HTTP!, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
