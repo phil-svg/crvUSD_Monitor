@@ -96,3 +96,33 @@ export async function enrichMarketData(allLendingMarkets: LendingMarketEvent[]):
 
   return enrichedMarkets;
 }
+
+export async function getFirstGaugeCrvApyByVaultAddress(vaultAddress: string): Promise<number | null> {
+  // Normalize the input address to lower case for case-insensitive comparison
+  const normalizedInputAddress = vaultAddress.toLowerCase();
+
+  try {
+    const response = await fetch("https://api.curve.fi/api/getAllGauges");
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+
+    const data = await response.json();
+
+    // Search through each property in the data object
+    for (const key in data.data) {
+      const item = data.data[key];
+      // Normalize the lendingVaultAddress to lower case
+      if (item.lendingVaultAddress?.toLowerCase() === normalizedInputAddress) {
+        // Return the first number from gaugeCrvApy array
+        return item.gaugeCrvApy[0];
+      }
+    }
+
+    // If no matching lendingVaultAddress is found, return null
+    return null;
+  } catch (error) {
+    console.error("Error fetching or processing data:", error);
+    return null;
+  }
+}

@@ -14,7 +14,7 @@ import {
 } from "../telegram/TelegramBot.js";
 import { checkWsConnectionViaNewBlocks, getCurrentBlockNumber, getPastEvents, getTxReceiptClassic, subscribeToLendingMarketsEvents } from "../web3Calls/generic.js";
 import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_FACTORY, ABI_LLAMALEND_VAULT } from "./Abis.js";
-import { enrichMarketData, extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, filterForOnly, handleEvent } from "./Helper.js";
+import { enrichMarketData, extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, filterForOnly, getFirstGaugeCrvApyByVaultAddress, handleEvent } from "./Helper.js";
 
 async function processLlamalendVaultEvent(
   market: EnrichedLendingMarketEvent,
@@ -44,6 +44,7 @@ async function processLlamalendVaultEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const dollarAmount = parsedDepositedBorrowTokenAmount * borrowedTokenDollarPricePerUnit;
+    const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketDepositMessage(
       market,
       txHash,
@@ -53,7 +54,8 @@ async function processLlamalendVaultEvent(
       borrowApr,
       lendApr,
       totalAssets,
-      totalDebtInMarket
+      totalDebtInMarket,
+      gaugeBoostPercentage
     );
     eventEmitter.emit("newMessage", message);
   }
@@ -65,6 +67,7 @@ async function processLlamalendVaultEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const dollarAmount = parsedWithdrawnBorrowTokenAmount * borrowedTokenDollarPricePerUnit;
+    const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketWithdrawMessage(
       market,
       txHash,
@@ -74,7 +77,8 @@ async function processLlamalendVaultEvent(
       borrowApr,
       lendApr,
       totalAssets,
-      totalDebtInMarket
+      totalDebtInMarket,
+      gaugeBoostPercentage
     );
     eventEmitter.emit("newMessage", message);
   }
@@ -118,6 +122,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_increase / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const dollarAmountBorrow = parsedBorrowedAmount * borrowedTokenDollarPricePerUnit;
+    const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketBorrowMessage(
       market,
       txHash,
@@ -130,7 +135,8 @@ async function processLlamalendControllerEvent(
       dollarAmountBorrow,
       borrowApr,
       lendApr,
-      totalAssets
+      totalAssets,
+      gaugeBoostPercentage
     );
     eventEmitter.emit("newMessage", message);
   }
@@ -139,6 +145,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_decrease / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const repayDollarAmount = parsedRepayAmount * borrowedTokenDollarPricePerUnit;
+    const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketRepayMessage(
       market,
       txHash,
@@ -151,13 +158,15 @@ async function processLlamalendControllerEvent(
       repayDollarAmount,
       borrowApr,
       lendApr,
-      totalAssets
+      totalAssets,
+      gaugeBoostPercentage
     );
     eventEmitter.emit("newMessage", message);
   }
   if (event.event === "RemoveCollateral") {
     const parsedCollatAmount = event.returnValues.collateral_decrease / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
+    const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketRemoveCollateralMessage(
       market,
       parsedCollatAmount,
@@ -168,7 +177,8 @@ async function processLlamalendControllerEvent(
       totalDebtInMarket,
       borrowApr,
       lendApr,
-      totalAssets
+      totalAssets,
+      gaugeBoostPercentage
     );
     eventEmitter.emit("newMessage", message);
   }
@@ -184,6 +194,7 @@ async function processLlamalendControllerEvent(
     const liquidatorAddress = event.returnValues.liquidator;
     const poorFellaAddress = event.returnValues.user;
     const parsedCollatAmount = event.returnValues.collateral_received / 10 ** market.collateral_token_decimals;
+    const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const collarDollarValue = parsedCollatAmount * collatTokenDollarPricePerUnit;
 
     if (poorFellaAddress.toLowerCase() === liquidatorAddress.toLowerCase()) {
@@ -198,10 +209,12 @@ async function processLlamalendControllerEvent(
         borrowApr,
         lendApr,
         totalAssets,
-        liquidatorAddress
+        liquidatorAddress,
+        gaugeBoostPercentage
       );
       eventEmitter.emit("newMessage", message);
     } else {
+      const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
       const message = buildLendingMarketHardLiquidateMessage(
         market,
         parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation,
@@ -214,7 +227,8 @@ async function processLlamalendControllerEvent(
         lendApr,
         totalAssets,
         liquidatorAddress,
-        poorFellaAddress
+        poorFellaAddress,
+        gaugeBoostPercentage
       );
       eventEmitter.emit("newMessage", message);
     }
@@ -258,6 +272,7 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
     const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
     const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
+    const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
 
     const message = buildSoftLiquidateMessage(
       market,
@@ -270,7 +285,8 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
       borrowApr,
       lendApr,
       totalDebtInMarket,
-      totalAssets
+      totalAssets,
+      gaugeBoostPercentage
     );
     eventEmitter.emit("newMessage", message);
   }
@@ -307,8 +323,8 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = PRESENT;
 
-  const START_BLOCK = 19509299;
-  const END_BLOCK = 19509299;
+  const START_BLOCK = 19540220;
+  const END_BLOCK = 19540220;
 
   console.log("start");
 

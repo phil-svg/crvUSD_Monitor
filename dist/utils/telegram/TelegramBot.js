@@ -476,7 +476,7 @@ function getLlamaLendPositionHealthLine(positionHealth) {
         return `Health of Position: no loan`;
     return `Health of Position: ${positionHealth.toFixed(2)}`;
 }
-export function buildLendingMarketDepositMessage(market, txHash, dollarAmount, agentAddress, parsedDepositedBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket) {
+export function buildLendingMarketDepositMessage(market, txHash, dollarAmount, agentAddress, parsedDepositedBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket, gaugeBoostPercentage) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -490,15 +490,19 @@ export function buildLendingMarketDepositMessage(market, txHash, dollarAmount, a
     const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositedBorrowTokenAmount)}${asset_Link}${dollarAddon}
 Market:${hyperlink(vaultURL, market.market_name)}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketWithdrawMessage(market, txHash, dollarAmount, agentAddress, parsedWithdrawnBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket) {
+export function buildLendingMarketWithdrawMessage(market, txHash, dollarAmount, agentAddress, parsedWithdrawnBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket, gaugeBoostPercentage) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -512,16 +516,20 @@ export function buildLendingMarketWithdrawMessage(market, txHash, dollarAmount, 
     const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedWithdrawnBorrowTokenAmount)}${asset_Link}${dollarAddon}
 Market:${hyperlink(vaultURL, market.market_name)}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 // CONTROLLER-MESSAGES
-export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, parsedBorrowedAmount, parsedCollatAmount, positionHealth, totalDebtInMarket, collatDollarAmount, dollarAmountBorrow, borrowApr, lendApr, totalAssets) {
+export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, parsedBorrowedAmount, parsedCollatAmount, positionHealth, totalDebtInMarket, collatDollarAmount, dollarAmountBorrow, borrowApr, lendApr, totalAssets, gaugeBoostPercentage) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -547,16 +555,20 @@ export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, pa
         userLine = `🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedCollatAmount)}${collat_Link}${dollarAddon} and borrowed ${formatForPrint(parsedBorrowedAmount)}${borrowedTokenLink}${dollarAddonBorrow}`;
     }
     const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 ${userLine}
 Market:${hyperlink(vaultURL, market.market_name)}
 ${positionHealthLine}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketRepayMessage(market, txHash, positionHealth, totalDebtInMarket, agentAddress, parsedRepayAmount, collatDollarAmount, parsedCollatAmount, repayDollarAmount, borrowApr, lendApr, totalAssets) {
+export function buildLendingMarketRepayMessage(market, txHash, positionHealth, totalDebtInMarket, agentAddress, parsedRepayAmount, collatDollarAmount, parsedCollatAmount, repayDollarAmount, borrowApr, lendApr, totalAssets, gaugeBoostPercentage) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -579,16 +591,20 @@ export function buildLendingMarketRepayMessage(market, txHash, positionHealth, t
     const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 ${userLine}
 Market:${hyperlink(vaultURL, market.market_name)}
 ${positionHealthLine}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAmount, txHash, agentAddress, positionHealth, collatDollarAmount, totalDebtInMarket, borrowApr, lendApr, totalAssets) {
+export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAmount, txHash, agentAddress, positionHealth, collatDollarAmount, totalDebtInMarket, borrowApr, lendApr, totalAssets, gaugeBoostPercentage) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -603,16 +619,20 @@ export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAm
     const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedCollatAmount)}${collat_Link}${collatDollarAddOn}
 ${positionHealthLine}
 Market:${hyperlink(vaultURL, market.market_name)}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketSelfLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress) {
+export function buildLendingMarketSelfLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, gaugeBoostPercentage) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -624,15 +644,19 @@ export function buildLendingMarketSelfLiquidateMessage(market, parsedBorrowToken
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");
     const collat_URL = getTokenURL(market.collateral_token);
     const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 User${hyperlink(liquidatorURL, shortenAddress(liquidatorAddress))} self-liquidated ${formatForPrint(parsedCollatAmount)}${collat_Link} ($${Number(collarDollarValue.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation)}${borrowedTokenLink} ($${formatForPrint(borrowTokenDollarAmount)})
 Market:${hyperlink(vaultURL, market.market_name)}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress) {
+export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress, gaugeBoostPercentage) {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -646,17 +670,21 @@ export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowToken
     const discountAmount = Math.abs(collarDollarValue - borrowTokenDollarAmount);
     const collat_URL = getTokenURL(market.collateral_token);
     const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 ⚰️${hyperlink(liquidatorURL, shortenAddress(liquidatorAddress))} hard-liquidated ${formatForPrint(parsedCollatAmount)}${collat_Link} ($${Number(collarDollarValue.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation)}${borrowedTokenLink} ($${formatForPrint(borrowTokenDollarAmount)})
 Market:${hyperlink(vaultURL, market.market_name)}
 Discount: $${formatForPrint(discountAmount)}
 Affected User:${hyperlink(poorFellaURL, shortenAddress(poorFellaAddress))}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets) {
+export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets, gaugeBoostPercentage) {
     const vaultURL = getPoolURL(market.vault);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -677,11 +705,15 @@ export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSo
     else {
         direction = "de";
     }
+    let apyLine = `Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    if (gaugeBoostPercentage) {
+        apyLine = `Base Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Gauge: ${gaugeBoostPercentage.toFixed(2)}% | added: ${(calculateAPYFromAPR(lendApr) + gaugeBoostPercentage).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%`;
+    }
     return `
 User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${formatForPrint(parsedSoftLiquidatedAmount)}${collat_Link} ($${Number(collatDollarAmount.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedRepaidAmount)}${borrowedTokenLink} ($${formatForPrint(repaidBorrrowTokenDollarAmount)})
 Market:${hyperlink(vaultURL, market.market_name)}
 Discount: $${formatForPrint(discountAmount)}
-Lending APY: ${calculateAPYFromAPR(lendApr).toFixed(2)}% | Borrow APY: ${calculateAPYFromAPR(borrowApr).toFixed(2)}%
+${apyLine}
 Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberFixed(totalAssets)}${borrowedTokenLink}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
