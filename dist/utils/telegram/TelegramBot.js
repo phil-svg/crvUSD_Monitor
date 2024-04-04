@@ -684,7 +684,7 @@ Borrowed: ${getShortenNumberFixed(totalDebtInMarket)} out of ${getShortenNumberF
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets, gaugeBoostPercentage) {
+export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets, gaugeBoostPercentage, discountAmount) {
     const vaultURL = getPoolURL(market.vault);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -694,7 +694,6 @@ export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSo
     const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
     const borrowedTokenURL = getTokenURL(market.borrowed_token);
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
-    const discountAmount = Math.abs(collatDollarAmount - repaidBorrrowTokenDollarAmount);
     const curveLendingLink = hyperlink(getCurveLendingURL(market.id), "lend.curve.fi");
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, "etherscan.io");
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, "eigenphi.io");

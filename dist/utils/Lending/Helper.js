@@ -1,5 +1,7 @@
 import { web3HttpProvider } from "../helperFunctions/Web3.js";
 import { getCoinDecimals, getCoinSymbol } from "../pegkeeper/Pegkeeper.js";
+import { web3Call } from "../web3Calls/generic.js";
+import { ABI_LLAMALEND_AMM } from "./Abis.js";
 export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation(receipt, market) {
     if (!receipt)
         return null;
@@ -60,15 +62,18 @@ export async function enrichMarketData(allLendingMarkets) {
         const collateralTokenDecimals = await getCoinDecimals(market.collateral_token, web3HttpProvider);
         const borrowedTokenSymbol = await getCoinSymbol(market.borrowed_token, web3HttpProvider);
         const borrowedTokenDecimals = await getCoinDecimals(market.borrowed_token, web3HttpProvider);
+        const ammContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
+        let fee = await web3Call(ammContract, "fee", []);
         // Check if any fetched data is null
-        if (!collateralTokenSymbol || !borrowedTokenSymbol || collateralTokenDecimals === null || borrowedTokenDecimals === null) {
+        if (!collateralTokenSymbol || !borrowedTokenSymbol || !collateralTokenDecimals || !borrowedTokenDecimals || !fee) {
             return null; // Return null for the whole function if any data couldn't be fetched
         }
+        fee = fee / 1e18;
         // Assuming decimals are returned as strings and need to be parsed
         const collateralDecimals = parseInt(collateralTokenDecimals, 10);
         const borrowedDecimals = parseInt(borrowedTokenDecimals, 10);
         const marketName = buildMarketName(collateralTokenSymbol, borrowedTokenSymbol);
-        enrichedMarkets.push(Object.assign(Object.assign({}, market), { collateral_token_symbol: collateralTokenSymbol, collateral_token_decimals: collateralDecimals, borrowed_token_symbol: borrowedTokenSymbol, borrowed_token_decimals: borrowedDecimals, market_name: marketName }));
+        enrichedMarkets.push(Object.assign(Object.assign({}, market), { collateral_token_symbol: collateralTokenSymbol, collateral_token_decimals: collateralDecimals, borrowed_token_symbol: borrowedTokenSymbol, borrowed_token_decimals: borrowedDecimals, market_name: marketName, fee: fee }));
     }
     return enrichedMarkets;
 }

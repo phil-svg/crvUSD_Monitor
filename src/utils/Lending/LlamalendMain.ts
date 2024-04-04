@@ -273,6 +273,7 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
     const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
+    const discountAmount = repaidBorrrowTokenDollarAmount * market.fee;
 
     const message = buildSoftLiquidateMessage(
       market,
@@ -286,7 +287,8 @@ async function processLlamalendAmmEvent(market: EnrichedLendingMarketEvent, llam
       lendApr,
       totalDebtInMarket,
       totalAssets,
-      gaugeBoostPercentage
+      gaugeBoostPercentage,
+      discountAmount
     );
     eventEmitter.emit("newMessage", message);
   }
@@ -323,8 +325,8 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = PRESENT;
 
-  const START_BLOCK = 19540220;
-  const END_BLOCK = 19540220;
+  const START_BLOCK = 19581002;
+  const END_BLOCK = START_BLOCK;
 
   console.log("start");
 
@@ -410,13 +412,16 @@ export async function launchCurveLendingMonitoring(eventEmitter: any) {
     console.log("Failed to boot LLamma Lend Markets, stopping!");
     return;
   }
+
   // console.log("allEnrichedLendingMarkets", allEnrichedLendingMarkets);
+  // process.exit();
 
   // await histoMode(allEnrichedLendingMarkets, eventEmitter);
   await liveMode(allEnrichedLendingMarkets, eventEmitter);
 }
 
 /*
+
 allEnrichedLendingMarkets [
   {
     id: '0',
@@ -431,7 +436,8 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'crvUSD',
     borrowed_token_decimals: 18,
-    market_name: 'wstETH Long'
+    market_name: 'wstETH Long',
+    fee: 0.006
   },
   {
     id: '1',
@@ -446,7 +452,8 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'crvUSD',
     borrowed_token_decimals: 18,
-    market_name: 'WETH Long'
+    market_name: 'WETH Long',
+    fee: 0.006
   },
   {
     id: '2',
@@ -461,7 +468,8 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'crvUSD',
     borrowed_token_decimals: 18,
-    market_name: 'tBTC Long'
+    market_name: 'tBTC Long',
+    fee: 0.006
   },
   {
     id: '3',
@@ -476,7 +484,8 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'crvUSD',
     borrowed_token_decimals: 18,
-    market_name: 'CRV Long'
+    market_name: 'CRV Long',
+    fee: 0.006
   },
   {
     id: '4',
@@ -491,7 +500,8 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'CRV',
     borrowed_token_decimals: 18,
-    market_name: 'CRV Short'
+    market_name: 'CRV Short',
+    fee: 0.006
   },
   {
     id: '5',
@@ -506,7 +516,8 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'WETH',
     borrowed_token_decimals: 18,
-    market_name: 'WETH Short'
+    market_name: 'WETH Short',
+    fee: 0.006
   },
   {
     id: '6',
@@ -521,7 +532,8 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'tBTC',
     borrowed_token_decimals: 18,
-    market_name: 'tBTC Short'
+    market_name: 'tBTC Short',
+    fee: 0.006
   },
   {
     id: '7',
@@ -536,7 +548,9 @@ allEnrichedLendingMarkets [
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'crvUSD',
     borrowed_token_decimals: 18,
-    market_name: 'sUSDe Long'
+    market_name: 'sUSDe Long',
+    fee: 0.002
   }
 ]
+
 */

@@ -47,6 +47,7 @@ export interface EnrichedLendingMarketEvent extends LendingMarketEvent {
   borrowed_token_symbol: string;
   borrowed_token_decimals: number;
   market_name: string;
+  fee: number;
 }
 
 interface EventLog {
