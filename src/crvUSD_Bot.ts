@@ -11,13 +11,13 @@ import { launchCurveLendingMonitoring } from './utils/Lending/LlamalendMain.js';
 
 console.clear();
 
-// export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 100000;
-// export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 65000;
-// export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
+export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 100000;
+export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 65000;
+export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
 
-export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 0;
-export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 0;
-export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0;
+// export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 0;
+// export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 0;
+// export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0;
 
 const ENV = 'prod';
 // const ENV = 'test';
