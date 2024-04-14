@@ -20,8 +20,6 @@ export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquida
       log.topics[2].toLowerCase().replace('0x000000000000000000000000', '') === controllerAddress
   );
 
-  console.log('allLogsWithControllerAddress', allLogsWithControllerAddress);
-
   const logEntry = allLogsWithControllerAddress.find(
     (log) => log.topics[1].toLowerCase().replace('0x000000000000000000000000', '') !== ammAddress
   );
