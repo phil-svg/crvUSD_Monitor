@@ -1,21 +1,29 @@
-import { dir } from "console";
-import { EnrichedLendingMarketEvent, EthereumEvent, LendingMarketEvent, TransactionReceipt } from "../Interfaces.js";
-import { web3HttpProvider } from "../helperFunctions/Web3.js";
-import { getCoinDecimals, getCoinSymbol } from "../pegkeeper/Pegkeeper.js";
-import { web3Call } from "../web3Calls/generic.js";
-import { ABI_LLAMALEND_AMM } from "./Abis.js";
+import { dir } from 'console';
+import { EnrichedLendingMarketEvent, EthereumEvent, LendingMarketEvent, TransactionReceipt } from '../Interfaces.js';
+import { web3HttpProvider } from '../helperFunctions/Web3.js';
+import { getCoinDecimals, getCoinSymbol } from '../pegkeeper/Pegkeeper.js';
+import { web3Call } from '../web3Calls/generic.js';
+import { ABI_LLAMALEND_AMM } from './Abis.js';
 
-export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation(receipt: TransactionReceipt | null, market: EnrichedLendingMarketEvent): number | null {
+export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation(
+  receipt: TransactionReceipt | null,
+  market: EnrichedLendingMarketEvent
+): number | null {
   if (!receipt) return null;
-  const transferSignature = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-  const senderAddress = receipt.from.toLowerCase().replace("0x", "");
-  const controllerAddress = market.controller.toLowerCase().replace("0x", "");
+  const transferSignature = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+  const controllerAddress = market.controller.toLowerCase().replace('0x', '');
+  const ammAddress = market.amm.toLowerCase().replace('0x', '');
 
-  const logEntry = receipt.logs.find(
+  const allLogsWithControllerAddress = receipt.logs.filter(
     (log) =>
       log.topics[0] === transferSignature &&
-      log.topics[1].toLowerCase().replace("0x000000000000000000000000", "") === senderAddress &&
-      log.topics[2].toLowerCase().replace("0x000000000000000000000000", "") === controllerAddress
+      log.topics[2].toLowerCase().replace('0x000000000000000000000000', '') === controllerAddress
+  );
+
+  console.log('allLogsWithControllerAddress', allLogsWithControllerAddress);
+
+  const logEntry = allLogsWithControllerAddress.find(
+    (log) => log.topics[1].toLowerCase().replace('0x000000000000000000000000', '') !== ammAddress
   );
 
   if (logEntry) {
@@ -24,7 +32,7 @@ export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquida
     const decimalValue = parseInt(relevantHexValue, 16);
     return decimalValue / 10 ** market.borrowed_token_decimals;
   } else {
-    console.log("No matching log entry found.");
+    console.log('No matching log entry found.');
     return null;
   }
 }
@@ -33,7 +41,7 @@ export function filterForOnly(targetAddress: string, market: LendingMarketEvent)
   const normalizedTargetAddress = targetAddress.toLowerCase();
   const marketValues = Object.values(market);
   return marketValues.some((value) => {
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
       return value.toLowerCase() === normalizedTargetAddress;
     }
     return false;
@@ -41,7 +49,8 @@ export function filterForOnly(targetAddress: string, market: LendingMarketEvent)
 }
 
 export async function handleEvent(event: EthereumEvent): Promise<LendingMarketEvent> {
-  const { id, collateral_token, borrowed_token, vault, controller, amm, price_oracle, monetary_policy } = event.returnValues;
+  const { id, collateral_token, borrowed_token, vault, controller, amm, price_oracle, monetary_policy } =
+    event.returnValues;
 
   const lendingMarketEvent: LendingMarketEvent = {
     id,
@@ -59,14 +68,16 @@ export async function handleEvent(event: EthereumEvent): Promise<LendingMarketEv
 
 function buildMarketName(collateralTokenSymbol: string, borrowedTokenSymbol: string): string {
   let token;
-  if (collateralTokenSymbol !== "crvUSD") {
-    return collateralTokenSymbol + " Long";
+  if (collateralTokenSymbol !== 'crvUSD') {
+    return collateralTokenSymbol + ' Long';
   } else {
-    return borrowedTokenSymbol + " Short";
+    return borrowedTokenSymbol + ' Short';
   }
 }
 
-export async function enrichMarketData(allLendingMarkets: LendingMarketEvent[]): Promise<EnrichedLendingMarketEvent[] | null> {
+export async function enrichMarketData(
+  allLendingMarkets: LendingMarketEvent[]
+): Promise<EnrichedLendingMarketEvent[] | null> {
   const enrichedMarkets: EnrichedLendingMarketEvent[] = [];
 
   for (const market of allLendingMarkets) {
@@ -76,7 +87,7 @@ export async function enrichMarketData(allLendingMarkets: LendingMarketEvent[]):
     const borrowedTokenDecimals = await getCoinDecimals(market.borrowed_token, web3HttpProvider);
 
     const ammContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
-    let fee = await web3Call(ammContract, "fee", []);
+    let fee = await web3Call(ammContract, 'fee', []);
 
     // Check if any fetched data is null
     if (!collateralTokenSymbol || !borrowedTokenSymbol || !collateralTokenDecimals || !borrowedTokenDecimals || !fee) {
@@ -110,9 +121,9 @@ export async function getFirstGaugeCrvApyByVaultAddress(vaultAddress: string): P
   const normalizedInputAddress = vaultAddress.toLowerCase();
 
   try {
-    const response = await fetch("https://api.curve.fi/api/getAllGauges");
+    const response = await fetch('https://api.curve.fi/api/getAllGauges');
     if (!response.ok) {
-      throw new Error("Network response was not ok");
+      throw new Error('Network response was not ok');
     }
 
     const data = await response.json();
@@ -130,7 +141,7 @@ export async function getFirstGaugeCrvApyByVaultAddress(vaultAddress: string): P
     // If no matching lendingVaultAddress is found, return null
     return null;
   } catch (error) {
-    console.error("Error fetching or processing data:", error);
+    console.error('Error fetching or processing data:', error);
     return null;
   }
 }
