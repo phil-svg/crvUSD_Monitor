@@ -151,11 +151,12 @@ export async function manageMarket(MARKET, eventEmitter) {
     await subscribeToEvents(AMM_CONTRACT, eventEmitter, MARKET);
     await subscribeToEvents(CONTROLLER_CONTRACT, eventEmitter, MARKET);
 }
-export async function handleLiveEvents(eventEmitter) {
-    eventEmitter.on('newEvent', async ({ eventData: EVENT, Market: MARKET }) => {
+export async function handleLiveEvents(eventEmitterTelegramBotRelated) {
+    eventEmitterTelegramBotRelated.on('newEvent', async ({ eventData: EVENT, Market: MARKET }) => {
         // for command checking when was the last seen tx.
         await saveLastSeenToFile(EVENT.transactionHash, new Date());
         console.log('New event in crvUSD Classic:', EVENT.transactionHash);
+        // console.log('New event in crvUSD Classic:', EVENT);
         const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
         const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
         const AMM_ADDRESS = MARKET.returnValues.amm;
@@ -163,8 +164,10 @@ export async function handleLiveEvents(eventEmitter) {
         // DEFI-SAVER START
         const txHash = EVENT.transactionHash;
         const tx = await getTxFromTxHash(txHash);
-        if (!tx)
+        if (!tx) {
+            console.log('failed to fetch tx');
             return;
+        }
         const DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS = '0x252025df8680c275d0ba80d084e5967d8bd26caf';
         let isDefiSaverAutomatedTx = false;
         if (tx.to.toLowerCase() === DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS.toLowerCase())
@@ -196,7 +199,7 @@ export async function handleLiveEvents(eventEmitter) {
             const message = await buildBorrowMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
             if (message === "don't print tiny liquidations")
                 return;
-            eventEmitter.emit('newMessage', message);
+            eventEmitterTelegramBotRelated.emit('newMessage', message);
         }
         else if (EVENT.event === 'Repay') {
             let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, EVENT);
@@ -208,7 +211,7 @@ export async function handleLiveEvents(eventEmitter) {
             if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING)
                 return;
             const message = await buildRepayMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
-            eventEmitter.emit('newMessage', message);
+            eventEmitterTelegramBotRelated.emit('newMessage', message);
         }
         else if (EVENT.event === 'RemoveCollateral') {
             const formattedEventData = await processRemoveCollateralEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
@@ -217,7 +220,7 @@ export async function handleLiveEvents(eventEmitter) {
             const message = await buildRemoveCollateralMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
             if (message === "don't print small amounts")
                 return;
-            eventEmitter.emit('newMessage', message);
+            eventEmitterTelegramBotRelated.emit('newMessage', message);
         }
         else if (EVENT.event === 'Liquidate') {
             const formattedEventData = await processLiquidateEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
@@ -226,7 +229,7 @@ export async function handleLiveEvents(eventEmitter) {
             const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, AMM_ADDRESS);
             if (message === "don't print tiny hard-liquidations")
                 return;
-            eventEmitter.emit('newMessage', message);
+            eventEmitterTelegramBotRelated.emit('newMessage', message);
             // AMM EVENT
         }
         else if (EVENT.event === 'TokenExchange') {
@@ -237,7 +240,7 @@ export async function handleLiveEvents(eventEmitter) {
             const message = await buildTokenExchangeMessage(formattedEventData);
             if (message === "don't print tiny liquidations")
                 return;
-            eventEmitter.emit('newMessage', message);
+            eventEmitterTelegramBotRelated.emit('newMessage', message);
         }
     });
 }

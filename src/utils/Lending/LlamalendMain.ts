@@ -456,7 +456,7 @@ const llamalendFactoryAddress = '0xeA6876DDE9e3467564acBeE1Ed5bac88783205E0'; //
 
 // todo
 
-export async function launchCurveLendingMonitoring(eventEmitter: any) {
+export async function launchCurveLendingMonitoring(eventEmitterTelegramBotRelated: any) {
   const allLendingMarkets = await getAllLendingMarkets();
   const allEnrichedLendingMarkets = await enrichMarketData(allLendingMarkets);
   if (!allEnrichedLendingMarkets) {
@@ -468,7 +468,7 @@ export async function launchCurveLendingMonitoring(eventEmitter: any) {
   // process.exit();
 
   // await histoMode(allEnrichedLendingMarkets, eventEmitter);
-  await liveMode(allEnrichedLendingMarkets, eventEmitter);
+  await liveMode(allEnrichedLendingMarkets, eventEmitterTelegramBotRelated);
 }
 
 /*

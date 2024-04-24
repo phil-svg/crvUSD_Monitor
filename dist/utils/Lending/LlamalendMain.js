@@ -252,7 +252,7 @@ async function liveMode(allLendingMarkets, eventEmitter) {
 // Markets: (v3)
 const llamalendFactoryAddress = '0xeA6876DDE9e3467564acBeE1Ed5bac88783205E0'; // v3
 // todo
-export async function launchCurveLendingMonitoring(eventEmitter) {
+export async function launchCurveLendingMonitoring(eventEmitterTelegramBotRelated) {
     const allLendingMarkets = await getAllLendingMarkets();
     const allEnrichedLendingMarkets = await enrichMarketData(allLendingMarkets);
     if (!allEnrichedLendingMarkets) {
@@ -262,7 +262,7 @@ export async function launchCurveLendingMonitoring(eventEmitter) {
     // console.log("allEnrichedLendingMarkets", allEnrichedLendingMarkets);
     // process.exit();
     // await histoMode(allEnrichedLendingMarkets, eventEmitter);
-    await liveMode(allEnrichedLendingMarkets, eventEmitter);
+    await liveMode(allEnrichedLendingMarkets, eventEmitterTelegramBotRelated);
 }
 /*
 

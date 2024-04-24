@@ -1391,16 +1391,9 @@ export async function processLastSeen(eventEmitter: EventEmitter) {
   eventEmitter.emit('newMessage', message);
 }
 
-export async function telegramBotMain(env: string, eventEmitter: EventEmitter) {
-  eventEmitter.on('newMessage', (message: string) => {
-    if (groupID) {
-      send(bot, message, parseInt(groupID));
-    }
-  });
-
-  let telegramGroupToken: string | undefined;
+export function getTgBot(env: string) {
   let groupID: string | undefined;
-
+  let telegramGroupToken: string | undefined;
   if (env == 'prod') {
     telegramGroupToken = process.env.TELEGRAM_CRVUSD_PROD_KEY!;
     groupID = process.env.TELEGRAM_PROD_GROUP_ID!;
@@ -1411,6 +1404,23 @@ export async function telegramBotMain(env: string, eventEmitter: EventEmitter) {
   }
 
   const bot = new TelegramBot(telegramGroupToken!, { polling: true });
+  return bot;
+}
+
+export async function telegramBotMain(env: string, bot: TelegramBot, eventEmitterTelegramBotRelated: EventEmitter) {
+  let groupID: string | undefined;
+  if (env == 'prod') {
+    groupID = process.env.TELEGRAM_PROD_GROUP_ID!;
+  }
+  if (env == 'test') {
+    groupID = process.env.TELEGRAM_TEST_GROUP_ID!;
+  }
+
+  eventEmitterTelegramBotRelated.on('newMessage', (message: string) => {
+    if (groupID) {
+      send(bot, message, parseInt(groupID));
+    }
+  });
 
   botMonitoringIntervalPrint(bot);
 
@@ -1423,7 +1433,7 @@ export async function telegramBotMain(env: string, eventEmitter: EventEmitter) {
     }
     if (msg && msg.text && msg.text.toLowerCase() === 'print last seen') {
       await new Promise((resolve) => setTimeout(resolve, 650));
-      await processLastSeen(eventEmitter);
+      await processLastSeen(eventEmitterTelegramBotRelated);
     }
   });
 }

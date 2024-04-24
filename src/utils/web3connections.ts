@@ -5,12 +5,12 @@ import { main } from '../crvUSD_Bot.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 
-const eventEmitter = new EventEmitter();
+export const eventEmitter = new EventEmitter();
+export const eventEmitterTelegramBotRelated = new EventEmitter();
 
 export let WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
 export let WEB3_WS_PROVIDER = getWeb3WsProvider();
 
-export default eventEmitter;
 let subscription: any; // Holds the subscription object
 
 function getWeb3WsProvider(): Web3 {

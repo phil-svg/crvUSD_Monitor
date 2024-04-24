@@ -180,11 +180,12 @@ export async function manageMarket(MARKET: any, eventEmitter: any): Promise<void
   await subscribeToEvents(CONTROLLER_CONTRACT, eventEmitter, MARKET);
 }
 
-export async function handleLiveEvents(eventEmitter: any) {
-  eventEmitter.on('newEvent', async ({ eventData: EVENT, Market: MARKET }: EventAndMarket) => {
+export async function handleLiveEvents(eventEmitterTelegramBotRelated: any) {
+  eventEmitterTelegramBotRelated.on('newEvent', async ({ eventData: EVENT, Market: MARKET }: EventAndMarket) => {
     // for command checking when was the last seen tx.
     await saveLastSeenToFile(EVENT.transactionHash, new Date());
     console.log('New event in crvUSD Classic:', EVENT.transactionHash);
+    // console.log('New event in crvUSD Classic:', EVENT);
     const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
     const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
     const AMM_ADDRESS = MARKET.returnValues.amm;
@@ -193,7 +194,10 @@ export async function handleLiveEvents(eventEmitter: any) {
     // DEFI-SAVER START
     const txHash = (EVENT as { transactionHash: string }).transactionHash;
     const tx = await getTxFromTxHash(txHash);
-    if (!tx) return;
+    if (!tx) {
+      console.log('failed to fetch tx');
+      return;
+    }
     const DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS = '0x252025df8680c275d0ba80d084e5967d8bd26caf';
 
     let isDefiSaverAutomatedTx = false;
@@ -234,7 +238,7 @@ export async function handleLiveEvents(eventEmitter: any) {
         defiSaverUser
       );
       if (message === "don't print tiny liquidations") return;
-      eventEmitter.emit('newMessage', message);
+      eventEmitterTelegramBotRelated.emit('newMessage', message);
     } else if (EVENT.event === 'Repay') {
       let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, EVENT);
       if (liquidateEventQuestion == true) return;
@@ -247,7 +251,7 @@ export async function handleLiveEvents(eventEmitter: any) {
         isManualSmartWalletTx,
         defiSaverUser
       );
-      eventEmitter.emit('newMessage', message);
+      eventEmitterTelegramBotRelated.emit('newMessage', message);
     } else if (EVENT.event === 'RemoveCollateral') {
       const formattedEventData = await processRemoveCollateralEvent(
         EVENT,
@@ -263,7 +267,7 @@ export async function handleLiveEvents(eventEmitter: any) {
         defiSaverUser
       );
       if (message === "don't print small amounts") return;
-      eventEmitter.emit('newMessage', message);
+      eventEmitterTelegramBotRelated.emit('newMessage', message);
     } else if (EVENT.event === 'Liquidate') {
       const formattedEventData = await processLiquidateEvent(
         EVENT,
@@ -274,7 +278,7 @@ export async function handleLiveEvents(eventEmitter: any) {
       if (hasUndefinedOrNaNValues(formattedEventData)) return;
       const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, AMM_ADDRESS);
       if (message === "don't print tiny hard-liquidations") return;
-      eventEmitter.emit('newMessage', message);
+      eventEmitterTelegramBotRelated.emit('newMessage', message);
       // AMM EVENT
     } else if (EVENT.event === 'TokenExchange') {
       const formattedEventData = await processTokenExchangeEvent(
@@ -290,7 +294,7 @@ export async function handleLiveEvents(eventEmitter: any) {
         return;
       const message = await buildTokenExchangeMessage(formattedEventData);
       if (message === "don't print tiny liquidations") return;
-      eventEmitter.emit('newMessage', message);
+      eventEmitterTelegramBotRelated.emit('newMessage', message);
     }
   });
 }
