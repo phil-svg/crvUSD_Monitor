@@ -1,43 +1,40 @@
-import { getWeb3HttpProvider } from "./Web3.js";
-import { getPastEvents, getWalletTokenBalance, web3Call } from "../web3Calls/generic.js";
-import { solveProfit } from "../profit/profit.js";
-import { getBorrowRateForProvidedLlamma } from "./LLAMMA.js";
-import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from "../CollatCheatSheet.js";
-import { getPriceOf_crvUSD } from "../priceAPI/priceAPI.js";
-import { getDollarValue } from "../../txValue/DefiLlama.js";
-import { ADDRESS_crvUSD, ADDRESS_crvUSD_ControllerFactory, NULL_ADDRESS, addressAggMonetary } from "../Constants.js";
-import { ABI_AggMonetaryPolicy } from "../abis/ABI_AggMonetaryPolicy.js";
-import { ABI_Controller } from "../abis/ABI_Controller.js";
-import { ABI_crvUSD_ControllerFactory } from "../abis/ABI_crvUSD_ControllerFactory.js";
-import { ABI_crvUSD } from "../abis/ABI_crvUSD.js";
+import { getPastEvents, getWalletTokenBalance, web3Call } from '../web3Calls/generic.js';
+import { solveProfit } from '../profit/profit.js';
+import { getBorrowRateForProvidedLlamma } from './LLAMMA.js';
+import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from '../CollatCheatSheet.js';
+import { getPriceOf_crvUSD } from '../priceAPI/priceAPI.js';
+import { getDollarValue } from '../../txValue/DefiLlama.js';
+import { ADDRESS_crvUSD, ADDRESS_crvUSD_ControllerFactory, NULL_ADDRESS, addressAggMonetary } from '../Constants.js';
+import { ABI_AggMonetaryPolicy } from '../abis/ABI_AggMonetaryPolicy.js';
+import { ABI_Controller } from '../abis/ABI_Controller.js';
+import { ABI_crvUSD_ControllerFactory } from '../abis/ABI_crvUSD_ControllerFactory.js';
+import { ABI_crvUSD } from '../abis/ABI_crvUSD.js';
+import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
 export function hasUndefinedOrNaNValues(data) {
     return Object.values(data).some((value) => value === undefined || Number.isNaN(value));
 }
 async function getCollatPrice(controllerAddress, collateralAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
-    const PRICE = await web3Call(CONTROLLER, "amm_price", [], blockNumber);
+    const PRICE = await web3Call(CONTROLLER, 'amm_price', [], blockNumber);
     // const COLLAT_DECIMALS = getDecimalFromCheatSheet(collateralAddress);
     return Number(PRICE / 10 ** 18);
 }
 async function getPositionHealthOfGeneralAddress(controllerAddress, userAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
     try {
-        const hasLoan = await web3Call(CONTROLLER, "loan_exists", [userAddress], blockNumber);
+        const hasLoan = await web3Call(CONTROLLER, 'loan_exists', [userAddress], blockNumber);
         if (!hasLoan)
-            return "no loan";
-        const HEALTH = await web3Call(CONTROLLER, "health", [userAddress, "true"], blockNumber);
+            return 'no loan';
+        const HEALTH = await web3Call(CONTROLLER, 'health', [userAddress, 'true'], blockNumber);
         return Number(HEALTH / 1e18);
     }
     catch (err) {
-        return "no loan";
+        return 'no loan';
     }
 }
 async function getPositionHealth(controllerAddress, userAddress, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
-    const HEALTH = await web3Call(CONTROLLER, "health", [userAddress], blockNumber);
+    const HEALTH = await web3Call(CONTROLLER, 'health', [userAddress], blockNumber);
     return Number(HEALTH / 1e18);
 }
 async function getBorrowRate(event, AMM_ADDRESS) {
@@ -50,35 +47,32 @@ async function getAmountOfCollatInMarket(addressCollat, addressAmm, blockNumber)
     return BALANCE / 10 ** DECIMALS;
 }
 async function getcrvUSDinCirculation(blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
-    const totalDebt = await web3Call(crvUSD_ControllerFactory, "total_debt", [], blockNumber);
+    const totalDebt = await web3Call(crvUSD_ControllerFactory, 'total_debt', [], blockNumber);
     return Number(totalDebt / 1e18);
 }
 async function getTotalMarketDebt(blockNumber, controllerAddress) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
-    const TOTAL_DEBT = await web3Call(CONTROLLER, "total_debt", [], blockNumber);
+    const TOTAL_DEBT = await web3Call(CONTROLLER, 'total_debt', [], blockNumber);
     return Number(TOTAL_DEBT / 1e18);
 }
 async function getCrvUsdTranserAmount(event) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const crvUSD = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
-    let amounts = await getPastEvents(crvUSD, "Transfer", event.blockNumber, event.blockNumber);
+    let amounts = await getPastEvents(crvUSD, 'Transfer', event.blockNumber, event.blockNumber);
     if (!amounts || !Array.isArray(amounts))
         return;
-    let amountElement = amounts.find((element) => element.returnValues.sender === event.returnValues.liquidator || element.returnValues.receiver === event.returnValues.liquidator);
-    let liquidatorCrvUsdTransferAmount = amountElement ? amountElement.returnValues.value : "bar";
+    let amountElement = amounts.find((element) => element.returnValues.sender === event.returnValues.liquidator ||
+        element.returnValues.receiver === event.returnValues.liquidator);
+    let liquidatorCrvUsdTransferAmount = amountElement ? amountElement.returnValues.value : 'bar';
     return Number(liquidatorCrvUsdTransferAmount / 1e18);
 }
 async function getPegKeepers(blockNumber) {
-    let web3 = getWeb3HttpProvider();
-    const AggMonetaryPolicy = new web3.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
+    const AggMonetaryPolicy = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
     const pegKeeperAddresses = [];
     let index = 0;
     while (true) {
         try {
-            const pegKeeperAddress = await web3Call(AggMonetaryPolicy, "peg_keepers", [index], blockNumber);
+            const pegKeeperAddress = await web3Call(AggMonetaryPolicy, 'peg_keepers', [index], blockNumber);
             if (pegKeeperAddress === NULL_ADDRESS)
                 break;
             pegKeeperAddresses.push(pegKeeperAddress);
@@ -91,26 +85,25 @@ async function getPegKeepers(blockNumber) {
     return pegKeeperAddresses;
 }
 async function getMarketCap(blockNumber) {
-    let web3 = getWeb3HttpProvider();
     const pegKeepers = await getPegKeepers(blockNumber);
     const ABI = [
         {
-            stateMutability: "view",
-            type: "function",
-            name: "debt",
+            stateMutability: 'view',
+            type: 'function',
+            name: 'debt',
             inputs: [],
             outputs: [
                 {
-                    name: "",
-                    type: "uint256",
+                    name: '',
+                    type: 'uint256',
                 },
             ],
         },
     ];
     let pegKeepersDebt = 0;
     for (const pegKeeperAddress of pegKeepers) {
-        const CONTRACT = new web3.eth.Contract(ABI, pegKeeperAddress);
-        const debt = await web3Call(CONTRACT, "debt", [], blockNumber);
+        const CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(ABI, pegKeeperAddress);
+        const debt = await web3Call(CONTRACT, 'debt', [], blockNumber);
         pegKeepersDebt += debt / 1e18;
     }
     return pegKeepersDebt;
@@ -358,10 +351,10 @@ export async function processTokenExchangeEvent(event, controllerAddress, collat
     let numberOfcrvUSDper1_collat;
     let amount_collat;
     let amount_crvUSD;
-    if (event.returnValues.sold_id === "0") {
+    if (event.returnValues.sold_id === '0') {
         soldAddress = ADDRESS_crvUSD;
         boughtAddress = collateralAddress;
-        tokenSoldName = "crvUSD";
+        tokenSoldName = 'crvUSD';
         soldAmount = Number(soldAmount / 1e18);
         amount_crvUSD = soldAmount;
         tokenBoughtName = collatName;
@@ -369,21 +362,21 @@ export async function processTokenExchangeEvent(event, controllerAddress, collat
         amount_collat = boughtAmount;
         numberOfcrvUSDper1_collat = soldAmount / boughtAmount;
     }
-    if (event.returnValues.sold_id === "1") {
+    if (event.returnValues.sold_id === '1') {
         boughtAddress = ADDRESS_crvUSD;
         soldAddress = collateralAddress;
         tokenSoldName = collatName;
         soldAmount = Number(soldAmount / 10 ** collatDecimals);
         amount_collat = soldAmount;
-        tokenBoughtName = "crvUSD";
+        tokenBoughtName = 'crvUSD';
         boughtAmount = Number(boughtAmount / 1e18);
         amount_crvUSD = boughtAmount;
         numberOfcrvUSDper1_collat = boughtAmount / soldAmount;
     }
     let dollarAmount;
-    if (event.returnValues.sold_id === "0")
+    if (event.returnValues.sold_id === '0')
         dollarAmount = Number(boughtAmount * collateral_price);
-    if (event.returnValues.sold_id === "1")
+    if (event.returnValues.sold_id === '1')
         dollarAmount = Number(soldAmount * collateral_price);
     if (!tokenSoldName)
         return;

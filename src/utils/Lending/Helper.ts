@@ -1,8 +1,7 @@
-import { dir } from 'console';
 import { EnrichedLendingMarketEvent, EthereumEvent, LendingMarketEvent, TransactionReceipt } from '../Interfaces.js';
-import { web3HttpProvider } from '../helperFunctions/Web3.js';
 import { getCoinDecimals, getCoinSymbol } from '../pegkeeper/Pegkeeper.js';
 import { web3Call } from '../web3Calls/generic.js';
+import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
 import { ABI_LLAMALEND_AMM } from './Abis.js';
 
 export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation(
@@ -79,12 +78,12 @@ export async function enrichMarketData(
   const enrichedMarkets: EnrichedLendingMarketEvent[] = [];
 
   for (const market of allLendingMarkets) {
-    const collateralTokenSymbol = await getCoinSymbol(market.collateral_token, web3HttpProvider);
-    const collateralTokenDecimals = await getCoinDecimals(market.collateral_token, web3HttpProvider);
-    const borrowedTokenSymbol = await getCoinSymbol(market.borrowed_token, web3HttpProvider);
-    const borrowedTokenDecimals = await getCoinDecimals(market.borrowed_token, web3HttpProvider);
+    const collateralTokenSymbol = await getCoinSymbol(market.collateral_token, WEB3_HTTP_PROVIDER);
+    const collateralTokenDecimals = await getCoinDecimals(market.collateral_token, WEB3_HTTP_PROVIDER);
+    const borrowedTokenSymbol = await getCoinSymbol(market.borrowed_token, WEB3_HTTP_PROVIDER);
+    const borrowedTokenDecimals = await getCoinDecimals(market.borrowed_token, WEB3_HTTP_PROVIDER);
 
-    const ammContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
+    const ammContract = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
     let fee = await web3Call(ammContract, 'fee', []);
 
     // Check if any fetched data is null

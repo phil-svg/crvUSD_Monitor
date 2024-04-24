@@ -1,5 +1,5 @@
-import { getWeb3HttpProvider } from "./Web3.js";
-import { ABI_AMM } from "../abis/ABI_AMM.js";
+import { ABI_AMM } from '../abis/ABI_AMM.js';
+import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
 export function calculateInterest(rate) {
     rate = rate / 1e18;
     const SECONDS_IN_A_YEAR = 365 * 86400;
@@ -14,7 +14,6 @@ export function calculateAPYFromAPR(apr) {
     return apy;
 }
 export async function getBorrowRateForProvidedLlamma(LLAMMA_ADDRESS, blockNumber) {
-    const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
     const AMM = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_AMM, LLAMMA_ADDRESS);
     try {
         let rate = Number(await AMM.methods.rate().call(blockNumber));

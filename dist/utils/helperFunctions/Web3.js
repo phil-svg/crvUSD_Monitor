@@ -1,27 +1,15 @@
-import Web3 from "web3";
-import dotenv from "dotenv";
-import axios from "axios";
-import Bottleneck from "bottleneck";
-import axiosRetry from "axios-retry";
-dotenv.config({ path: "../.env" });
-export function getWeb3WsProvider() {
-    let web3WsProvider = null;
-    web3WsProvider = new Web3(new Web3.providers.WebsocketProvider(process.env.WEB3_WSS));
-    return web3WsProvider;
-}
-export function getWeb3HttpProvider() {
-    let web3HttpProvider = null;
-    web3HttpProvider = new Web3(new Web3.providers.HttpProvider(process.env.WEB3_HTTP));
-    return web3HttpProvider;
-}
-export const web3HttpProvider = getWeb3HttpProvider();
-export const webWsProvider = getWeb3WsProvider();
+import dotenv from 'dotenv';
+import axios from 'axios';
+import Bottleneck from 'bottleneck';
+import axiosRetry from 'axios-retry';
+import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+dotenv.config({ path: '../.env' });
 export async function getTxReceipt(txHash) {
     try {
         const response = await axios.post(`${process.env.ALCHEMY_API}`, {
             id: 1,
-            jsonrpc: "2.0",
-            method: "eth_getTransactionReceipt",
+            jsonrpc: '2.0',
+            method: 'eth_getTransactionReceipt',
             params: [txHash],
         }, {
             timeout: 5000, // Set a timeout of 5000 milliseconds
@@ -41,31 +29,30 @@ export async function getTxReceipt(txHash) {
           console.error("Error fetching transaction receipt:", err);
         }
         */
-        console.error("Error fetching transaction receipt:", err);
+        console.error('Error fetching transaction receipt:', err);
         return null;
     }
 }
 export async function getCallTraceViaAlchemy(txHash) {
     const response = await fetch(process.env.WEB3_HTTP, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            method: "trace_transaction",
+            method: 'trace_transaction',
             params: [txHash],
             id: 1,
-            jsonrpc: "2.0",
+            jsonrpc: '2.0',
         }),
     });
     if (response.status !== 200) {
-        return "request failed";
+        return 'request failed';
     }
     const data = (await response.json());
     return data.result;
 }
 export async function getTxWithLimiter(txHash) {
-    const web3 = getWeb3HttpProvider();
     const limiter = new Bottleneck({
         maxConcurrent: 1,
         minTime: 300,
@@ -76,7 +63,7 @@ export async function getTxWithLimiter(txHash) {
             return retryCount * 2000;
         },
         retryCondition: (error) => {
-            return error.code === "ECONNABORTED" || error.code === "ERR_SOCKET_CONNECTION_TIMEOUT";
+            return error.code === 'ECONNABORTED' || error.code === 'ERR_SOCKET_CONNECTION_TIMEOUT';
         },
     });
     return limiter.schedule(async () => {
@@ -85,16 +72,16 @@ export async function getTxWithLimiter(txHash) {
         const RETRY_DELAY = 5000;
         while (retries < MAX_RETRIES) {
             try {
-                const TX = await web3.eth.getTransaction(txHash);
+                const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);
                 return TX;
             }
             catch (error) {
                 if (error instanceof Error) {
                     const err = error;
-                    if (err.code === "ECONNABORTED") {
+                    if (err.code === 'ECONNABORTED') {
                         console.log(`getTxWithLimiter connection timed out. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${RETRY_DELAY / 1000} seconds.`);
                     }
-                    else if (err.message && err.message.includes("CONNECTION ERROR")) {
+                    else if (err.message && err.message.includes('CONNECTION ERROR')) {
                         console.log(`getTxWithLimiter connection error. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${RETRY_DELAY / 1000} seconds.`);
                     }
                     else {

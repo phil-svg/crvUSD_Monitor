@@ -1,24 +1,9 @@
-import Web3 from "web3";
-import dotenv from "dotenv";
-import axios from "axios";
-import Bottleneck from "bottleneck";
-import axiosRetry from "axios-retry";
-dotenv.config({ path: "../.env" });
-
-export function getWeb3WsProvider(): Web3 {
-  let web3WsProvider: Web3 | null = null;
-  web3WsProvider = new Web3(new Web3.providers.WebsocketProvider(process.env.WEB3_WSS!));
-  return web3WsProvider;
-}
-
-export function getWeb3HttpProvider(): Web3 {
-  let web3HttpProvider: Web3 | null = null;
-  web3HttpProvider = new Web3(new Web3.providers.HttpProvider(process.env.WEB3_HTTP!));
-  return web3HttpProvider;
-}
-
-export const web3HttpProvider = getWeb3HttpProvider();
-export const webWsProvider = getWeb3WsProvider();
+import dotenv from 'dotenv';
+import axios from 'axios';
+import Bottleneck from 'bottleneck';
+import axiosRetry from 'axios-retry';
+import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+dotenv.config({ path: '../.env' });
 
 export async function getTxReceipt(txHash: string): Promise<any> {
   try {
@@ -26,8 +11,8 @@ export async function getTxReceipt(txHash: string): Promise<any> {
       `${process.env.ALCHEMY_API!}`,
       {
         id: 1,
-        jsonrpc: "2.0",
-        method: "eth_getTransactionReceipt",
+        jsonrpc: '2.0',
+        method: 'eth_getTransactionReceipt',
         params: [txHash],
       },
       {
@@ -48,27 +33,27 @@ export async function getTxReceipt(txHash: string): Promise<any> {
       console.error("Error fetching transaction receipt:", err);
     }
     */
-    console.error("Error fetching transaction receipt:", err);
+    console.error('Error fetching transaction receipt:', err);
     return null;
   }
 }
 
 export async function getCallTraceViaAlchemy(txHash: string): Promise<any> {
   const response = await fetch(process.env.WEB3_HTTP!, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      method: "trace_transaction",
+      method: 'trace_transaction',
       params: [txHash],
       id: 1,
-      jsonrpc: "2.0",
+      jsonrpc: '2.0',
     }),
   });
 
   if (response.status !== 200) {
-    return "request failed";
+    return 'request failed';
   }
 
   const data = (await response.json()) as { result: any };
@@ -76,7 +61,6 @@ export async function getCallTraceViaAlchemy(txHash: string): Promise<any> {
 }
 
 export async function getTxWithLimiter(txHash: string): Promise<any | null> {
-  const web3 = getWeb3HttpProvider();
   const limiter = new Bottleneck({
     maxConcurrent: 1,
     minTime: 300,
@@ -88,7 +72,7 @@ export async function getTxWithLimiter(txHash: string): Promise<any | null> {
       return retryCount * 2000;
     },
     retryCondition: (error) => {
-      return error.code === "ECONNABORTED" || error.code === "ERR_SOCKET_CONNECTION_TIMEOUT";
+      return error.code === 'ECONNABORTED' || error.code === 'ERR_SOCKET_CONNECTION_TIMEOUT';
     },
   });
 
@@ -99,17 +83,29 @@ export async function getTxWithLimiter(txHash: string): Promise<any | null> {
 
     while (retries < MAX_RETRIES) {
       try {
-        const TX = await web3.eth.getTransaction(txHash);
+        const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);
         return TX;
       } catch (error: unknown) {
         if (error instanceof Error) {
           const err = error as any;
-          if (err.code === "ECONNABORTED") {
-            console.log(`getTxWithLimiter connection timed out. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${RETRY_DELAY / 1000} seconds.`);
-          } else if (err.message && err.message.includes("CONNECTION ERROR")) {
-            console.log(`getTxWithLimiter connection error. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${RETRY_DELAY / 1000} seconds.`);
+          if (err.code === 'ECONNABORTED') {
+            console.log(
+              `getTxWithLimiter connection timed out. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${
+                RETRY_DELAY / 1000
+              } seconds.`
+            );
+          } else if (err.message && err.message.includes('CONNECTION ERROR')) {
+            console.log(
+              `getTxWithLimiter connection error. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${
+                RETRY_DELAY / 1000
+              } seconds.`
+            );
           } else {
-            console.log(`Failed to get transaction by hash. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${RETRY_DELAY / 1000} seconds.`);
+            console.log(
+              `Failed to get transaction by hash. Attempt ${retries + 1} of ${MAX_RETRIES}. Retrying in ${
+                RETRY_DELAY / 1000
+              } seconds.`
+            );
           }
           retries++;
           await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
@@ -117,7 +113,9 @@ export async function getTxWithLimiter(txHash: string): Promise<any | null> {
       }
     }
 
-    console.log(`Failed to get transaction by hash ${txHash} after several attempts. Please check your connection and the status of the Ethereum node.`);
+    console.log(
+      `Failed to get transaction by hash ${txHash} after several attempts. Please check your connection and the status of the Ethereum node.`
+    );
     return null;
   });
 }

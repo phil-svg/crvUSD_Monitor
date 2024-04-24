@@ -1,8 +1,6 @@
-import { getWeb3WsProvider, getWeb3HttpProvider } from "../helperFunctions/Web3.js";
-const WEB3_WS_PROVIDER = getWeb3WsProvider();
-const WEB3_HTTP_PROVIDER = getWeb3HttpProvider();
+import { WEB3_HTTP_PROVIDER, WEB3_WS_PROVIDER } from '../web3connections.js';
 function isCupsErr(err) {
-    return err.message.includes("compute units per second capacity");
+    return err.message.includes('compute units per second capacity');
 }
 function isError(err) {
     return err instanceof Error;
@@ -28,10 +26,10 @@ export async function getCurrentBlockNumber() {
             }
             else {
                 if (isError(error)) {
-                    console.log("Error in getCurrentBlockNumber", blockNumber, error.message);
+                    console.log('Error in getCurrentBlockNumber', blockNumber, error.message);
                 }
                 else {
-                    console.log("Error in getCurrentBlockNumber", blockNumber, "Unknown error");
+                    console.log('Error in getCurrentBlockNumber', blockNumber, 'Unknown error');
                 }
                 shouldContinue = false;
             }
@@ -44,7 +42,6 @@ export async function getCurrentBlockNumber() {
     return blockNumber;
 }
 export async function getCurrentBlockNumber2() {
-    const WEB3_WS_PROVIDER = getWeb3WsProvider();
     let shouldContinue = true;
     let retries = 0;
     const maxRetries = 12;
@@ -59,10 +56,10 @@ export async function getCurrentBlockNumber2() {
             }
             else {
                 if (isError(error)) {
-                    console.log("Error in getCurrentBlockNumber", blockNumber, error.message);
+                    console.log('Error in getCurrentBlockNumber', blockNumber, error.message);
                 }
                 else {
-                    console.log("Error in getCurrentBlockNumber", blockNumber, "Unknown error");
+                    console.log('Error in getCurrentBlockNumber', blockNumber, 'Unknown error');
                 }
                 shouldContinue = false;
             }
@@ -95,13 +92,13 @@ export async function getPastEvents(CONTRACT, eventName, fromBlock, toBlock) {
             }
             else {
                 const errorString = error.toString();
-                if (errorString.includes("Log response size exceeded.")) {
+                if (errorString.includes('Log response size exceeded.')) {
                     const matchResult = errorString.match(/\[.*\]/g);
                     if (matchResult) {
                         const recommendedBlockRange = matchResult[0];
                         const [start, end] = recommendedBlockRange
                             .slice(1, -1)
-                            .split(", ")
+                            .split(', ')
                             .map((x) => parseInt(x, 16));
                         return { start, end };
                     }
@@ -116,7 +113,7 @@ export async function getPastEvents(CONTRACT, eventName, fromBlock, toBlock) {
     }
     return EVENT_ARRAY;
 }
-export async function web3Call(CONTRACT, method, params, blockNumber = { block: "latest" }) {
+export async function web3Call(CONTRACT, method, params, blockNumber = { block: 'latest' }) {
     let shouldContinue = true;
     let retries = 0;
     while (shouldContinue && retries < 12) {
@@ -146,44 +143,44 @@ export async function subscribeToEvents(CONTRACT, eventEmitter, Market) {
     try {
         const subscription = CONTRACT.events.allEvents();
         subscription
-            .on("connected", () => {
+            .on('connected', () => {
             console.log(CONTRACT._address, `subscribed to events successfully`);
         })
-            .on("data", async (eventData) => {
-            eventEmitter.emit("newEvent", { eventData, Market });
+            .on('data', async (eventData) => {
+            eventEmitter.emit('newEvent', { eventData, Market });
         })
-            .on("error", (error) => {
-            console.error("Error in event subscription: ", error);
+            .on('error', (error) => {
+            console.error('Error in event subscription: ', error);
         });
     }
     catch (err) {
-        console.log("Error in fetching events:", err.message);
+        console.log('Error in fetching events:', err.message);
     }
 }
 export async function subscribeToPegkeeperEvents(CONTRACT, eventEmitter) {
     try {
         const subscription = CONTRACT.events.allEvents();
         subscription
-            .on("connected", () => {
+            .on('connected', () => {
             console.log(CONTRACT._address, `subscribed to events successfully`);
         })
-            .on("data", async (eventData) => {
-            eventEmitter.emit("newPegKeeperEvent", eventData);
+            .on('data', async (eventData) => {
+            eventEmitter.emit('newPegKeeperEvent', eventData);
         })
-            .on("error", (error) => {
-            console.error("Error in event subscription: ", error);
+            .on('error', (error) => {
+            console.error('Error in event subscription: ', error);
         });
     }
     catch (err) {
-        console.log("Error in fetching events:", err.message);
+        console.log('Error in fetching events:', err.message);
     }
 }
 export async function subscribeToLendingMarketsEvents(market, vaultContract, controllerContact, ammContract, eventEmitter, type) {
     let contract;
-    if (type === "Vault") {
+    if (type === 'Vault') {
         contract = vaultContract;
     }
-    else if (type === "Controller") {
+    else if (type === 'Controller') {
         contract = controllerContact;
     }
     else {
@@ -192,19 +189,26 @@ export async function subscribeToLendingMarketsEvents(market, vaultContract, con
     try {
         const subscription = contract.events.allEvents();
         subscription
-            .on("connected", () => {
+            .on('connected', () => {
             console.log(contract._address, `subscribed to LLammaLend events successfully`);
         })
-            .on("data", async (event) => {
-            console.log("LLAMMA LEND Event", event);
-            eventEmitter.emit("newLendingMarketsEvent", { market, event, type, vaultContract, controllerContact, ammContract });
+            .on('data', async (event) => {
+            // console.log('LLAMMA LEND Event', event);
+            eventEmitter.emit('newLendingMarketsEvent', {
+                market,
+                event,
+                type,
+                vaultContract,
+                controllerContact,
+                ammContract,
+            });
         })
-            .on("error", (error) => {
-            console.error("Error in event subscription: ", error);
+            .on('error', (error) => {
+            console.error('Error in event subscription: ', error);
         });
     }
     catch (err) {
-        console.log("Error in fetching events:", err.message);
+        console.log('Error in fetching events:', err.message);
     }
 }
 export async function getTxFromTxHash(txHash) {
@@ -222,25 +226,25 @@ export async function getWalletTokenBalance(walletAddress, tokenAddress, blockNu
         {
             inputs: [
                 {
-                    internalType: "address",
-                    name: "account",
-                    type: "address",
+                    internalType: 'address',
+                    name: 'account',
+                    type: 'address',
                 },
             ],
-            name: "balanceOf",
+            name: 'balanceOf',
             outputs: [
                 {
-                    internalType: "uint256",
-                    name: "",
-                    type: "uint256",
+                    internalType: 'uint256',
+                    name: '',
+                    type: 'uint256',
                 },
             ],
-            stateMutability: "view",
-            type: "function",
+            stateMutability: 'view',
+            type: 'function',
         },
     ];
     const TOKEN = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_BALANCE_OF, tokenAddress);
-    const BALANCE = await web3Call(TOKEN, "balanceOf", [walletAddress], blockNumber);
+    const BALANCE = await web3Call(TOKEN, 'balanceOf', [walletAddress], blockNumber);
     return BALANCE;
 }
 export async function checkWsConnectionViaNewBlocks(startTime = Date.now()) {
@@ -255,7 +259,7 @@ export async function checkWsConnectionViaNewBlocks(startTime = Date.now()) {
             clearTimeout(blockTimeout);
         // Set a new timeout
         blockTimeout = setTimeout(() => {
-            console.log("No new block has been seen in the last 30 seconds");
+            console.log('No new block has been seen in the last 30 seconds');
         }, BLOCK_INTERVAL_TIMEOUT_MS);
     };
     try {
@@ -263,17 +267,17 @@ export async function checkWsConnectionViaNewBlocks(startTime = Date.now()) {
         resetBlockTimeout();
         // Subscribe to new block headers
         WEB3_WS_PROVIDER.eth
-            .subscribe("newBlockHeaders", async (error, blockHeader) => {
+            .subscribe('newBlockHeaders', async (error, blockHeader) => {
             if (error) {
                 console.error(`Error subscribing to new block headers: ${error}`);
-                if (error.message.includes("connection not open")) {
+                if (error.message.includes('connection not open')) {
                     const currentTime = Date.now();
                     if (currentTime - startTime < MAX_RETRY_DURATION_MS) {
                         console.log(`Retrying to subscribe in ${RETRY_INTERVAL_MS / 1000} seconds...`);
                         setTimeout(() => checkWsConnectionViaNewBlocks(startTime), RETRY_INTERVAL_MS);
                     }
                     else {
-                        console.error("Failed to subscribe to new block headers after 2 minutes.");
+                        console.error('Failed to subscribe to new block headers after 2 minutes.');
                     }
                 }
                 return;
@@ -285,7 +289,7 @@ export async function checkWsConnectionViaNewBlocks(startTime = Date.now()) {
                 // console.log("New block number:", newBlockNumber);
             }
         })
-            .on("error", console.error);
+            .on('error', console.error);
     }
     catch (err) {
         console.error(`An error occurred in subscribeToNewBlocks: ${err.message}`);
@@ -295,7 +299,7 @@ export async function checkWsConnectionViaNewBlocks(startTime = Date.now()) {
             setTimeout(() => checkWsConnectionViaNewBlocks(startTime), RETRY_INTERVAL_MS);
         }
         else {
-            console.error("Failed to subscribe to new block headers after 2 minutes.");
+            console.error('Failed to subscribe to new block headers after 2 minutes.');
         }
     }
 }

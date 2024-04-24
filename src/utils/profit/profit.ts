@@ -1,15 +1,15 @@
-import { getWeb3HttpProvider, getCallTraceViaAlchemy } from "../helperFunctions/Web3.js";
-import { TransactionReceipt } from "web3-eth";
-import { AbiItem } from "web3-utils";
-import Big from "big.js";
-import { getPrice } from "../priceAPI/priceAPI.js";
-import { ABI_Tricrypto } from "../abis/ABI_Tricrypto.js";
-import { ETH_ADDRESS } from "../Constants.js";
+import { getCallTraceViaAlchemy } from '../helperFunctions/Web3.js';
+import { TransactionReceipt } from 'web3-eth';
+import { AbiItem } from 'web3-utils';
+import Big from 'big.js';
+import { getPrice } from '../priceAPI/priceAPI.js';
+import { ABI_Tricrypto } from '../abis/ABI_Tricrypto.js';
+import { ETH_ADDRESS } from '../Constants.js';
+import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
 
 async function getEthPrice(blockNumber: number): Promise<number | null> {
-  let web3 = getWeb3HttpProvider();
-  const ADDRESS_TRICRYPTO = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
-  const TRICRYPTO = new web3.eth.Contract(ABI_Tricrypto, ADDRESS_TRICRYPTO);
+  const ADDRESS_TRICRYPTO = '0xD51a44d3FaE010294C616388b506AcdA1bfAAE46';
+  const TRICRYPTO = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Tricrypto, ADDRESS_TRICRYPTO);
 
   try {
     return (await TRICRYPTO.methods.price_oracle(1).call(blockNumber)) / 1e18;
@@ -19,17 +19,16 @@ async function getEthPrice(blockNumber: number): Promise<number | null> {
 }
 
 async function getCosts(txHash: string, blockNumber: number): Promise<number | null> {
-  let web3 = getWeb3HttpProvider();
   try {
-    const txReceipt = await web3.eth.getTransactionReceipt(txHash);
+    const txReceipt = await WEB3_HTTP_PROVIDER.eth.getTransactionReceipt(txHash);
     const gasUsed = txReceipt.gasUsed;
 
-    const tx = await web3.eth.getTransaction(txHash);
+    const tx = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);
     const gasPrice = tx.gasPrice;
 
-    const cost = web3.utils.toBN(gasUsed).mul(web3.utils.toBN(gasPrice));
+    const cost = WEB3_HTTP_PROVIDER.utils.toBN(gasUsed).mul(WEB3_HTTP_PROVIDER.utils.toBN(gasPrice));
 
-    let txCostInETHER = Number(web3.utils.fromWei(cost, "ether"));
+    let txCostInETHER = Number(WEB3_HTTP_PROVIDER.utils.fromWei(cost, 'ether'));
 
     let etherPrice = await getEthPrice(blockNumber);
     if (!etherPrice) return null;
@@ -55,12 +54,12 @@ async function adjustBalancesForDecimals(balanceChanges: BalanceChange[]): Promi
     // Fetch the token's decimals and symbol
     const decimals = await getTokenDecimals(balanceChange.token);
     if (!decimals) {
-      console.log("unknown decimals for", balanceChange.tokenSymbol, balanceChange.token);
+      console.log('unknown decimals for', balanceChange.tokenSymbol, balanceChange.token);
       continue;
     }
     const symbol = await getTokenSymbol(balanceChange.token);
     if (!symbol) {
-      console.log("unknown symbol for", balanceChange.tokenSymbol, balanceChange.token);
+      console.log('unknown symbol for', balanceChange.tokenSymbol, balanceChange.token);
       continue;
     }
 
@@ -82,26 +81,25 @@ async function adjustBalancesForDecimals(balanceChanges: BalanceChange[]): Promi
 }
 
 export async function getTokenSymbol(tokenAddress: string): Promise<string | null> {
-  if (tokenAddress === ETH_ADDRESS) return "ETH";
+  if (tokenAddress === ETH_ADDRESS) return 'ETH';
 
-  let web3 = await getWeb3HttpProvider();
   const SYMBOL_ABI: AbiItem[] = [
     {
       inputs: [],
-      name: "symbol",
+      name: 'symbol',
       outputs: [
         {
-          internalType: "string",
-          name: "",
-          type: "string",
+          internalType: 'string',
+          name: '',
+          type: 'string',
         },
       ],
-      stateMutability: "view",
-      type: "function",
+      stateMutability: 'view',
+      type: 'function',
     },
   ];
 
-  const CONTRACT = new web3.eth.Contract(SYMBOL_ABI, tokenAddress);
+  const CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(SYMBOL_ABI, tokenAddress);
   try {
     return await CONTRACT.methods.symbol().call();
   } catch (error) {
@@ -111,24 +109,23 @@ export async function getTokenSymbol(tokenAddress: string): Promise<string | nul
 
 export async function getTokenDecimals(tokenAddress: string): Promise<number | null> {
   if (tokenAddress === ETH_ADDRESS) return 18;
-  let web3 = getWeb3HttpProvider();
   const DECIMALS_ABI: AbiItem[] = [
     {
       inputs: [],
-      name: "decimals",
+      name: 'decimals',
       outputs: [
         {
-          internalType: "uint8",
-          name: "",
-          type: "uint8",
+          internalType: 'uint8',
+          name: '',
+          type: 'uint8',
         },
       ],
-      stateMutability: "view",
-      type: "function",
+      stateMutability: 'view',
+      type: 'function',
     },
   ];
 
-  const CONTRACT = new web3.eth.Contract(DECIMALS_ABI, tokenAddress);
+  const CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(DECIMALS_ABI, tokenAddress);
   try {
     return Number(await CONTRACT.methods.decimals().call());
   } catch (error) {
@@ -184,20 +181,19 @@ interface WithdrawalEvent {
 
 function getWithdrawalEvents(receipt: TransactionReceipt, userAddress: string): WithdrawalEvent[] {
   const withdrawalEvents: WithdrawalEvent[] = [];
-  let web3 = getWeb3HttpProvider();
 
   if (receipt.logs) {
     for (const log of receipt.logs) {
       // Adjust the topic to match the Withdrawal event signature
-      if (log.topics[0] !== "0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65") {
+      if (log.topics[0] !== '0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65') {
         continue;
       }
 
       // Decode the log
-      const decodedLog: any = web3.eth.abi.decodeLog(
+      const decodedLog: any = WEB3_HTTP_PROVIDER.eth.abi.decodeLog(
         [
-          { type: "address", indexed: true, name: "src" },
-          { type: "uint256", indexed: false, name: "wad" },
+          { type: 'address', indexed: true, name: 'src' },
+          { type: 'uint256', indexed: false, name: 'wad' },
         ],
         log.data,
         log.topics.slice(1)
@@ -258,27 +254,29 @@ async function calculateAbsDollarBalance(decimalAdjustedBalanceChanges: any[], b
 
 function getTransferEvents(receipt: TransactionReceipt, userAddress: string): TransferEvent[] {
   const transferEvents: TransferEvent[] = [];
-  let web3 = getWeb3HttpProvider();
 
   if (receipt.logs) {
     for (const log of receipt.logs) {
-      if (log.topics[0] !== "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef") {
+      if (log.topics[0] !== '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef') {
         continue;
       }
 
       // Decode the log
-      const decodedLog: any = web3.eth.abi.decodeLog(
+      const decodedLog: any = WEB3_HTTP_PROVIDER.eth.abi.decodeLog(
         [
-          { type: "address", indexed: true, name: "from" },
-          { type: "address", indexed: true, name: "to" },
-          { type: "uint256", indexed: false, name: "value" },
+          { type: 'address', indexed: true, name: 'from' },
+          { type: 'address', indexed: true, name: 'to' },
+          { type: 'uint256', indexed: false, name: 'value' },
         ],
         log.data,
         log.topics.slice(1)
       );
 
       // We check if this log is a transfer from or to the userAddress
-      if (decodedLog.from.toLowerCase() === userAddress.toLowerCase() || decodedLog.to.toLowerCase() === userAddress.toLowerCase()) {
+      if (
+        decodedLog.from.toLowerCase() === userAddress.toLowerCase() ||
+        decodedLog.to.toLowerCase() === userAddress.toLowerCase()
+      ) {
         // Create an object matching TransferEvent interface
         const transferEvent: TransferEvent = {
           from: decodedLog.from,
@@ -309,7 +307,7 @@ function calculateEthBalanceChange(callTrace: CallTrace, userAddress: string): n
     const call = callTrace[i];
 
     // We only want to consider 'call' types for ETH transfers
-    if (call.action.callType !== "call") {
+    if (call.action.callType !== 'call') {
       continue;
     }
 
@@ -332,10 +330,10 @@ function calculateEthBalanceChange(callTrace: CallTrace, userAddress: string): n
 
 function getTransferEventsFromTrace(callTraces: any[], userAddress: string): TransferEvent[] {
   const transferEvents: TransferEvent[] = [];
-  const transferMethodId = "0xa9059cbb";
-  const transferFromMethodId = "0x23b872dd";
-  const withdrawMethodId = "0x2e1a7d4d";
-  const customBurnMethodId = "0xba087652";
+  const transferMethodId = '0xa9059cbb';
+  const transferFromMethodId = '0x23b872dd';
+  const withdrawMethodId = '0x2e1a7d4d';
+  const customBurnMethodId = '0xba087652';
   const userAddressLower = userAddress.toLowerCase();
 
   for (const callTrace of callTraces) {
@@ -354,12 +352,12 @@ function getTransferEventsFromTrace(callTraces: any[], userAddress: string): Tra
       if (action.input.toLowerCase().startsWith(transferMethodId)) {
         sender = action.from;
         // Extract receiver and amount from the input
-        receiver = "0x" + action.input.slice(34, 74);
+        receiver = '0x' + action.input.slice(34, 74);
         amountHex = action.input.slice(74, 138);
       } else if (action.input.toLowerCase().startsWith(transferFromMethodId)) {
         // Extract sender, receiver and amount from the input for transferFrom
-        sender = "0x" + action.input.slice(34, 74);
-        receiver = "0x" + action.input.slice(98, 138);
+        sender = '0x' + action.input.slice(34, 74);
+        receiver = '0x' + action.input.slice(98, 138);
         amountHex = action.input.slice(162, 202);
       } else if (action.input.toLowerCase().startsWith(withdrawMethodId)) {
         // Added this block
@@ -371,11 +369,11 @@ function getTransferEventsFromTrace(callTraces: any[], userAddress: string): Tra
       } else if (action.input.toLowerCase().startsWith(customBurnMethodId)) {
         // Handle the custom burn function
         sender = action.from;
-        receiver = "0x" + action.input.slice(74, 114); // Extract receiver from the input
+        receiver = '0x' + action.input.slice(74, 114); // Extract receiver from the input
         amountHex = action.input.slice(34, 74); // Extract amount from the input
       }
 
-      const amount = BigInt("0x" + amountHex).toString(); // convert from hex to decimal
+      const amount = BigInt('0x' + amountHex).toString(); // convert from hex to decimal
 
       // Check if this log is a transfer from or to the userAddress
       if (sender.toLowerCase() === userAddressLower || receiver.toLowerCase() === userAddressLower) {
@@ -435,7 +433,7 @@ export async function solveProfit(event: any): Promise<number[] | void> {
     let profit = revenue - cost;
     return [profit, revenue, cost];
   } catch (err) {
-    console.log("err in solveProfit: ", err);
+    console.log('err in solveProfit: ', err);
     return;
   }
 }

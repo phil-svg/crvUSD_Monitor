@@ -4,6 +4,7 @@ import {
   LendingMarketEvent,
   LendingMarketEventPayload,
 } from '../Interfaces.js';
+import { WEB3_HTTP_PROVIDER, WEB3_WS_PROVIDER } from '../web3connections.js';
 import {
   getBorrowApr,
   getCollatDollarValue,
@@ -12,7 +13,6 @@ import {
   getTotalAssets,
   getTotalDebtInMarket,
 } from '../helperFunctions/Lending.js';
-import { web3HttpProvider, webWsProvider } from '../helperFunctions/Web3.js';
 import { getPriceOf_crvUSD } from '../priceAPI/priceAPI.js';
 import {
   buildLendingMarketBorrowMessage,
@@ -35,7 +35,6 @@ import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_FACTORY, ABI
 import {
   enrichMarketData,
   extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation,
-  filterForOnly,
   getFirstGaugeCrvApyByVaultAddress,
   handleEvent,
 } from './Helper.js';
@@ -271,8 +270,8 @@ async function processLlamalendAmmEvent(
   eventEmitter: any
 ) {
   if (event.event === 'TokenExchange') {
-    console.log('Soft Liquidation spotted');
-    console.log('\n\n new Event in LLAMMA_CRVUSD_AMM:', event);
+    // console.log('Soft Liquidation spotted');
+    // console.log('\n\n new Event in LLAMMA_CRVUSD_AMM:', event);
 
     const isLongPosition = market.market_name.endsWith('Long');
     let crvUSDPrice = await getPriceOf_crvUSD(event.blockNumber);
@@ -334,7 +333,7 @@ async function getAllLendingMarkets(): Promise<LendingMarketEvent[]> {
 
   const PRESENT = await getCurrentBlockNumber();
 
-  const llamalendFactory = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_FACTORY, llamalendFactoryAddress);
+  const llamalendFactory = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_FACTORY, llamalendFactoryAddress);
   const result = await getPastEvents(llamalendFactory, 'NewVault', LENDING_LAUNCH_BLOCK, PRESENT);
 
   let events: EthereumEvent[] = [];
@@ -370,9 +369,9 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
 
     // console.log("\nmarket", market);
 
-    const vaultContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_VAULT, market.vault);
-    const controllerContact = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_CONTROLLER, market.controller);
-    const ammContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
+    const vaultContract = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_VAULT, market.vault);
+    const controllerContact = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_CONTROLLER, market.controller);
+    const ammContract = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
 
     const pastEventsVault = await getPastEvents(vaultContract, 'allEvents', START_BLOCK, END_BLOCK);
     if (Array.isArray(pastEventsVault)) {
@@ -420,9 +419,9 @@ async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventEm
   for (const market of allLendingMarkets) {
     console.log('\nmarket', market);
 
-    const vaultContract = new webWsProvider.eth.Contract(ABI_LLAMALEND_VAULT, market.vault);
-    const controllerContact = new webWsProvider.eth.Contract(ABI_LLAMALEND_CONTROLLER, market.controller);
-    const ammContract = new webWsProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
+    const vaultContract = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_VAULT, market.vault);
+    const controllerContact = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_CONTROLLER, market.controller);
+    const ammContract = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
 
     subscribeToLendingMarketsEvents(market, vaultContract, controllerContact, ammContract, eventEmitter, 'Vault');
     subscribeToLendingMarketsEvents(market, vaultContract, controllerContact, ammContract, eventEmitter, 'Controller');
@@ -432,7 +431,8 @@ async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventEm
   eventEmitter.on(
     'newLendingMarketsEvent',
     async ({ market, event, type, vaultContract, controllerContact, ammContract }: LendingMarketEventPayload) => {
-      console.log('\n\n\n\nnew event in Market:', market.vault, ':', event, 'type:', type);
+      // console.log('\n\n\n\nnew event in Market:', market.vault, ':', event, 'type:', type);
+      console.log('\nnew event in lending:', event.transactionHash);
       if (type === 'Vault') {
         await processLlamalendVaultEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
       } else if (type === 'Controller') {
