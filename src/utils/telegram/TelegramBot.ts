@@ -15,6 +15,7 @@ import { fileURLToPath } from 'url';
 import { EnrichedLendingMarketEvent } from '../Interfaces.js';
 import { generateDefiSaverUrl } from '../defisaver/DefiSaver.js';
 import { calculateAPYFromAPR } from '../helperFunctions/LLAMMA.js';
+import eventEmitter from '../EventEmitter.js';
 dotenv.config({ path: '../.env' });
 
 function getTokenURL(tokenAddress: string) {
@@ -1407,7 +1408,7 @@ export function getTgBot(env: string) {
   return bot;
 }
 
-export async function telegramBotMain(env: string, bot: TelegramBot, eventEmitterTelegramBotRelated: EventEmitter) {
+export async function telegramBotMain(env: string, bot: TelegramBot) {
   let groupID: string | undefined;
   if (env == 'prod') {
     groupID = process.env.TELEGRAM_PROD_GROUP_ID!;
@@ -1416,7 +1417,7 @@ export async function telegramBotMain(env: string, bot: TelegramBot, eventEmitte
     groupID = process.env.TELEGRAM_TEST_GROUP_ID!;
   }
 
-  eventEmitterTelegramBotRelated.on('newMessage', (message: string) => {
+  eventEmitter.on('newMessage', (message: string) => {
     if (groupID) {
       send(bot, message, parseInt(groupID));
     }
@@ -1433,7 +1434,7 @@ export async function telegramBotMain(env: string, bot: TelegramBot, eventEmitte
     }
     if (msg && msg.text && msg.text.toLowerCase() === 'print last seen') {
       await new Promise((resolve) => setTimeout(resolve, 650));
-      await processLastSeen(eventEmitterTelegramBotRelated);
+      await processLastSeen(eventEmitter);
     }
   });
 }

@@ -1,4 +1,5 @@
 import { WEB3_HTTP_PROVIDER, WEB3_WS_PROVIDER } from '../web3connections.js';
+import eventEmitter from '../EventEmitter.js';
 function isCupsErr(err) {
     return err.message.includes('compute units per second capacity');
 }
@@ -139,7 +140,7 @@ export async function getBlockTimeStamp(blockNumber) {
     const BLOCK = await WEB3_HTTP_PROVIDER.eth.getBlock(blockNumber);
     return Number(BLOCK.timestamp);
 }
-export async function subscribeToEvents(CONTRACT, eventEmitter, Market) {
+export async function subscribeToEvents(CONTRACT, Market) {
     try {
         const subscription = CONTRACT.events.allEvents();
         subscription
@@ -147,6 +148,7 @@ export async function subscribeToEvents(CONTRACT, eventEmitter, Market) {
             console.log(CONTRACT._address, `subscribed to events successfully`);
         })
             .on('data', async (eventData) => {
+            console.log('New event in crvUSD Classic:', eventData.transactionHash);
             eventEmitter.emit('newEvent', { eventData, Market });
         })
             .on('error', (error) => {
@@ -157,7 +159,7 @@ export async function subscribeToEvents(CONTRACT, eventEmitter, Market) {
         console.log('Error in fetching events:', err.message);
     }
 }
-export async function subscribeToPegkeeperEvents(CONTRACT, eventEmitter) {
+export async function subscribeToPegkeeperEvents(CONTRACT) {
     try {
         const subscription = CONTRACT.events.allEvents();
         subscription

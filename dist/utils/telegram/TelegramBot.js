@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateDefiSaverUrl } from '../defisaver/DefiSaver.js';
 import { calculateAPYFromAPR } from '../helperFunctions/LLAMMA.js';
+import eventEmitter from '../EventEmitter.js';
 dotenv.config({ path: '../.env' });
 function getTokenURL(tokenAddress) {
     return 'https://etherscan.io/token/' + tokenAddress;
@@ -813,7 +814,7 @@ export function getTgBot(env) {
     const bot = new TelegramBot(telegramGroupToken, { polling: true });
     return bot;
 }
-export async function telegramBotMain(env, bot, eventEmitterTelegramBotRelated) {
+export async function telegramBotMain(env, bot) {
     let groupID;
     if (env == 'prod') {
         groupID = process.env.TELEGRAM_PROD_GROUP_ID;
@@ -821,7 +822,7 @@ export async function telegramBotMain(env, bot, eventEmitterTelegramBotRelated) 
     if (env == 'test') {
         groupID = process.env.TELEGRAM_TEST_GROUP_ID;
     }
-    eventEmitterTelegramBotRelated.on('newMessage', (message) => {
+    eventEmitter.on('newMessage', (message) => {
         if (groupID) {
             send(bot, message, parseInt(groupID));
         }
@@ -836,7 +837,7 @@ export async function telegramBotMain(env, bot, eventEmitterTelegramBotRelated) 
         }
         if (msg && msg.text && msg.text.toLowerCase() === 'print last seen') {
             await new Promise((resolve) => setTimeout(resolve, 650));
-            await processLastSeen(eventEmitterTelegramBotRelated);
+            await processLastSeen(eventEmitter);
         }
     });
 }

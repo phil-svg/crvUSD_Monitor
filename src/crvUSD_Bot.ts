@@ -4,11 +4,10 @@ import {
   bootWsProvider,
   checkWsConnectionViaNewBlocks,
   eraseWebProvider,
-  eventEmitter,
-  eventEmitterTelegramBotRelated,
   setupDeadWebsocketListener,
 } from './utils/web3connections.js';
 import { launchClassicCrvUSDMonitoring } from './utils/ClassicCrvUSD/main.js';
+import eventEmitter from './utils/EventEmitter.js';
 
 console.clear();
 
@@ -32,9 +31,9 @@ export async function main() {
   eventEmitter.removeAllListeners();
   setupDeadWebsocketListener();
 
-  await telegramBotMain(ENV, bot, eventEmitterTelegramBotRelated);
-  await launchCurveLendingMonitoring(eventEmitterTelegramBotRelated);
-  await launchClassicCrvUSDMonitoring(eventEmitterTelegramBotRelated);
+  await telegramBotMain(ENV, bot);
+  await launchCurveLendingMonitoring();
+  await launchClassicCrvUSDMonitoring();
 
   // WS Connectivy Things
   await checkWsConnectionViaNewBlocks(); // restarts main if WS dead for 30s.

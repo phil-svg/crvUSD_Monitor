@@ -5,6 +5,8 @@ import { buildLendingMarketBorrowMessage, buildLendingMarketDepositMessage, buil
 import { checkWsConnectionViaNewBlocks, getCurrentBlockNumber, getPastEvents, getTxReceiptClassic, subscribeToLendingMarketsEvents, } from '../web3Calls/generic.js';
 import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_FACTORY, ABI_LLAMALEND_VAULT } from './Abis.js';
 import { enrichMarketData, extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, getFirstGaugeCrvApyByVaultAddress, handleEvent, } from './Helper.js';
+import eventEmitter from '../EventEmitter.js';
+import { saveLastSeenToFile } from '../Oragnizer.js';
 async function processLlamalendVaultEvent(market, llamalendVaultContract, controllerContract, ammContract, event, eventEmitter) {
     const txHash = event.transactionHash;
     const isLongPosition = market.market_name.endsWith('Long');
@@ -185,7 +187,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     const PRESENT = await getCurrentBlockNumber();
     // const START_BLOCK = LENDING_LAUNCH_BLOCK;
     // const END_BLOCK = PRESENT;
-    const START_BLOCK = 19649812;
+    const START_BLOCK = 19727444;
     const END_BLOCK = START_BLOCK;
     console.log('start');
     for (const market of allLendingMarkets) {
@@ -224,7 +226,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     await new Promise((resolve) => setTimeout(resolve, 500));
     process.exit();
 }
-async function liveMode(allLendingMarkets, eventEmitter) {
+async function liveMode(allLendingMarkets) {
     await checkWsConnectionViaNewBlocks();
     for (const market of allLendingMarkets) {
         console.log('\nmarket', market);
@@ -237,7 +239,8 @@ async function liveMode(allLendingMarkets, eventEmitter) {
     }
     eventEmitter.on('newLendingMarketsEvent', async ({ market, event, type, vaultContract, controllerContact, ammContract }) => {
         // console.log('\n\n\n\nnew event in Market:', market.vault, ':', event, 'type:', type);
-        console.log('\nnew event in lending:', event.transactionHash);
+        console.log(`new ${event.event} event in lending:`, event.transactionHash);
+        await saveLastSeenToFile(event.transactionHash, new Date());
         if (type === 'Vault') {
             await processLlamalendVaultEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
         }
@@ -252,7 +255,7 @@ async function liveMode(allLendingMarkets, eventEmitter) {
 // Markets: (v3)
 const llamalendFactoryAddress = '0xeA6876DDE9e3467564acBeE1Ed5bac88783205E0'; // v3
 // todo
-export async function launchCurveLendingMonitoring(eventEmitterTelegramBotRelated) {
+export async function launchCurveLendingMonitoring() {
     const allLendingMarkets = await getAllLendingMarkets();
     const allEnrichedLendingMarkets = await enrichMarketData(allLendingMarkets);
     if (!allEnrichedLendingMarkets) {
@@ -262,7 +265,7 @@ export async function launchCurveLendingMonitoring(eventEmitterTelegramBotRelate
     // console.log("allEnrichedLendingMarkets", allEnrichedLendingMarkets);
     // process.exit();
     // await histoMode(allEnrichedLendingMarkets, eventEmitter);
-    await liveMode(allEnrichedLendingMarkets, eventEmitterTelegramBotRelated);
+    await liveMode(allEnrichedLendingMarkets);
 }
 /*
 

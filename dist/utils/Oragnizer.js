@@ -11,7 +11,8 @@ import { ABI_AMM } from './abis/ABI_AMM.js';
 import { ABI_Controller } from './abis/ABI_Controller.js';
 import { getDSProxyOwner, isDefiSaverSmartWallet } from './defisaver/DefiSaver.js';
 import { WEB3_WS_PROVIDER } from './web3connections.js';
-export async function watchingForNewMarketOpenings(crvUSD_ControllerFactory, eventEmitter) {
+import eventEmitter from './EventEmitter.js';
+export async function watchingForNewMarketOpenings(crvUSD_ControllerFactory) {
     const subscription = crvUSD_ControllerFactory.events.AddMarket();
     subscription
         .on('connected', () => {
@@ -19,13 +20,13 @@ export async function watchingForNewMarketOpenings(crvUSD_ControllerFactory, eve
     })
         .on('data', async (marketCreation) => {
         console.log('NEW MARKET!!!');
-        await manageMarket(marketCreation, eventEmitter);
+        await manageMarket(marketCreation);
     })
         .on('error', (error) => {
         console.error('Error in event subscription: ', error);
     });
 }
-async function saveLastSeenToFile(hash, timestamp) {
+export async function saveLastSeenToFile(hash, timestamp) {
     try {
         const __dirname = path.dirname(fileURLToPath(import.meta.url));
         const filePath = path.join(__dirname, '../../lastSeen.json');
@@ -48,7 +49,7 @@ async function isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT) {
 }
 export let lastSeenTxHash = null;
 export let lastSeenTxTimestamp = null;
-export async function manageMarket(MARKET, eventEmitter) {
+export async function manageMarket(MARKET) {
     const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
     const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
     const CONTROLLER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_Controller, ADDRESS_CONTROLLER);
@@ -60,84 +61,133 @@ export async function manageMarket(MARKET, eventEmitter) {
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
     /*
-    const START_BLOCK = 19476651;
-    const END_BLOCK = 19476651;
+    const START_BLOCK = 19715902;
+    const END_BLOCK = 19715902;
   
-    const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
+    const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, 'allEvents', START_BLOCK, END_BLOCK);
   
     if (!(PAST_EVENTS_AMM_CONTRACT instanceof Array)) return;
   
     for (const AMM_EVENT of PAST_EVENTS_AMM_CONTRACT) {
-      console.log("AMM_EVENT", AMM_EVENT);
-      if ((AMM_EVENT as { event: string }).event !== "TokenExchange") continue;
-      const formattedEventData = await processTokenExchangeEvent(AMM_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
-      console.log("formattedEventData", formattedEventData);
-      if (!formattedEventData || Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))) continue;
+      console.log('AMM_EVENT', AMM_EVENT);
+      if ((AMM_EVENT as { event: string }).event !== 'TokenExchange') continue;
+      const formattedEventData = await processTokenExchangeEvent(
+        AMM_EVENT,
+        ADDRESS_CONTROLLER,
+        ADDRESS_COLLATERAL,
+        ADDRESS_AMM
+      );
+      console.log('formattedEventData', formattedEventData);
+      if (
+        !formattedEventData ||
+        Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))
+      )
+        continue;
       const message = await buildTokenExchangeMessage(formattedEventData);
       if (message === "don't print tiny liquidations") continue;
-      eventEmitter.emit("newMessage", message);
+      eventEmitter.emit('newMessage', message);
     }
   
-    const PAST_EVENTS_crvUSD_CONTROLLER = await getPastEvents(CONTROLLER_CONTRACT, "allEvents", START_BLOCK, END_BLOCK);
+    const PAST_EVENTS_crvUSD_CONTROLLER = await getPastEvents(CONTROLLER_CONTRACT, 'allEvents', START_BLOCK, END_BLOCK);
     if (!(PAST_EVENTS_crvUSD_CONTROLLER instanceof Array)) return;
   
     for (const CONTROLLER_EVENT of PAST_EVENTS_crvUSD_CONTROLLER) {
-      console.log("processing CONTROLLER EVENT", CONTROLLER_EVENT);
+      console.log('processing CONTROLLER EVENT', CONTROLLER_EVENT);
   
       // DEFI-SAVER START
       const txHash = (CONTROLLER_EVENT as { transactionHash: string }).transactionHash;
       const tx = await getTxFromTxHash(txHash);
-      const DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS = "0x252025df8680c275d0ba80d084e5967d8bd26caf";
+      const DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS = '0x252025df8680c275d0ba80d084e5967d8bd26caf';
   
       let isDefiSaverAutomatedTx = false;
-      if (tx.to.toLowerCase() === DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS.toLowerCase()) isDefiSaverAutomatedTx = true;
+      if (tx.to.toLowerCase() === DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS.toLowerCase())
+        isDefiSaverAutomatedTx = true;
   
       let isManualSmartWalletTx = false;
       let dfsCheck = await isDefiSaverSmartWallet(tx.to);
       if (dfsCheck === true) isManualSmartWalletTx = true;
   
-      let defiSaverUser = "";
+      let defiSaverUser = '';
       if (isManualSmartWalletTx) {
         defiSaverUser = tx.from;
       }
       if (isDefiSaverAutomatedTx) {
-        const DSProxy_Address = (CONTROLLER_EVENT as { returnValues: any }).returnValues["0"];
+        const DSProxy_Address = (CONTROLLER_EVENT as { returnValues: any }).returnValues['0'];
         const user = await getDSProxyOwner(DSProxy_Address);
         defiSaverUser = user;
       }
   
-      console.log("isDefiSaverAutomatedTx", isDefiSaverAutomatedTx);
-      console.log("isManualSmartWalletTx", isManualSmartWalletTx);
-      console.log("defiSaverUser", defiSaverUser);
+      console.log('isDefiSaverAutomatedTx', isDefiSaverAutomatedTx);
+      console.log('isManualSmartWalletTx', isManualSmartWalletTx);
+      console.log('defiSaverUser', defiSaverUser);
       // DEFI-SAVER END
   
-      if ((CONTROLLER_EVENT as { event: string }).event === "Borrow") {
-        const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+      if ((CONTROLLER_EVENT as { event: string }).event === 'Borrow') {
+        const formattedEventData = await processBorrowEvent(
+          CONTROLLER_EVENT,
+          ADDRESS_CONTROLLER,
+          ADDRESS_COLLATERAL,
+          ADDRESS_AMM
+        );
         if (hasUndefinedOrNaNValues(formattedEventData)) continue;
-        if (formattedEventData.collateral_increase_value && formattedEventData.collateral_increase_value < MIN_REPAYED_AMOUNT_WORTH_PRINTING) continue;
-        const message = await buildBorrowMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
+        if (
+          formattedEventData.collateral_increase_value &&
+          formattedEventData.collateral_increase_value < MIN_REPAYED_AMOUNT_WORTH_PRINTING
+        )
+          continue;
+        const message = await buildBorrowMessage(
+          formattedEventData,
+          isDefiSaverAutomatedTx,
+          isManualSmartWalletTx,
+          defiSaverUser
+        );
         if (message === "don't print tiny liquidations") continue;
-        eventEmitter.emit("newMessage", message);
-      } else if ((CONTROLLER_EVENT as { event: string }).event === "Repay") {
+        eventEmitter.emit('newMessage', message);
+      } else if ((CONTROLLER_EVENT as { event: string }).event === 'Repay') {
         let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, CONTROLLER_EVENT);
         if (liquidateEventQuestion == true) continue;
-        const formattedEventData = await processRepayEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+        const formattedEventData = await processRepayEvent(
+          CONTROLLER_EVENT,
+          ADDRESS_CONTROLLER,
+          ADDRESS_COLLATERAL,
+          ADDRESS_AMM
+        );
         if (hasUndefinedOrNaNValues(formattedEventData)) continue;
         if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING) continue;
-        const message = await buildRepayMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
-        eventEmitter.emit("newMessage", message);
-      } else if ((CONTROLLER_EVENT as { event: string }).event === "RemoveCollateral") {
-        const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+        const message = await buildRepayMessage(
+          formattedEventData,
+          isDefiSaverAutomatedTx,
+          isManualSmartWalletTx,
+          defiSaverUser
+        );
+        eventEmitter.emit('newMessage', message);
+      } else if ((CONTROLLER_EVENT as { event: string }).event === 'RemoveCollateral') {
+        const formattedEventData = await processRemoveCollateralEvent(
+          CONTROLLER_EVENT,
+          ADDRESS_CONTROLLER,
+          ADDRESS_COLLATERAL,
+          ADDRESS_AMM
+        );
         if (hasUndefinedOrNaNValues(formattedEventData)) continue;
-        const message = await buildRemoveCollateralMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
+        const message = await buildRemoveCollateralMessage(
+          formattedEventData,
+          isDefiSaverAutomatedTx,
+          isManualSmartWalletTx,
+          defiSaverUser
+        );
         if (message === "don't print small amounts") continue;
-        eventEmitter.emit("newMessage", message);
-      } else if ((CONTROLLER_EVENT as { event: string }).event === "Liquidate") {
-        const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+        eventEmitter.emit('newMessage', message);
+      } else if ((CONTROLLER_EVENT as { event: string }).event === 'Liquidate') {
+        const formattedEventData = await processLiquidateEvent(
+          CONTROLLER_EVENT,
+          ADDRESS_CONTROLLER,
+          ADDRESS_COLLATERAL,
+          ADDRESS_AMM
+        );
         if (hasUndefinedOrNaNValues(formattedEventData)) continue;
         const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, ADDRESS_AMM);
         if (message === "don't print tiny hard-liquidations") continue;
-        eventEmitter.emit("newMessage", message);
+        eventEmitter.emit('newMessage', message);
       }
     }
   
@@ -148,15 +198,14 @@ export async function manageMarket(MARKET, eventEmitter) {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////// LIVE MODE ////////////////////////
-    await subscribeToEvents(AMM_CONTRACT, eventEmitter, MARKET);
-    await subscribeToEvents(CONTROLLER_CONTRACT, eventEmitter, MARKET);
+    await subscribeToEvents(AMM_CONTRACT, MARKET);
+    await subscribeToEvents(CONTROLLER_CONTRACT, MARKET);
 }
-export async function handleLiveEvents(eventEmitterTelegramBotRelated) {
-    eventEmitterTelegramBotRelated.on('newEvent', async ({ eventData: EVENT, Market: MARKET }) => {
+export async function handleLiveEvents() {
+    eventEmitter.on('newEvent', async ({ eventData: EVENT, Market: MARKET }) => {
         // for command checking when was the last seen tx.
         await saveLastSeenToFile(EVENT.transactionHash, new Date());
-        console.log('New event in crvUSD Classic:', EVENT.transactionHash);
-        // console.log('New event in crvUSD Classic:', EVENT);
+        console.log(`New ${EVENT.event} event in crvUSD Classic:`, EVENT.transactionHash);
         const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
         const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
         const AMM_ADDRESS = MARKET.returnValues.amm;
@@ -199,7 +248,7 @@ export async function handleLiveEvents(eventEmitterTelegramBotRelated) {
             const message = await buildBorrowMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
             if (message === "don't print tiny liquidations")
                 return;
-            eventEmitterTelegramBotRelated.emit('newMessage', message);
+            eventEmitter.emit('newMessage', message);
         }
         else if (EVENT.event === 'Repay') {
             let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, EVENT);
@@ -211,7 +260,7 @@ export async function handleLiveEvents(eventEmitterTelegramBotRelated) {
             if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING)
                 return;
             const message = await buildRepayMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
-            eventEmitterTelegramBotRelated.emit('newMessage', message);
+            eventEmitter.emit('newMessage', message);
         }
         else if (EVENT.event === 'RemoveCollateral') {
             const formattedEventData = await processRemoveCollateralEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
@@ -220,7 +269,7 @@ export async function handleLiveEvents(eventEmitterTelegramBotRelated) {
             const message = await buildRemoveCollateralMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
             if (message === "don't print small amounts")
                 return;
-            eventEmitterTelegramBotRelated.emit('newMessage', message);
+            eventEmitter.emit('newMessage', message);
         }
         else if (EVENT.event === 'Liquidate') {
             const formattedEventData = await processLiquidateEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
@@ -229,7 +278,7 @@ export async function handleLiveEvents(eventEmitterTelegramBotRelated) {
             const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, AMM_ADDRESS);
             if (message === "don't print tiny hard-liquidations")
                 return;
-            eventEmitterTelegramBotRelated.emit('newMessage', message);
+            eventEmitter.emit('newMessage', message);
             // AMM EVENT
         }
         else if (EVENT.event === 'TokenExchange') {
@@ -240,7 +289,7 @@ export async function handleLiveEvents(eventEmitterTelegramBotRelated) {
             const message = await buildTokenExchangeMessage(formattedEventData);
             if (message === "don't print tiny liquidations")
                 return;
-            eventEmitterTelegramBotRelated.emit('newMessage', message);
+            eventEmitter.emit('newMessage', message);
         }
     });
 }

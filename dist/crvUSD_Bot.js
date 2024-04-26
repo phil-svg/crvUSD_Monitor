@@ -1,7 +1,8 @@
 import { getTgBot, telegramBotMain } from './utils/telegram/TelegramBot.js';
 import { launchCurveLendingMonitoring } from './utils/Lending/LlamalendMain.js';
-import { bootWsProvider, checkWsConnectionViaNewBlocks, eraseWebProvider, eventEmitter, eventEmitterTelegramBotRelated, setupDeadWebsocketListener, } from './utils/web3connections.js';
+import { bootWsProvider, checkWsConnectionViaNewBlocks, eraseWebProvider, setupDeadWebsocketListener, } from './utils/web3connections.js';
 import { launchClassicCrvUSDMonitoring } from './utils/ClassicCrvUSD/main.js';
+import eventEmitter from './utils/EventEmitter.js';
 console.clear();
 export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 100000;
 export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 65000;
@@ -18,9 +19,9 @@ export async function main() {
     await bootWsProvider(); // starting new WS connection.
     eventEmitter.removeAllListeners();
     setupDeadWebsocketListener();
-    await telegramBotMain(ENV, bot, eventEmitterTelegramBotRelated);
-    await launchCurveLendingMonitoring(eventEmitterTelegramBotRelated);
-    await launchClassicCrvUSDMonitoring(eventEmitterTelegramBotRelated);
+    await telegramBotMain(ENV, bot);
+    await launchCurveLendingMonitoring();
+    await launchClassicCrvUSDMonitoring();
     // WS Connectivy Things
     await checkWsConnectionViaNewBlocks(); // restarts main if WS dead for 30s.
 }

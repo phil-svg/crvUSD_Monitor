@@ -6,6 +6,7 @@ import { ABI_hacked_Coins, ABI_hacked_Decimals, ABI_hacked_Symbol } from '../abi
 import { getPriceOf_crvUSD } from '../priceAPI/priceAPI.js';
 import { PegKeeperMessageContext, buildPegKeeperMessage } from '../telegram/TelegramBot.js';
 import { WEB3_HTTP_PROVIDER, WEB3_WS_PROVIDER } from '../web3connections.js';
+import eventEmitter from '../EventEmitter.js';
 
 async function getAllPegKeepersInfo(blockNumber: number): Promise<
   Array<{
@@ -238,12 +239,12 @@ async function handleSingleEvent(
   eventEmitter.emit('newMessage', message);
 }
 
-export async function livemodePegKeepers(blockNumber: number, eventEmitter: any): Promise<void> {
+export async function livemodePegKeepers(blockNumber: number): Promise<void> {
   const pegkeeperAddressArrOnchain = await getPegkeeperAddressArrOnchain(blockNumber);
   const allPegKeepersInfo = await getAllPegKeepersInfo(blockNumber);
   for (const address of pegkeeperAddressArrOnchain) {
     const PEG_KEEPER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_Pegkeeper, address);
-    subscribeToPegkeeperEvents(PEG_KEEPER_CONTRACT, eventEmitter);
+    subscribeToPegkeeperEvents(PEG_KEEPER_CONTRACT);
   }
   eventEmitter.on('newPegKeeperEvent', async (event: any) => {
     if (event.event === 'Provide' || event.event === 'Withdraw') {

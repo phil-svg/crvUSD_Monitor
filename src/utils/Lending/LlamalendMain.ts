@@ -38,6 +38,8 @@ import {
   getFirstGaugeCrvApyByVaultAddress,
   handleEvent,
 } from './Helper.js';
+import eventEmitter from '../EventEmitter.js';
+import { saveLastSeenToFile } from '../Oragnizer.js';
 
 async function processLlamalendVaultEvent(
   market: EnrichedLendingMarketEvent,
@@ -358,7 +360,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = PRESENT;
 
-  const START_BLOCK = 19649812;
+  const START_BLOCK = 19727444;
   const END_BLOCK = START_BLOCK;
 
   console.log('start');
@@ -413,7 +415,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   process.exit();
 }
 
-async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventEmitter: any) {
+async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[]) {
   await checkWsConnectionViaNewBlocks();
 
   for (const market of allLendingMarkets) {
@@ -432,7 +434,9 @@ async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventEm
     'newLendingMarketsEvent',
     async ({ market, event, type, vaultContract, controllerContact, ammContract }: LendingMarketEventPayload) => {
       // console.log('\n\n\n\nnew event in Market:', market.vault, ':', event, 'type:', type);
-      console.log('\nnew event in lending:', event.transactionHash);
+      console.log(`new ${event.event} event in lending:`, event.transactionHash);
+      await saveLastSeenToFile(event.transactionHash, new Date());
+
       if (type === 'Vault') {
         await processLlamalendVaultEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
       } else if (type === 'Controller') {
@@ -456,7 +460,7 @@ const llamalendFactoryAddress = '0xeA6876DDE9e3467564acBeE1Ed5bac88783205E0'; //
 
 // todo
 
-export async function launchCurveLendingMonitoring(eventEmitterTelegramBotRelated: any) {
+export async function launchCurveLendingMonitoring() {
   const allLendingMarkets = await getAllLendingMarkets();
   const allEnrichedLendingMarkets = await enrichMarketData(allLendingMarkets);
   if (!allEnrichedLendingMarkets) {
@@ -468,7 +472,7 @@ export async function launchCurveLendingMonitoring(eventEmitterTelegramBotRelate
   // process.exit();
 
   // await histoMode(allEnrichedLendingMarkets, eventEmitter);
-  await liveMode(allEnrichedLendingMarkets, eventEmitterTelegramBotRelated);
+  await liveMode(allEnrichedLendingMarkets);
 }
 
 /*

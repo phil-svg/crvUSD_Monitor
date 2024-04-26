@@ -2,6 +2,7 @@ import { Contract } from 'web3-eth-contract';
 import { EventEmitter } from 'stream';
 import { EnrichedLendingMarketEvent, TransactionReceipt } from '../Interfaces.js';
 import { WEB3_HTTP_PROVIDER, WEB3_WS_PROVIDER } from '../web3connections.js';
+import eventEmitter from '../EventEmitter.js';
 
 function isCupsErr(err: Error): boolean {
   return err.message.includes('compute units per second capacity');
@@ -171,7 +172,7 @@ export async function getBlockTimeStamp(blockNumber: number): Promise<number> {
   return Number(BLOCK.timestamp);
 }
 
-export async function subscribeToEvents(CONTRACT: any, eventEmitter: EventEmitter, Market: any) {
+export async function subscribeToEvents(CONTRACT: any, Market: any) {
   try {
     const subscription = CONTRACT.events.allEvents();
 
@@ -180,6 +181,7 @@ export async function subscribeToEvents(CONTRACT: any, eventEmitter: EventEmitte
         console.log(CONTRACT._address, `subscribed to events successfully`);
       })
       .on('data', async (eventData: any) => {
+        console.log('New event in crvUSD Classic:', eventData.transactionHash);
         eventEmitter.emit('newEvent', { eventData, Market });
       })
       .on('error', (error: Error) => {
@@ -190,7 +192,7 @@ export async function subscribeToEvents(CONTRACT: any, eventEmitter: EventEmitte
   }
 }
 
-export async function subscribeToPegkeeperEvents(CONTRACT: any, eventEmitter: EventEmitter) {
+export async function subscribeToPegkeeperEvents(CONTRACT: any) {
   try {
     const subscription = CONTRACT.events.allEvents();
 

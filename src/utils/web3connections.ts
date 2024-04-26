@@ -1,12 +1,9 @@
 import Web3 from 'web3';
-import EventEmitter from 'events';
 import { main } from '../crvUSD_Bot.js';
 
 import dotenv from 'dotenv';
+import eventEmitter from './EventEmitter.js';
 dotenv.config({ path: '../.env' });
-
-export const eventEmitter = new EventEmitter();
-export const eventEmitterTelegramBotRelated = new EventEmitter();
 
 export let WEB3_HTTP_PROVIDER = await getWeb3HttpProvider();
 export let WEB3_WS_PROVIDER = getWeb3WsProvider();
@@ -83,7 +80,7 @@ export async function checkWsConnectionViaNewBlocks() {
   let lastReveivedBlockNumber = 0;
   subscription = WEB3_WS_PROVIDER.eth.subscribe('newBlockHeaders', async (err, blockHeader) => {
     lastReveivedBlockNumber = blockHeader.number;
-    console.log('New block', blockHeader.number, new Date().toLocaleTimeString());
+    // console.log('New block', blockHeader.number, new Date().toLocaleTimeString());
   });
   await new Promise((resolve) => setTimeout(resolve, 20000));
   while (true) {
