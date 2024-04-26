@@ -23,6 +23,7 @@ import { ABI_Controller } from './abis/ABI_Controller.js';
 import { getDSProxyOwner, isDefiSaverSmartWallet } from './defisaver/DefiSaver.js';
 import { WEB3_WS_PROVIDER } from './web3connections.js';
 import eventEmitter from './EventEmitter.js';
+import { couldStartTrivia } from 'typescript';
 
 export async function watchingForNewMarketOpenings(crvUSD_ControllerFactory: any) {
   const subscription = crvUSD_ControllerFactory.events.AddMarket();
@@ -87,8 +88,8 @@ export async function manageMarket(MARKET: any): Promise<void> {
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 19715902;
-  const END_BLOCK = 19715902;
+  const START_BLOCK = 19739744;
+  const END_BLOCK = 19739744;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, 'allEvents', START_BLOCK, END_BLOCK);
 
