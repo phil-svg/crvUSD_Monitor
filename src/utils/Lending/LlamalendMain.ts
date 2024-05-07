@@ -40,6 +40,11 @@ import {
 } from './Helper.js';
 import eventEmitter from '../EventEmitter.js';
 import { saveLastSeenToFile } from '../Oragnizer.js';
+import {
+  LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING,
+  LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING,
+  LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING,
+} from '../../crvUSD_Bot.js';
 
 async function processLlamalendVaultEvent(
   market: EnrichedLendingMarketEvent,
@@ -69,6 +74,7 @@ async function processLlamalendVaultEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const dollarAmount = parsedDepositedBorrowTokenAmount * borrowedTokenDollarPricePerUnit;
+    if (dollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketDepositMessage(
       market,
@@ -92,6 +98,7 @@ async function processLlamalendVaultEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const dollarAmount = parsedWithdrawnBorrowTokenAmount * borrowedTokenDollarPricePerUnit;
+    if (dollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketWithdrawMessage(
       market,
@@ -147,6 +154,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_increase / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const dollarAmountBorrow = parsedBorrowedAmount * borrowedTokenDollarPricePerUnit;
+    if (dollarAmountBorrow < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketBorrowMessage(
       market,
@@ -170,6 +178,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_decrease / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const repayDollarAmount = parsedRepayAmount * borrowedTokenDollarPricePerUnit;
+    if (repayDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketRepayMessage(
       market,
@@ -192,6 +201,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_decrease / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
+    if (collatDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
     const message = buildLendingMarketRemoveCollateralMessage(
       market,
       parsedCollatAmount,
@@ -224,6 +234,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_received / 10 ** market.collateral_token_decimals;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const collarDollarValue = parsedCollatAmount * collatTokenDollarPricePerUnit;
+    if (collarDollarValue < LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING) return;
 
     if (poorFellaAddress.toLowerCase() === liquidatorAddress.toLowerCase()) {
       const message = buildLendingMarketSelfLiquidateMessage(
@@ -309,6 +320,7 @@ async function processLlamalendAmmEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const discountAmount = repaidBorrrowTokenDollarAmount * market.fee;
+    if (discountAmount < LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING) return;
 
     const message = buildSoftLiquidateMessage(
       market,
@@ -360,7 +372,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = PRESENT;
 
-  const START_BLOCK = 19740136;
+  const START_BLOCK = 19812751;
   const END_BLOCK = START_BLOCK;
 
   for (const market of allLendingMarkets) {
