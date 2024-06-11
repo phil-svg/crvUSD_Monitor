@@ -1,7 +1,7 @@
 import { getTgBot, telegramBotMain } from './utils/telegram/TelegramBot.js';
 import { launchCurveLendingMonitoring } from './utils/Lending/LlamalendMain.js';
 import { bootWsProvider, checkWsConnectionViaNewBlocks, eraseWebProvider, setupDeadWebsocketListener, } from './utils/web3connections.js';
-import { launchClassicCrvUSDMonitoring } from './utils/ClassicCrvUSD/main.js';
+import { launchClassicCrvUSDMonitoring, launchPegkeeper } from './utils/ClassicCrvUSD/main.js';
 import eventEmitter from './utils/EventEmitter.js';
 console.clear();
 // ********************* Classic crvUSD **************
@@ -31,6 +31,7 @@ export async function main() {
     await telegramBotMain(ENV, bot);
     await launchCurveLendingMonitoring();
     await launchClassicCrvUSDMonitoring();
+    await launchPegkeeper();
     // WS Connectivy Things
     await checkWsConnectionViaNewBlocks(); // restarts main if WS dead for 30s.
 }

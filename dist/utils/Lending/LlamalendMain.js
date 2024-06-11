@@ -158,24 +158,24 @@ async function processLlamalendAmmEvent(market, llamalendVaultContract, controll
         let parsedSoftLiquidatedAmount;
         let parsedRepaidAmount;
         if (event.returnValues.sold_id === '0') {
-            parsedSoftLiquidatedAmount = event.returnValues.tokens_bought / 10 ** market.borrowed_token_decimals;
-            parsedRepaidAmount = event.returnValues.tokens_sold / 10 ** market.collateral_token_decimals;
+            parsedSoftLiquidatedAmount = event.returnValues.tokens_bought / 10 ** market.collateral_token_decimals;
+            parsedRepaidAmount = event.returnValues.tokens_sold / 10 ** market.borrowed_token_decimals;
         }
         else {
             parsedSoftLiquidatedAmount = event.returnValues.tokens_sold / 10 ** market.collateral_token_decimals;
             parsedRepaidAmount = event.returnValues.tokens_bought / 10 ** market.borrowed_token_decimals;
         }
         const collatDollarAmount = collatTokenDollarPricePerUnit * parsedSoftLiquidatedAmount;
-        const repaidBorrrowTokenDollarAmount = parsedRepaidAmount * borrowedTokenDollarPricePerUnit;
+        const repaidBorrowTokenDollarAmount = parsedRepaidAmount * borrowedTokenDollarPricePerUnit;
         const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
         const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
         const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
         const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
         const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
-        const discountAmount = repaidBorrrowTokenDollarAmount * market.fee;
+        const discountAmount = repaidBorrowTokenDollarAmount * market.fee;
         if (discountAmount < LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING)
             return;
-        const message = buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets, gaugeBoostPercentage, discountAmount);
+        const message = buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets, gaugeBoostPercentage, discountAmount);
         eventEmitter.emit('newMessage', message);
     }
 }
@@ -202,7 +202,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     const PRESENT = await getCurrentBlockNumber();
     // const START_BLOCK = LENDING_LAUNCH_BLOCK;
     // const END_BLOCK = PRESENT;
-    const START_BLOCK = 19812751;
+    const START_BLOCK = 20066541;
     const END_BLOCK = START_BLOCK;
     for (const market of allLendingMarkets) {
         // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm
