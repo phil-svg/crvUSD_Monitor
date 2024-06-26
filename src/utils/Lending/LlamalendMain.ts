@@ -445,7 +445,7 @@ async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[]) {
     'newLendingMarketsEvent',
     async ({ market, event, type, vaultContract, controllerContact, ammContract }: LendingMarketEventPayload) => {
       // console.log('\n\n\n\nnew event in Market:', market.vault, ':', event, 'type:', type);
-      console.log(`new ${event.event} event in lending:`, event.transactionHash);
+      console.log(`${event.transactionHash} | ${event.event} | lending`);
       await saveLastSeenToFile(event.transactionHash, new Date());
 
       if (type === 'Vault') {

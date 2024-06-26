@@ -56,7 +56,7 @@ export async function checkWsConnectionViaNewBlocks() {
     let lastReveivedBlockNumber = 0;
     subscription = WEB3_WS_PROVIDER.eth.subscribe('newBlockHeaders', async (err, blockHeader) => {
         lastReveivedBlockNumber = blockHeader.number;
-        // console.log('New block', blockHeader.number, new Date().toLocaleTimeString());
+        console.log('New block', blockHeader.number, new Date().toLocaleTimeString());
     });
     await new Promise((resolve) => setTimeout(resolve, 20000));
     while (true) {
