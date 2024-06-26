@@ -243,7 +243,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
 async function liveMode(allLendingMarkets) {
     await checkWsConnectionViaNewBlocks();
     for (const market of allLendingMarkets) {
-        console.log('\nmarket', market);
+        // console.log('\nmarket', market);
         const vaultContract = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_VAULT, market.vault);
         const controllerContact = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_CONTROLLER, market.controller);
         const ammContract = new WEB3_WS_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, market.amm);

@@ -145,7 +145,7 @@ export async function subscribeToEvents(CONTRACT, Market) {
         const subscription = CONTRACT.events.allEvents();
         subscription
             .on('connected', () => {
-            console.log(CONTRACT._address, `subscribed to events successfully`);
+            // console.log(CONTRACT._address, `subscribed to events successfully`);
         })
             .on('data', async (eventData) => {
             console.log('New event in crvUSD Classic:', eventData.transactionHash);
@@ -164,7 +164,7 @@ export async function subscribeToPegkeeperEvents(CONTRACT) {
         const subscription = CONTRACT.events.allEvents();
         subscription
             .on('connected', () => {
-            console.log(CONTRACT._address, `subscribed to events successfully`);
+            // console.log(CONTRACT._address, `subscribed to events successfully`);
         })
             .on('data', async (eventData) => {
             eventEmitter.emit('newPegKeeperEvent', eventData);
@@ -192,7 +192,7 @@ export async function subscribeToLendingMarketsEvents(market, vaultContract, con
         const subscription = contract.events.allEvents();
         subscription
             .on('connected', () => {
-            console.log(contract._address, `subscribed to LLammaLend events successfully`);
+            // console.log(contract._address, `subscribed to LLammaLend events successfully`);
         })
             .on('data', async (event) => {
             // console.log('LLAMMA LEND Event', event);

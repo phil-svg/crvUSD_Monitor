@@ -16,7 +16,7 @@ export async function watchingForNewMarketOpenings(crvUSD_ControllerFactory) {
     const subscription = crvUSD_ControllerFactory.events.AddMarket();
     subscription
         .on('connected', () => {
-        console.log(crvUSD_ControllerFactory._address, `subscribed to new market event successfully`);
+        // console.log(crvUSD_ControllerFactory._address, `subscribed to new market event successfully`);
     })
         .on('data', async (marketCreation) => {
         console.log('NEW MARKET!!!');
@@ -55,9 +55,9 @@ export async function manageMarket(MARKET) {
     const CONTROLLER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_Controller, ADDRESS_CONTROLLER);
     const ADDRESS_AMM = MARKET.returnValues.amm;
     const AMM_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_AMM, ADDRESS_AMM);
-    console.log('ADDRESS_COLLATERAL', ADDRESS_COLLATERAL);
-    console.log('ADDRESS_CONTROLLER', ADDRESS_CONTROLLER);
-    console.log('ADDRESS_AMM', ADDRESS_AMM, '\n');
+    // console.log('ADDRESS_COLLATERAL', ADDRESS_COLLATERAL);
+    // console.log('ADDRESS_CONTROLLER', ADDRESS_CONTROLLER);
+    // console.log('ADDRESS_AMM', ADDRESS_AMM, '\n');
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
     /*
