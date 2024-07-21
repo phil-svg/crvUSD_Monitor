@@ -25,7 +25,7 @@ export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
 
 export const LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING = 100000;
 export const LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING = 35;
-export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0.1;
+export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
 
 // export const LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING = 0;
 // export const LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING = 0;
@@ -55,4 +55,6 @@ export async function main() {
 }
 
 await main();
+// await telegramBotMain(ENV, bot);
+// await launchClassicCrvUSDMonitoring();
 // await conductResearch();

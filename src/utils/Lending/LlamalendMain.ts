@@ -373,14 +373,14 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = PRESENT;
 
-  const START_BLOCK = 20066541;
+  const START_BLOCK = 20313138;
   const END_BLOCK = START_BLOCK;
 
   for (const market of allLendingMarkets) {
     // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm
     // if (!filterForOnly("0x52096539ed1391CB50C6b9e4Fd18aFd2438ED23b", market)) continue;
 
-    // console.log("\nmarket", market);
+    // console.log('\nmarket', market);
 
     const vaultContract = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_VAULT, market.vault);
     const controllerContact = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_CONTROLLER, market.controller);

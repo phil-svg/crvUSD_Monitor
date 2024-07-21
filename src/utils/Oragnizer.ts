@@ -87,8 +87,8 @@ export async function manageMarket(MARKET: any): Promise<void> {
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 19739744;
-  const END_BLOCK = 19739744;
+  const START_BLOCK = 20155721;
+  const END_BLOCK = 20155721;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, 'allEvents', START_BLOCK, END_BLOCK);
 
@@ -142,10 +142,6 @@ export async function manageMarket(MARKET: any): Promise<void> {
       const user = await getDSProxyOwner(DSProxy_Address);
       defiSaverUser = user;
     }
-
-    console.log('isDefiSaverAutomatedTx', isDefiSaverAutomatedTx);
-    console.log('isManualSmartWalletTx', isManualSmartWalletTx);
-    console.log('defiSaverUser', defiSaverUser);
     // DEFI-SAVER END
 
     if ((CONTROLLER_EVENT as { event: string }).event === 'Borrow') {
@@ -216,9 +212,9 @@ export async function manageMarket(MARKET: any): Promise<void> {
       eventEmitter.emit('newMessage', message);
     }
   }
-
-  // process.exit();
   */
+  // process.exit();
+
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,7 @@ export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
 // ********************* Lending *********************
 export const LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING = 100000;
 export const LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING = 35;
-export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0.1;
+export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
 // export const LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING = 0;
 // export const LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING = 0;
 // export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0.1;
@@ -36,5 +36,7 @@ export async function main() {
     await checkWsConnectionViaNewBlocks(); // restarts main if WS dead for 30s.
 }
 await main();
+// await telegramBotMain(ENV, bot);
+// await launchClassicCrvUSDMonitoring();
 // await conductResearch();
 //# sourceMappingURL=crvUSD_Bot.js.map
