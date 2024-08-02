@@ -233,7 +233,7 @@ Manually via${hyperlink(url, 'defisaver.com')} 🛟`;
 Automated via${hyperlink(url, 'defisaver.com')} 🛟`;
     }
     return `
-  🚀${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
+  User${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(COLLATERAL_URL, collateralName)}${dollarAddon}
 ${healthAndDefiSaverLine}
 Borrow APY: ${formatForPrint(borrowRate)}%
 ${marketHealthPrint}

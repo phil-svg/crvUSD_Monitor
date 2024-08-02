@@ -319,7 +319,7 @@ Automated via${hyperlink(url, 'defisaver.com')} 🛟`;
   }
 
   return `
-  🚀${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(
+  User${hyperlink(buyerURL, shortenBuyer)} removed ${formatForPrint(collateral_decrease)}${hyperlink(
     COLLATERAL_URL,
     collateralName
   )}${dollarAddon}
