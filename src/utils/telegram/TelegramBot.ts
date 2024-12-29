@@ -16,7 +16,6 @@ import { EnrichedLendingMarketEvent } from '../Interfaces.js';
 import { generateDefiSaverUrl } from '../defisaver/DefiSaver.js';
 import { calculateAPYFromAPR } from '../helperFunctions/LLAMMA.js';
 import eventEmitter from '../EventEmitter.js';
-import { fromTwos } from 'ethers';
 dotenv.config({ path: '../.env' });
 
 function getTokenURL(tokenAddress: string) {

@@ -68,17 +68,15 @@ async function fetchDataWithRetry(fetchFunction, attempts = 3, delay = 200) {
     return null;
 }
 export async function getCoinSymbol(coinAddress, web3) {
-    return fetchDataWithRetry(async () => {
-        const COIN = new web3.eth.Contract(ABI_hacked_Symbol, coinAddress);
-        try {
-            let coinSymbol = await web3Call(COIN, 'symbol', []);
-            return coinSymbol;
-        }
-        catch (error) {
-            console.error(`Failed to fetch symbol for address ${coinAddress}:`, error);
-            return null;
-        }
-    });
+    const COIN = new web3.eth.Contract(ABI_hacked_Symbol, coinAddress);
+    try {
+        let coinSymbol = await web3Call(COIN, 'symbol', []);
+        return coinSymbol;
+    }
+    catch (error) {
+        console.error(`Failed to fetch symbol for address ${coinAddress}:`, error);
+        return null;
+    }
 }
 export async function getCoinDecimals(coinAddress, web3) {
     return fetchDataWithRetry(async () => {

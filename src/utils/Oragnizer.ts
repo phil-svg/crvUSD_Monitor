@@ -56,7 +56,7 @@ export async function saveLastSeenToFile(hash: string, timestamp: Date) {
   }
 }
 
-async function isLiquidateEvent(CONTROLLER: any, CONTROLLER_EVENT: any) {
+export async function isLiquidateEvent(CONTROLLER: any, CONTROLLER_EVENT: any) {
   let blockNumber = CONTROLLER_EVENT.blockNumber;
   let txHash = CONTROLLER_EVENT.transactionHash;
   const PAST_EVENTS_CONTROLLER = await getPastEvents(CONTROLLER, 'Liquidate', blockNumber, blockNumber);

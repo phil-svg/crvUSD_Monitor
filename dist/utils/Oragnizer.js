@@ -40,7 +40,7 @@ export async function saveLastSeenToFile(hash, timestamp) {
         console.error('Error writing last seen data to file:', error);
     }
 }
-async function isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT) {
+export async function isLiquidateEvent(CONTROLLER, CONTROLLER_EVENT) {
     let blockNumber = CONTROLLER_EVENT.blockNumber;
     let txHash = CONTROLLER_EVENT.transactionHash;
     const PAST_EVENTS_CONTROLLER = await getPastEvents(CONTROLLER, 'Liquidate', blockNumber, blockNumber);

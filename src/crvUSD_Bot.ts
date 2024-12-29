@@ -8,6 +8,7 @@ import {
 } from './utils/web3connections.js';
 import { launchClassicCrvUSDMonitoring, launchPegkeeper } from './utils/ClassicCrvUSD/main.js';
 import eventEmitter from './utils/EventEmitter.js';
+import { conductResearch } from './research/Research.js';
 
 console.clear();
 

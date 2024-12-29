@@ -134,44 +134,6 @@ function getTokenBalanceChanges(transferEvents, userAddress) {
     }
     return balanceChanges;
 }
-function getWithdrawalEvents(receipt, userAddress) {
-    const withdrawalEvents = [];
-    if (receipt.logs) {
-        for (const log of receipt.logs) {
-            // Adjust the topic to match the Withdrawal event signature
-            if (log.topics[0] !== '0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65') {
-                continue;
-            }
-            // Decode the log
-            const decodedLog = WEB3_HTTP_PROVIDER.eth.abi.decodeLog([
-                { type: 'address', indexed: true, name: 'src' },
-                { type: 'uint256', indexed: false, name: 'wad' },
-            ], log.data, log.topics.slice(1));
-            // Check if the withdrawal event concerns the userAddress
-            if (decodedLog.src.toLowerCase() === userAddress.toLowerCase()) {
-                // Create an object matching WithdrawalEvent interface
-                const withdrawalEvent = {
-                    receiver: decodedLog.src,
-                    wad: decodedLog.wad,
-                    weth: log.address, // Add the contract address generating this log
-                };
-                withdrawalEvents.push(withdrawalEvent);
-            }
-        }
-    }
-    return withdrawalEvents;
-}
-function combineEvents(transferEvents, withdrawalEvents) {
-    // Map withdrawal events to match TransferEvent format
-    const formattedWithdrawals = withdrawalEvents.map((withdrawalEvent) => ({
-        from: withdrawalEvent.receiver,
-        to: withdrawalEvent.weth,
-        value: withdrawalEvent.wad,
-        token: withdrawalEvent.weth,
-    }));
-    // Return a new array combining both transfer and withdrawal events
-    return [...transferEvents, ...formattedWithdrawals];
-}
 function addEthBalanceChange(balanceChanges, ethBalanceChange) {
     if (ethBalanceChange !== 0) {
         balanceChanges.push({
