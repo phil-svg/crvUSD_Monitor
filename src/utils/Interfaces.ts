@@ -1,7 +1,7 @@
 export interface LendingMarketEventPayload {
   market: EnrichedLendingMarketEvent;
   event: any;
-  type: "Vault" | "Controller" | "Amm";
+  type: 'Vault' | 'Controller' | 'Amm';
   vaultContract: any;
   controllerContact: any;
   ammContract: any;
@@ -48,47 +48,4 @@ export interface EnrichedLendingMarketEvent extends LendingMarketEvent {
   borrowed_token_decimals: number;
   market_name: string;
   fee: number;
-}
-
-interface EventLog {
-  event: string;
-  address: string;
-  returnValues: any;
-  logIndex: number;
-  transactionIndex: number;
-  transactionHash: string;
-  blockHash: string;
-  blockNumber: number;
-  raw?: { data: string; topics: any[] };
-}
-
-interface Log {
-  address: string;
-  data: string;
-  topics: string[];
-  logIndex: number;
-  transactionIndex: number;
-  transactionHash: string;
-  blockHash: string;
-  blockNumber: number;
-  removed: boolean;
-}
-
-export interface TransactionReceipt {
-  status: boolean;
-  transactionHash: string;
-  transactionIndex: number;
-  blockHash: string;
-  blockNumber: number;
-  from: string;
-  to: string;
-  contractAddress?: string;
-  cumulativeGasUsed: number;
-  gasUsed: number;
-  effectiveGasPrice: number;
-  logs: Log[];
-  logsBloom: string;
-  events?: {
-    [eventName: string]: EventLog;
-  };
 }

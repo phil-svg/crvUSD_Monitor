@@ -1,45 +1,10 @@
-import dotenv from 'dotenv';
 import axios from 'axios';
 import Bottleneck from 'bottleneck';
 import axiosRetry from 'axios-retry';
-import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
-dotenv.config({ path: '../.env' });
+import { web3HttpProvider } from '../web3/Web3Basics.js';
 
-export async function getTxReceipt(txHash: string): Promise<any> {
-  try {
-    const response = await axios.post(
-      `${process.env.ALCHEMY_API!}`,
-      {
-        id: 1,
-        jsonrpc: '2.0',
-        method: 'eth_getTransactionReceipt',
-        params: [txHash],
-      },
-      {
-        timeout: 5000, // Set a timeout of 5000 milliseconds
-      }
-    );
-
-    if (response.data && response.data.result) {
-      return response.data.result;
-    } else {
-      return null;
-    }
-  } catch (error) {
-    const err = error as Error & { code?: string };
-    /*
-    if (err.code !== "ECONNABORTED" && err.code !== "ERR_SOCKET_CONNECTION_TIMEOUT" && err.code !== "ERR_BAD_REQUEST") {
-      // Don't log timeout errors
-      console.error("Error fetching transaction receipt:", err);
-    }
-    */
-    console.error('Error fetching transaction receipt:', err);
-    return null;
-  }
-}
-
-export async function getCallTraceViaAlchemy(txHash: string): Promise<any> {
-  const response = await fetch(process.env.WEB3_HTTP!, {
+export async function getCallTraceViaRpcProvider(txHash: string): Promise<any> {
+  const response = await fetch(process.env.WEB3_HTTP_MAINNET!, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -83,7 +48,7 @@ export async function getTxWithLimiter(txHash: string): Promise<any | null> {
 
     while (retries < MAX_RETRIES) {
       try {
-        const TX = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);
+        const TX = await web3HttpProvider.eth.getTransaction(txHash);
         return TX;
       } catch (error: unknown) {
         if (error instanceof Error) {

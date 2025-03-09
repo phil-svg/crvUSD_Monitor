@@ -1,15 +1,15 @@
-import { getCallTraceViaAlchemy } from '../helperFunctions/Web3.js';
+import { getCallTraceViaRpcProvider } from '../helperFunctions/Web3.js';
 import { TransactionReceipt } from 'web3-eth';
 import { AbiItem } from 'web3-utils';
 import Big from 'big.js';
 import { getPrice } from '../priceAPI/priceAPI.js';
 import { ABI_Tricrypto } from '../abis/ABI_Tricrypto.js';
 import { ETH_ADDRESS } from '../Constants.js';
-import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+import { web3HttpProvider } from '../web3/Web3Basics.js';
 
 async function getEthPrice(blockNumber: number): Promise<number | null> {
   const ADDRESS_TRICRYPTO = '0xD51a44d3FaE010294C616388b506AcdA1bfAAE46';
-  const TRICRYPTO = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Tricrypto, ADDRESS_TRICRYPTO);
+  const TRICRYPTO = new web3HttpProvider.eth.Contract(ABI_Tricrypto, ADDRESS_TRICRYPTO);
 
   try {
     return (await TRICRYPTO.methods.price_oracle(1).call(blockNumber)) / 1e18;
@@ -20,15 +20,15 @@ async function getEthPrice(blockNumber: number): Promise<number | null> {
 
 async function getCosts(txHash: string, blockNumber: number): Promise<number | null> {
   try {
-    const txReceipt = await WEB3_HTTP_PROVIDER.eth.getTransactionReceipt(txHash);
+    const txReceipt = await web3HttpProvider.eth.getTransactionReceipt(txHash);
     const gasUsed = txReceipt.gasUsed;
 
-    const tx = await WEB3_HTTP_PROVIDER.eth.getTransaction(txHash);
+    const tx = await web3HttpProvider.eth.getTransaction(txHash);
     const gasPrice = tx.gasPrice;
 
-    const cost = WEB3_HTTP_PROVIDER.utils.toBN(gasUsed).mul(WEB3_HTTP_PROVIDER.utils.toBN(gasPrice));
+    const cost = web3HttpProvider.utils.toBN(gasUsed).mul(web3HttpProvider.utils.toBN(gasPrice));
 
-    let txCostInETHER = Number(WEB3_HTTP_PROVIDER.utils.fromWei(cost, 'ether'));
+    let txCostInETHER = Number(web3HttpProvider.utils.fromWei(cost, 'ether'));
 
     let etherPrice = await getEthPrice(blockNumber);
     if (!etherPrice) return null;
@@ -99,7 +99,7 @@ export async function getTokenSymbol(tokenAddress: string): Promise<string | nul
     },
   ];
 
-  const CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(SYMBOL_ABI, tokenAddress);
+  const CONTRACT = new web3HttpProvider.eth.Contract(SYMBOL_ABI, tokenAddress);
   try {
     return await CONTRACT.methods.symbol().call();
   } catch (error) {
@@ -125,7 +125,7 @@ export async function getTokenDecimals(tokenAddress: string): Promise<number | n
     },
   ];
 
-  const CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(DECIMALS_ABI, tokenAddress);
+  const CONTRACT = new web3HttpProvider.eth.Contract(DECIMALS_ABI, tokenAddress);
   try {
     return Number(await CONTRACT.methods.decimals().call());
   } catch (error) {
@@ -214,7 +214,7 @@ function getTransferEvents(receipt: TransactionReceipt, userAddress: string): Tr
       }
 
       // Decode the log
-      const decodedLog: any = WEB3_HTTP_PROVIDER.eth.abi.decodeLog(
+      const decodedLog: any = web3HttpProvider.eth.abi.decodeLog(
         [
           { type: 'address', indexed: true, name: 'from' },
           { type: 'address', indexed: true, name: 'to' },
@@ -363,9 +363,9 @@ async function getRevenueForAddress(event: any, CALL_TRACE: any, user: string): 
 }
 
 async function getRevenue(event: any): Promise<any> {
-  // Wait for 4 seconds to give Alchemy time to build the call_trace.
+  // Wait for 4 seconds to give RPC Provider time to build the call_trace.
   await new Promise((resolve) => setTimeout(resolve, 4000));
-  const CALL_TRACE = await getCallTraceViaAlchemy(event.transactionHash);
+  const CALL_TRACE = await getCallTraceViaRpcProvider(event.transactionHash);
 
   const buyer = CALL_TRACE[0].action.from;
   const to = CALL_TRACE[0].action.to;

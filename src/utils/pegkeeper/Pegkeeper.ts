@@ -1,12 +1,12 @@
 import { ADDRESS_crvUSD, NULL_ADDRESS, addressAggMonetary } from '../Constants.js';
-import { getPastEvents, subscribeToPegkeeperEvents, web3Call } from '../web3Calls/generic.js';
 import { ABI_AggMonetaryPolicy } from '../abis/ABI_AggMonetaryPolicy.js';
 import { ABI_Pegkeeper } from '../abis/ABI_Pegkeeper.js';
 import { ABI_hacked_Coins, ABI_hacked_Decimals, ABI_hacked_Symbol } from '../abis/ABI_Hacked.js';
 import { getPriceOf_crvUSD } from '../priceAPI/priceAPI.js';
 import { PegKeeperMessageContext, buildPegKeeperMessage } from '../telegram/TelegramBot.js';
-import { WEB3_HTTP_PROVIDER, WEB3_WS_PROVIDER } from '../web3connections.js';
 import eventEmitter from '../EventEmitter.js';
+import { getPastEvents, web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
+import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
 
 async function getAllPegKeepersInfo(blockNumber: number): Promise<
   Array<{
@@ -20,11 +20,11 @@ async function getAllPegKeepersInfo(blockNumber: number): Promise<
   let pegKeepersDetails = [];
 
   for (const pegKeeperAddress of pegkeeperAddressArrOnchain) {
-    const PEG_KEEPER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_Pegkeeper, pegKeeperAddress);
+    const PEG_KEEPER_CONTRACT = new web3HttpProvider.eth.Contract(ABI_Pegkeeper, pegKeeperAddress);
     const pool = await web3Call(PEG_KEEPER_CONTRACT, 'pool', []);
 
-    const coinAddress = await getPegkeeperCoin(pool, WEB3_WS_PROVIDER);
-    const coinSymbol = coinAddress ? await getCoinSymbol(coinAddress, WEB3_WS_PROVIDER) : null;
+    const coinAddress = await getPegkeeperCoin(pool, web3HttpProvider);
+    const coinSymbol = coinAddress ? await getCoinSymbol(coinAddress, web3HttpProvider) : null;
 
     pegKeepersDetails.push({
       pegKeeperAddress,
@@ -38,7 +38,7 @@ async function getAllPegKeepersInfo(blockNumber: number): Promise<
 }
 
 async function getPegkeeperAddressArrOnchain(blockNumber: number): Promise<string[]> {
-  const AggMonetaryContract = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
+  const AggMonetaryContract = new web3HttpProvider.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
 
   let pegKeeperAddresses: string[] = [];
   let i = 0;
@@ -195,7 +195,7 @@ export async function calculateDebtsForAllPegKeepers(
   let debtsSummary = [];
 
   for (const pegKeeperInfo of allPegKeepersInfo) {
-    const debts = await getPegKeeperDebtAtBlocks(pegKeeperInfo, blockNumber, WEB3_WS_PROVIDER);
+    const debts = await getPegKeeperDebtAtBlocks(pegKeeperInfo, blockNumber, web3HttpProvider);
     debtsSummary.push({
       coinSymbol: pegKeeperInfo.coinSymbol,
       ...debts,
@@ -241,8 +241,7 @@ export async function livemodePegKeepers(blockNumber: number): Promise<void> {
   const pegkeeperAddressArrOnchain = await getPegkeeperAddressArrOnchain(blockNumber);
   const allPegKeepersInfo = await getAllPegKeepersInfo(blockNumber);
   for (const address of pegkeeperAddressArrOnchain) {
-    const PEG_KEEPER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_Pegkeeper, address);
-    subscribeToPegkeeperEvents(PEG_KEEPER_CONTRACT);
+    subscribeToPegkeeperEvents(address, ABI_Pegkeeper);
   }
   eventEmitter.on('newPegKeeperEvent', async (event: any) => {
     if (event.event === 'Provide' || event.event === 'Withdraw') {
@@ -251,9 +250,24 @@ export async function livemodePegKeepers(blockNumber: number): Promise<void> {
   });
 }
 
+async function subscribeToPegkeeperEvents(address: string, abi: any) {
+  try {
+    registerHandler(async (logs) => {
+      const events = await fetchEventsRealTime(logs, address, abi, 'AllEvents');
+      if (events.length > 0) {
+        events.forEach((event: any) => {
+          eventEmitter.emit('newPegKeeperEvent', event);
+        });
+      }
+    });
+  } catch (err) {
+    console.log('Error in fetching events:', err);
+  }
+}
+
 export async function pegkeeperHisto(eventEmitter: any, startBlock: number, endBlock: number): Promise<void> {
   const allPegKeepersInfo = await getAllPegKeepersInfo(endBlock);
-  const allHistoEvents = await getAllEvents(WEB3_WS_PROVIDER, startBlock, endBlock);
+  const allHistoEvents = await getAllEvents(web3HttpProvider, startBlock, endBlock);
 
   for (const histoEvent of allHistoEvents) {
     await handleSingleEvent(histoEvent, allPegKeepersInfo, eventEmitter);

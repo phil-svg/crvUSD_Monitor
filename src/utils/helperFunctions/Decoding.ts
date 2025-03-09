@@ -1,4 +1,3 @@
-import { getPastEvents, getWalletTokenBalance, web3Call } from '../web3Calls/generic.js';
 import { solveProfit } from '../profit/profit.js';
 import { getBorrowRateForProvidedLlamma } from './LLAMMA.js';
 import { getDecimalFromCheatSheet, getSymbolFromCheatSheet } from '../CollatCheatSheet.js';
@@ -10,7 +9,7 @@ import { ABI_AggMonetaryPolicy } from '../abis/ABI_AggMonetaryPolicy.js';
 import { ABI_Controller } from '../abis/ABI_Controller.js';
 import { ABI_crvUSD_ControllerFactory } from '../abis/ABI_crvUSD_ControllerFactory.js';
 import { ABI_crvUSD } from '../abis/ABI_crvUSD.js';
-import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+import { getPastEvents, web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
 
 export function hasUndefinedOrNaNValues(data: Record<string, any>): boolean {
   return Object.values(data).some((value) => value === undefined || Number.isNaN(value));
@@ -21,7 +20,7 @@ async function getCollatPrice(
   collateralAddress: string,
   blockNumber: number
 ): Promise<number> {
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
+  const CONTROLLER = new web3HttpProvider.eth.Contract(ABI_Controller, controllerAddress);
 
   const PRICE = await web3Call(CONTROLLER, 'amm_price', [], blockNumber);
   // const COLLAT_DECIMALS = getDecimalFromCheatSheet(collateralAddress);
@@ -33,7 +32,7 @@ async function getPositionHealthOfGeneralAddress(
   userAddress: string,
   blockNumber: number
 ): Promise<number | string | null> {
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
+  const CONTROLLER = new web3HttpProvider.eth.Contract(ABI_Controller, controllerAddress);
 
   try {
     const hasLoan = await web3Call(CONTROLLER, 'loan_exists', [userAddress], blockNumber);
@@ -46,12 +45,39 @@ async function getPositionHealthOfGeneralAddress(
   }
 }
 
+async function getWalletTokenBalance(walletAddress: string, tokenAddress: string, blockNumber: number) {
+  const ABI_BALANCE_OF: any[] = [
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'account',
+          type: 'address',
+        },
+      ],
+      name: 'balanceOf',
+      outputs: [
+        {
+          internalType: 'uint256',
+          name: '',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+  ];
+  const TOKEN = new web3HttpProvider.eth.Contract(ABI_BALANCE_OF, tokenAddress);
+  const BALANCE = await web3Call(TOKEN, 'balanceOf', [walletAddress], blockNumber);
+  return BALANCE;
+}
+
 async function getPositionHealth(
   controllerAddress: string,
   userAddress: string,
   blockNumber: number
 ): Promise<number | null> {
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
+  const CONTROLLER = new web3HttpProvider.eth.Contract(ABI_Controller, controllerAddress);
 
   const HEALTH = await web3Call(CONTROLLER, 'health', [userAddress], blockNumber);
   return Number(HEALTH / 1e18);
@@ -69,7 +95,7 @@ async function getAmountOfCollatInMarket(addressCollat: string, addressAmm: stri
 }
 
 async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
-  const crvUSD_ControllerFactory = new WEB3_HTTP_PROVIDER.eth.Contract(
+  const crvUSD_ControllerFactory = new web3HttpProvider.eth.Contract(
     ABI_crvUSD_ControllerFactory,
     ADDRESS_crvUSD_ControllerFactory
   );
@@ -79,14 +105,14 @@ async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
 }
 
 async function getTotalMarketDebt(blockNumber: number, controllerAddress: string) {
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, controllerAddress);
+  const CONTROLLER = new web3HttpProvider.eth.Contract(ABI_Controller, controllerAddress);
 
   const TOTAL_DEBT = await web3Call(CONTROLLER, 'total_debt', [], blockNumber);
   return Number(TOTAL_DEBT / 1e18);
 }
 
 async function getCrvUsdTranserAmount(event: any) {
-  const crvUSD = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
+  const crvUSD = new web3HttpProvider.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
 
   let amounts = await getPastEvents(crvUSD, 'Transfer', event.blockNumber, event.blockNumber);
   if (!amounts || !Array.isArray(amounts)) return;
@@ -101,7 +127,7 @@ async function getCrvUsdTranserAmount(event: any) {
 }
 
 async function getPegKeepers(blockNumber: number) {
-  const AggMonetaryPolicy = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
+  const AggMonetaryPolicy = new web3HttpProvider.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
 
   const pegKeeperAddresses = [];
   let index = 0;
@@ -140,7 +166,7 @@ async function getMarketCap(blockNumber: number) {
   let pegKeepersDebt = 0;
 
   for (const pegKeeperAddress of pegKeepers) {
-    const CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(ABI, pegKeeperAddress);
+    const CONTRACT = new web3HttpProvider.eth.Contract(ABI, pegKeeperAddress);
     const debt = await web3Call(CONTRACT, 'debt', [], blockNumber);
     pegKeepersDebt += debt / 1e18;
   }

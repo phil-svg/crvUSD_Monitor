@@ -1,6 +1,5 @@
 import { getCoinDecimals, getCoinSymbol } from '../pegkeeper/Pegkeeper.js';
-import { web3Call } from '../web3Calls/generic.js';
-import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+import { web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
 import { ABI_LLAMALEND_AMM } from './Abis.js';
 export function extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation(receipt, market) {
     if (!receipt)
@@ -58,11 +57,11 @@ function buildMarketName(collateralTokenSymbol, borrowedTokenSymbol) {
 export async function enrichMarketData(allLendingMarkets) {
     const enrichedMarkets = [];
     for (const market of allLendingMarkets) {
-        const collateralTokenSymbol = await getCoinSymbol(market.collateral_token, WEB3_HTTP_PROVIDER);
-        const collateralTokenDecimals = await getCoinDecimals(market.collateral_token, WEB3_HTTP_PROVIDER);
-        const borrowedTokenSymbol = await getCoinSymbol(market.borrowed_token, WEB3_HTTP_PROVIDER);
-        const borrowedTokenDecimals = await getCoinDecimals(market.borrowed_token, WEB3_HTTP_PROVIDER);
-        const ammContract = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
+        const collateralTokenSymbol = await getCoinSymbol(market.collateral_token, web3HttpProvider);
+        const collateralTokenDecimals = await getCoinDecimals(market.collateral_token, web3HttpProvider);
+        const borrowedTokenSymbol = await getCoinSymbol(market.borrowed_token, web3HttpProvider);
+        const borrowedTokenDecimals = await getCoinDecimals(market.borrowed_token, web3HttpProvider);
+        const ammContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
         let fee = await web3Call(ammContract, 'fee', []);
         // Check if any fetched data is null
         if (!collateralTokenSymbol || !borrowedTokenSymbol || !collateralTokenDecimals || !borrowedTokenDecimals || !fee) {

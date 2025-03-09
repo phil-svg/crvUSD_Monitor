@@ -1,5 +1,4 @@
 import { getRawTokens } from './tokens.js';
-import { web3Call } from '../web3Calls/generic.js';
 import {
   ADDRESS_PRICE_ORACLE_sfrxETH,
   ADDRESS_TRICRYPTO,
@@ -11,13 +10,13 @@ import { ABI_Controller } from '../abis/ABI_Controller.js';
 import { ABI_priceAggregator } from '../abis/ABI_PriceAggregator.js';
 import { ABI_priceOracle } from '../abis/ABI_PriceOracle.js';
 import { ABI_Tricrypto } from '../abis/ABI_Tricrypto.js';
-import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+import { web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
 
 const rawTokens = getRawTokens();
 const tokens: Record<string, string> = rawTokens;
 
 async function getPriceOf_ETH(blockNumber: number): Promise<number | null> {
-  const TRICRYPTO = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Tricrypto, ADDRESS_TRICRYPTO);
+  const TRICRYPTO = new web3HttpProvider.eth.Contract(ABI_Tricrypto, ADDRESS_TRICRYPTO);
 
   try {
     return (await TRICRYPTO.methods.price_oracle(1).call(blockNumber)) / 1e18;
@@ -27,7 +26,7 @@ async function getPriceOf_ETH(blockNumber: number): Promise<number | null> {
 }
 
 export async function getPriceOf_sfrxETH(blockNumber: number): Promise<number | null> {
-  const PRICE_ORACLE = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_priceOracle, ADDRESS_PRICE_ORACLE_sfrxETH);
+  const PRICE_ORACLE = new web3HttpProvider.eth.Contract(ABI_priceOracle, ADDRESS_PRICE_ORACLE_sfrxETH);
 
   try {
     return (await PRICE_ORACLE.methods.price().call(blockNumber)) / 1e18;
@@ -45,7 +44,7 @@ export async function getPriceOf_frxETH(blockNumber: number): Promise<number | n
 }
 
 export async function getPriceOf_crvUSD(blockNumber: number): Promise<number | null> {
-  const PRICE_AGGREGATOR = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_priceAggregator, ADDRESS_crvUSD_PRICE_AGGREGATOR);
+  const PRICE_AGGREGATOR = new web3HttpProvider.eth.Contract(ABI_priceAggregator, ADDRESS_crvUSD_PRICE_AGGREGATOR);
 
   try {
     return (await PRICE_AGGREGATOR.methods.price().call(blockNumber)) / 1e18;
@@ -56,10 +55,7 @@ export async function getPriceOf_crvUSD(blockNumber: number): Promise<number | n
 }
 
 export async function getPriceOf_crvUSD_2nd(blockNumber: number): Promise<number | null> {
-  const PRICE_AGGREGATOR = new WEB3_HTTP_PROVIDER.eth.Contract(
-    ABI_priceAggregator,
-    ADDRESS_crvUSD_PRICE_AGGREGATOR_2nd
-  );
+  const PRICE_AGGREGATOR = new web3HttpProvider.eth.Contract(ABI_priceAggregator, ADDRESS_crvUSD_PRICE_AGGREGATOR_2nd);
 
   try {
     return (await PRICE_AGGREGATOR.methods.price().call(blockNumber)) / 1e18;
@@ -70,7 +66,7 @@ export async function getPriceOf_crvUSD_2nd(blockNumber: number): Promise<number
 }
 
 export async function getPriceOf_wstETH(blockNumber: number): Promise<number | null> {
-  const CONTROLLER = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_Controller, ADDRESS_crvUSD_CONTROLLER);
+  const CONTROLLER = new web3HttpProvider.eth.Contract(ABI_Controller, ADDRESS_crvUSD_CONTROLLER);
 
   const PRICE = await web3Call(CONTROLLER, 'amm_price', [], blockNumber);
   const COLLAT_DECIMALS = 18;

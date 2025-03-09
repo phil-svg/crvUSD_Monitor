@@ -1,7 +1,6 @@
-import { web3Call } from '../web3Calls/generic.js';
-import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+import { web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
 export async function getDSProxyOwner(DSProxyAddress) {
-    const DSProxyFactory = new WEB3_HTTP_PROVIDER.eth.Contract(DSProxyWallet_ABI, DSProxyAddress);
+    const DSProxyFactory = new web3HttpProvider.eth.Contract(DSProxyWallet_ABI, DSProxyAddress);
     const res = await web3Call(DSProxyFactory, 'owner', []);
     return res;
 }
@@ -117,7 +116,7 @@ const DSProxyWallet_ABI = [
 ];
 export async function isDefiSaverSmartWallet(address) {
     const DSProxyFactory_Address = '0xA26e15C895EFc0616177B7c1e7270A4C7D51C997';
-    const DSProxyFactory = new WEB3_HTTP_PROVIDER.eth.Contract(DSProxyFactory_ABI, DSProxyFactory_Address);
+    const DSProxyFactory = new web3HttpProvider.eth.Contract(DSProxyFactory_ABI, DSProxyFactory_Address);
     const res = await web3Call(DSProxyFactory, 'isProxy', [address]);
     if (res === true)
         return true;

@@ -17,6 +17,7 @@
     "bignumber.js": "^9.1.1",
     "bottleneck": "^2.19.5",
     "dotenv": "^16.0.3",
+    "ethereum-multicall": "^2.26.0",
     "fs": "^0.0.1-security",
     "node-telegram-bot-api": "^0.61.0",
     "typescript": "^5.0.4",

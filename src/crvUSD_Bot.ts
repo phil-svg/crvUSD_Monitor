@@ -1,14 +1,7 @@
 import { getTgBot, telegramBotMain } from './utils/telegram/TelegramBot.js';
 import { launchCurveLendingMonitoring } from './utils/Lending/LlamalendMain.js';
-import {
-  bootWsProvider,
-  checkWsConnectionViaNewBlocks,
-  eraseWebProvider,
-  setupDeadWebsocketListener,
-} from './utils/web3connections.js';
 import { launchClassicCrvUSDMonitoring, launchPegkeeper } from './utils/ClassicCrvUSD/main.js';
-import eventEmitter from './utils/EventEmitter.js';
-import { conductResearch } from './research/Research.js';
+import { startListeningToAllEvents } from './utils/web3/AllEvents.js';
 
 console.clear();
 
@@ -40,19 +33,20 @@ const ENV = 'prod';
 const bot = getTgBot(ENV);
 
 export async function main() {
-  // WS Connectivy Things
-  await eraseWebProvider(); // cleaning all perhaps existing WS.
-  await bootWsProvider(); // starting new WS connection.
-  eventEmitter.removeAllListeners();
-  setupDeadWebsocketListener();
+  console.log('starting startListeningToAllEvents');
+  startListeningToAllEvents();
 
+  console.log('starting telegramBotMain');
   await telegramBotMain(ENV, bot);
-  await launchCurveLendingMonitoring();
-  await launchClassicCrvUSDMonitoring();
-  await launchPegkeeper();
 
-  // WS Connectivy Things
-  await checkWsConnectionViaNewBlocks(); // restarts main if WS dead for 30s.
+  console.log('starting launchCurveLendingMonitoring');
+  await launchCurveLendingMonitoring();
+
+  console.log('starting launchClassicCrvUSDMonitoring');
+  await launchClassicCrvUSDMonitoring();
+
+  console.log('starting launchPegkeeper');
+  await launchPegkeeper();
 }
 
 await main();

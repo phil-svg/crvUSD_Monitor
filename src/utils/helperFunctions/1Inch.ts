@@ -1,6 +1,5 @@
 import { ETH_ADDRESS } from '../Constants.js';
-import { web3Call } from '../web3Calls/generic.js';
-import { WEB3_HTTP_PROVIDER } from '../web3connections.js';
+import { web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
 import { getTxWithLimiter } from './Web3.js';
 import { AbiItem } from 'web3-utils';
 
@@ -891,12 +890,12 @@ export async function decode1Inch(tx: any): Promise<IParams | null> {
 
   // find corresponding method in abi
   const methodAbi = abiSwap1Inch.find(
-    (abiItem: AbiItem) => WEB3_HTTP_PROVIDER.eth.abi.encodeFunctionSignature(abiItem) === methodSignature
+    (abiItem: AbiItem) => web3HttpProvider.eth.abi.encodeFunctionSignature(abiItem) === methodSignature
   );
 
   if (methodAbi) {
     // decode parameters
-    const decodedParams = WEB3_HTTP_PROVIDER.eth.abi.decodeParameters(methodAbi.inputs!, '0x' + tx.input.slice(10));
+    const decodedParams = web3HttpProvider.eth.abi.decodeParameters(methodAbi.inputs!, '0x' + tx.input.slice(10));
 
     // map decoded parameters to property names
     const params: IParams = {
@@ -920,12 +919,12 @@ export async function decode1InchV5(tx: any): Promise<IParams | null> {
 
   // find corresponding method in abi
   const methodAbi = abi1inchV5.find(
-    (abiItem: AbiItem) => WEB3_HTTP_PROVIDER.eth.abi.encodeFunctionSignature(abiItem) === methodSignature
+    (abiItem: AbiItem) => web3HttpProvider.eth.abi.encodeFunctionSignature(abiItem) === methodSignature
   );
 
   if (methodAbi) {
     // decode parameters
-    const decodedParams = WEB3_HTTP_PROVIDER.eth.abi.decodeParameters(methodAbi.inputs!, '0x' + tx.input.slice(10));
+    const decodedParams = web3HttpProvider.eth.abi.decodeParameters(methodAbi.inputs!, '0x' + tx.input.slice(10));
 
     // map decoded parameters to property names
     const params: IParams = {
@@ -953,7 +952,7 @@ async function getTokenNameFromChain(address: string): Promise<string> {
   let ABI_SYMBOL: AbiItem[] = [
     { stateMutability: 'view', type: 'function', name: 'symbol', inputs: [], outputs: [{ name: '', type: 'string' }] },
   ];
-  let CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_SYMBOL, address);
+  let CONTRACT = new web3HttpProvider.eth.Contract(ABI_SYMBOL, address);
   let name = await web3Call(CONTRACT, 'symbol', []);
   if (typeof name !== 'string') return 'token';
   return name;
@@ -973,7 +972,7 @@ async function getTokenDecimalsFromChain(address: string): Promise<number> {
       type: 'function',
     },
   ];
-  let CONTRACT = new WEB3_HTTP_PROVIDER.eth.Contract(ABI_DECIMALS, address);
+  let CONTRACT = new web3HttpProvider.eth.Contract(ABI_DECIMALS, address);
   let decimals = await web3Call(CONTRACT, 'decimals', []);
   if (typeof decimals !== 'string') return 18; // best guess in case of failed decimal fetch
   return parseInt(decimals);

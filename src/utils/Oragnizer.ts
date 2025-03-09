@@ -1,7 +1,6 @@
 import { writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getPastEvents, getTxFromTxHash, subscribeToEvents } from './web3Calls/generic.js';
 import {
   hasUndefinedOrNaNValues,
   processBorrowEvent,
@@ -21,23 +20,24 @@ import { MIN_REPAYED_AMOUNT_WORTH_PRINTING } from '../crvUSD_Bot.js';
 import { ABI_AMM } from './abis/ABI_AMM.js';
 import { ABI_Controller } from './abis/ABI_Controller.js';
 import { getDSProxyOwner, isDefiSaverSmartWallet } from './defisaver/DefiSaver.js';
-import { WEB3_WS_PROVIDER } from './web3connections.js';
 import eventEmitter from './EventEmitter.js';
+import { getPastEvents, getTxFromTxHash, web3HttpProvider } from './web3/Web3Basics.js';
+import { fetchEventsRealTime, registerHandler } from './web3/AllEvents.js';
 
-export async function watchingForNewMarketOpenings(crvUSD_ControllerFactory: any) {
-  const subscription = crvUSD_ControllerFactory.events.AddMarket();
-
-  subscription
-    .on('connected', () => {
-      // console.log(crvUSD_ControllerFactory._address, `subscribed to new market event successfully`);
-    })
-    .on('data', async (marketCreation: any) => {
-      console.log('NEW MARKET!!!');
-      await manageMarket(marketCreation);
-    })
-    .on('error', (error: Error) => {
-      console.error('Error in event subscription: ', error);
+export async function watchingForNewMarketOpenings(address: string, abi: any) {
+  try {
+    registerHandler(async (logs) => {
+      const events = await fetchEventsRealTime(logs, address, abi, 'AddMarket');
+      if (events.length > 0) {
+        events.forEach((event: any) => {
+          console.log('NEW MARKET!!!');
+          manageMarket(event);
+        });
+      }
     });
+  } catch (err) {
+    console.log('Error in fetching events:', err);
+  }
 }
 
 export async function saveLastSeenToFile(hash: string, timestamp: Date) {
@@ -70,14 +70,14 @@ export async function isLiquidateEvent(CONTROLLER: any, CONTROLLER_EVENT: any) {
 export let lastSeenTxHash: string | null = null;
 export let lastSeenTxTimestamp: Date | null = null;
 
-export async function manageMarket(MARKET: any): Promise<void> {
-  const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
+export async function manageMarket(market: any): Promise<void> {
+  const ADDRESS_COLLATERAL = market.returnValues.collateral;
 
-  const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
-  const CONTROLLER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_Controller, ADDRESS_CONTROLLER);
+  const ADDRESS_CONTROLLER = market.returnValues.controller;
+  const CONTROLLER_CONTRACT = new web3HttpProvider.eth.Contract(ABI_Controller, ADDRESS_CONTROLLER);
 
-  const ADDRESS_AMM = MARKET.returnValues.amm;
-  const AMM_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_AMM, ADDRESS_AMM);
+  const ADDRESS_AMM = market.returnValues.amm;
+  const AMM_CONTRACT = new web3HttpProvider.eth.Contract(ABI_AMM, ADDRESS_AMM);
 
   // console.log('ADDRESS_COLLATERAL', ADDRESS_COLLATERAL);
   // console.log('ADDRESS_CONTROLLER', ADDRESS_CONTROLLER);
@@ -222,22 +222,37 @@ export async function manageMarket(MARKET: any): Promise<void> {
 
   //////////////////////// LIVE MODE ////////////////////////
 
-  await subscribeToEvents(AMM_CONTRACT, MARKET);
-  await subscribeToEvents(CONTROLLER_CONTRACT, MARKET);
+  await subscribeToEvents(ADDRESS_AMM, ABI_AMM, market);
+  await subscribeToEvents(ADDRESS_CONTROLLER, ABI_Controller, market);
+}
+
+async function subscribeToEvents(address: string, abi: any, market: any) {
+  try {
+    registerHandler(async (logs) => {
+      const events = await fetchEventsRealTime(logs, address, abi, 'AllEvents');
+      if (events.length > 0) {
+        events.forEach((event: any) => {
+          console.log('New event in crvUSD Classic:', event.transactionHash);
+          eventEmitter.emit('newEvent', { event, market });
+        });
+      }
+    });
+  } catch (err) {
+    console.log('Error in fetching events:', err);
+  }
 }
 
 export async function handleLiveEvents() {
-  eventEmitter.on('newEvent', async ({ eventData: EVENT, Market: MARKET }: EventAndMarket) => {
+  eventEmitter.on('newEvent', async ({ event, market }) => {
     // for command checking when was the last seen tx.
-    await saveLastSeenToFile(EVENT.transactionHash, new Date());
-    console.log(`New ${EVENT.event} event in crvUSD Classic:`, EVENT.transactionHash);
-    const ADDRESS_COLLATERAL = MARKET.returnValues.collateral;
-    const ADDRESS_CONTROLLER = MARKET.returnValues.controller;
-    const AMM_ADDRESS = MARKET.returnValues.amm;
-    const CONTROLLER_CONTRACT = new WEB3_WS_PROVIDER.eth.Contract(ABI_Controller, ADDRESS_CONTROLLER);
+    await saveLastSeenToFile(event.transactionHash, new Date());
+    const ADDRESS_COLLATERAL = market.returnValues.collateral;
+    const ADDRESS_CONTROLLER = market.returnValues.controller;
+    const AMM_ADDRESS = market.returnValues.amm;
+    const CONTROLLER_CONTRACT = new web3HttpProvider.eth.Contract(ABI_Controller, ADDRESS_CONTROLLER);
 
     // DEFI-SAVER START
-    const txHash = (EVENT as { transactionHash: string }).transactionHash;
+    const txHash = (event as { transactionHash: string }).transactionHash;
     const tx = await getTxFromTxHash(txHash);
     if (!tx) {
       console.log('failed to fetch tx');
@@ -258,7 +273,7 @@ export async function handleLiveEvents() {
       defiSaverUser = tx.from;
     }
     if (isDefiSaverAutomatedTx) {
-      const DSProxy_Address = (EVENT as { returnValues: any }).returnValues['0'];
+      const DSProxy_Address = (event as { returnValues: any }).returnValues['0'];
       const user = await getDSProxyOwner(DSProxy_Address);
       defiSaverUser = user;
     }
@@ -268,8 +283,8 @@ export async function handleLiveEvents() {
     // console.log('defiSaverUser', defiSaverUser);
     // DEFI-SAVER END
 
-    if (EVENT.event === 'Borrow') {
-      const formattedEventData = await processBorrowEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
+    if (event.event === 'Borrow') {
+      const formattedEventData = await processBorrowEvent(event, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
       if (hasUndefinedOrNaNValues(formattedEventData)) return;
       if (
         formattedEventData.collateral_increase_value &&
@@ -284,10 +299,10 @@ export async function handleLiveEvents() {
       );
       if (message === "don't print tiny liquidations") return;
       eventEmitter.emit('newMessage', message);
-    } else if (EVENT.event === 'Repay') {
-      let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, EVENT);
+    } else if (event.event === 'Repay') {
+      let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, event);
       if (liquidateEventQuestion == true) return;
-      const formattedEventData = await processRepayEvent(EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
+      const formattedEventData = await processRepayEvent(event, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
       if (hasUndefinedOrNaNValues(formattedEventData)) return;
       if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING) return;
       const message = await buildRepayMessage(
@@ -297,9 +312,9 @@ export async function handleLiveEvents() {
         defiSaverUser
       );
       eventEmitter.emit('newMessage', message);
-    } else if (EVENT.event === 'RemoveCollateral') {
+    } else if (event.event === 'RemoveCollateral') {
       const formattedEventData = await processRemoveCollateralEvent(
-        EVENT,
+        event,
         ADDRESS_CONTROLLER,
         ADDRESS_COLLATERAL,
         AMM_ADDRESS
@@ -313,9 +328,9 @@ export async function handleLiveEvents() {
       );
       if (message === "don't print small amounts") return;
       eventEmitter.emit('newMessage', message);
-    } else if (EVENT.event === 'Liquidate') {
+    } else if (event.event === 'Liquidate') {
       const formattedEventData = await processLiquidateEvent(
-        EVENT,
+        event,
         ADDRESS_CONTROLLER,
         ADDRESS_COLLATERAL,
         AMM_ADDRESS
@@ -325,9 +340,9 @@ export async function handleLiveEvents() {
       if (message === "don't print tiny hard-liquidations") return;
       eventEmitter.emit('newMessage', message);
       // AMM EVENT
-    } else if (EVENT.event === 'TokenExchange') {
+    } else if (event.event === 'TokenExchange') {
       const formattedEventData = await processTokenExchangeEvent(
-        EVENT,
+        event,
         ADDRESS_CONTROLLER,
         ADDRESS_COLLATERAL,
         AMM_ADDRESS
@@ -342,9 +357,4 @@ export async function handleLiveEvents() {
       eventEmitter.emit('newMessage', message);
     }
   });
-}
-
-interface EventAndMarket {
-  eventData: any;
-  Market: any;
 }
