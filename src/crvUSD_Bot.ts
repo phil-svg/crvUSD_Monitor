@@ -49,7 +49,7 @@ export async function main() {
   await launchPegkeeper();
 }
 
-// await main();
-await telegramBotMain(ENV, bot);
-await launchClassicCrvUSDMonitoring();
+await main();
+// await telegramBotMain(ENV, bot);
+// await launchClassicCrvUSDMonitoring();
 // await conductResearch();

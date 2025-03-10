@@ -33,8 +33,8 @@ export async function main() {
     console.log('starting launchPegkeeper');
     await launchPegkeeper();
 }
-// await main();
-await telegramBotMain(ENV, bot);
-await launchClassicCrvUSDMonitoring();
+await main();
+// await telegramBotMain(ENV, bot);
+// await launchClassicCrvUSDMonitoring();
 // await conductResearch();
 //# sourceMappingURL=crvUSD_Bot.js.map
