@@ -23,5 +23,20 @@
     "address": "0x18084fbA666a33d37592fA2633fD49a74DD93a88",
     "symbol": "tBTC",
     "decimals": 18
+  },
+  {
+    "address": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
+    "symbol": "weETH",
+    "decimals": 18
+  },
+  {
+    "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+    "symbol": "cbBTC",
+    "decimals": 8
+  },
+  {
+    "address": "0x8236a87084f8B84306f72007F36F2618A5634494",
+    "symbol": "LBTC",
+    "decimals": 8
   }
 ]

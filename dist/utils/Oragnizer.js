@@ -62,133 +62,94 @@ export async function manageMarket(market) {
     // console.log('ADDRESS_AMM', ADDRESS_AMM, '\n');
     await updateCheatSheet(ADDRESS_COLLATERAL);
     //////////////////////// HISTO MODE ////////////////////////
-    /*
-    const START_BLOCK = 20155721;
-    const END_BLOCK = 20155721;
-  
+    const START_BLOCK = 22019155;
+    const END_BLOCK = 22019155;
     const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, 'allEvents', START_BLOCK, END_BLOCK);
-  
-    if (!(PAST_EVENTS_AMM_CONTRACT instanceof Array)) return;
-  
+    if (!(PAST_EVENTS_AMM_CONTRACT instanceof Array))
+        return;
     for (const AMM_EVENT of PAST_EVENTS_AMM_CONTRACT) {
-      console.log('AMM_EVENT', AMM_EVENT);
-      if ((AMM_EVENT as { event: string }).event !== 'TokenExchange') continue;
-      const formattedEventData = await processTokenExchangeEvent(
-        AMM_EVENT,
-        ADDRESS_CONTROLLER,
-        ADDRESS_COLLATERAL,
-        ADDRESS_AMM
-      );
-      console.log('formattedEventData', formattedEventData);
-      if (
-        !formattedEventData ||
-        Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value))
-      )
-        continue;
-      const message = await buildTokenExchangeMessage(formattedEventData);
-      if (message === "don't print tiny liquidations") continue;
-      eventEmitter.emit('newMessage', message);
+        console.log('AMM_EVENT', AMM_EVENT);
+        if (AMM_EVENT.event !== 'TokenExchange')
+            continue;
+        const formattedEventData = await processTokenExchangeEvent(AMM_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+        console.log('formattedEventData', formattedEventData);
+        if (!formattedEventData ||
+            Object.values(formattedEventData).some((value) => value === undefined || Number.isNaN(value)))
+            continue;
+        const message = await buildTokenExchangeMessage(formattedEventData);
+        if (message === "don't print tiny liquidations")
+            continue;
+        eventEmitter.emit('newMessage', message);
     }
-  
     const PAST_EVENTS_crvUSD_CONTROLLER = await getPastEvents(CONTROLLER_CONTRACT, 'allEvents', START_BLOCK, END_BLOCK);
-    if (!(PAST_EVENTS_crvUSD_CONTROLLER instanceof Array)) return;
-  
+    if (!(PAST_EVENTS_crvUSD_CONTROLLER instanceof Array))
+        return;
     for (const CONTROLLER_EVENT of PAST_EVENTS_crvUSD_CONTROLLER) {
-      console.log('processing CONTROLLER EVENT', CONTROLLER_EVENT);
-  
-      // DEFI-SAVER START
-      const txHash = (CONTROLLER_EVENT as { transactionHash: string }).transactionHash;
-      const tx = await getTxFromTxHash(txHash);
-      const DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS = '0x252025df8680c275d0ba80d084e5967d8bd26caf';
-  
-      let isDefiSaverAutomatedTx = false;
-      if (tx.to.toLowerCase() === DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS.toLowerCase())
-        isDefiSaverAutomatedTx = true;
-  
-      let isManualSmartWalletTx = false;
-      let dfsCheck = await isDefiSaverSmartWallet(tx.to);
-      if (dfsCheck === true) isManualSmartWalletTx = true;
-  
-      let defiSaverUser = '';
-      if (isManualSmartWalletTx) {
-        defiSaverUser = tx.from;
-      }
-      if (isDefiSaverAutomatedTx) {
-        const DSProxy_Address = (CONTROLLER_EVENT as { returnValues: any }).returnValues['0'];
-        const user = await getDSProxyOwner(DSProxy_Address);
-        defiSaverUser = user;
-      }
-      // DEFI-SAVER END
-  
-      if ((CONTROLLER_EVENT as { event: string }).event === 'Borrow') {
-        const formattedEventData = await processBorrowEvent(
-          CONTROLLER_EVENT,
-          ADDRESS_CONTROLLER,
-          ADDRESS_COLLATERAL,
-          ADDRESS_AMM
-        );
-        if (hasUndefinedOrNaNValues(formattedEventData)) continue;
-        if (
-          formattedEventData.collateral_increase_value &&
-          formattedEventData.collateral_increase_value < MIN_REPAYED_AMOUNT_WORTH_PRINTING
-        )
-          continue;
-        const message = await buildBorrowMessage(
-          formattedEventData,
-          isDefiSaverAutomatedTx,
-          isManualSmartWalletTx,
-          defiSaverUser
-        );
-        if (message === "don't print tiny liquidations") continue;
-        eventEmitter.emit('newMessage', message);
-      } else if ((CONTROLLER_EVENT as { event: string }).event === 'Repay') {
-        let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, CONTROLLER_EVENT);
-        if (liquidateEventQuestion == true) continue;
-        const formattedEventData = await processRepayEvent(
-          CONTROLLER_EVENT,
-          ADDRESS_CONTROLLER,
-          ADDRESS_COLLATERAL,
-          ADDRESS_AMM
-        );
-        if (hasUndefinedOrNaNValues(formattedEventData)) continue;
-        if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING) continue;
-        const message = await buildRepayMessage(
-          formattedEventData,
-          isDefiSaverAutomatedTx,
-          isManualSmartWalletTx,
-          defiSaverUser
-        );
-        eventEmitter.emit('newMessage', message);
-      } else if ((CONTROLLER_EVENT as { event: string }).event === 'RemoveCollateral') {
-        const formattedEventData = await processRemoveCollateralEvent(
-          CONTROLLER_EVENT,
-          ADDRESS_CONTROLLER,
-          ADDRESS_COLLATERAL,
-          ADDRESS_AMM
-        );
-        if (hasUndefinedOrNaNValues(formattedEventData)) continue;
-        const message = await buildRemoveCollateralMessage(
-          formattedEventData,
-          isDefiSaverAutomatedTx,
-          isManualSmartWalletTx,
-          defiSaverUser
-        );
-        if (message === "don't print small amounts") continue;
-        eventEmitter.emit('newMessage', message);
-      } else if ((CONTROLLER_EVENT as { event: string }).event === 'Liquidate') {
-        const formattedEventData = await processLiquidateEvent(
-          CONTROLLER_EVENT,
-          ADDRESS_CONTROLLER,
-          ADDRESS_COLLATERAL,
-          ADDRESS_AMM
-        );
-        if (hasUndefinedOrNaNValues(formattedEventData)) continue;
-        const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, ADDRESS_AMM);
-        if (message === "don't print tiny hard-liquidations") continue;
-        eventEmitter.emit('newMessage', message);
-      }
+        console.log('processing CONTROLLER EVENT', CONTROLLER_EVENT);
+        // DEFI-SAVER START
+        const txHash = CONTROLLER_EVENT.transactionHash;
+        const tx = await getTxFromTxHash(txHash);
+        const DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS = '0x252025df8680c275d0ba80d084e5967d8bd26caf';
+        let isDefiSaverAutomatedTx = false;
+        if (tx.to.toLowerCase() === DEFI_SAVER_crvUSD_AUTOMATION_CONTRACT_ADDRESS.toLowerCase())
+            isDefiSaverAutomatedTx = true;
+        let isManualSmartWalletTx = false;
+        let dfsCheck = await isDefiSaverSmartWallet(tx.to);
+        if (dfsCheck === true)
+            isManualSmartWalletTx = true;
+        let defiSaverUser = '';
+        if (isManualSmartWalletTx) {
+            defiSaverUser = tx.from;
+        }
+        if (isDefiSaverAutomatedTx) {
+            const DSProxy_Address = CONTROLLER_EVENT.returnValues['0'];
+            const user = await getDSProxyOwner(DSProxy_Address);
+            defiSaverUser = user;
+        }
+        // DEFI-SAVER END
+        if (CONTROLLER_EVENT.event === 'Borrow') {
+            const formattedEventData = await processBorrowEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+            if (hasUndefinedOrNaNValues(formattedEventData))
+                continue;
+            if (formattedEventData.collateral_increase_value &&
+                formattedEventData.collateral_increase_value < MIN_REPAYED_AMOUNT_WORTH_PRINTING)
+                continue;
+            const message = await buildBorrowMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
+            if (message === "don't print tiny liquidations")
+                continue;
+            eventEmitter.emit('newMessage', message);
+        }
+        else if (CONTROLLER_EVENT.event === 'Repay') {
+            let liquidateEventQuestion = await isLiquidateEvent(CONTROLLER_CONTRACT, CONTROLLER_EVENT);
+            if (liquidateEventQuestion == true)
+                continue;
+            const formattedEventData = await processRepayEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+            if (hasUndefinedOrNaNValues(formattedEventData))
+                continue;
+            if (formattedEventData.loan_decrease < MIN_REPAYED_AMOUNT_WORTH_PRINTING)
+                continue;
+            const message = await buildRepayMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
+            eventEmitter.emit('newMessage', message);
+        }
+        else if (CONTROLLER_EVENT.event === 'RemoveCollateral') {
+            const formattedEventData = await processRemoveCollateralEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+            if (hasUndefinedOrNaNValues(formattedEventData))
+                continue;
+            const message = await buildRemoveCollateralMessage(formattedEventData, isDefiSaverAutomatedTx, isManualSmartWalletTx, defiSaverUser);
+            if (message === "don't print small amounts")
+                continue;
+            eventEmitter.emit('newMessage', message);
+        }
+        else if (CONTROLLER_EVENT.event === 'Liquidate') {
+            const formattedEventData = await processLiquidateEvent(CONTROLLER_EVENT, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, ADDRESS_AMM);
+            if (hasUndefinedOrNaNValues(formattedEventData))
+                continue;
+            const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, ADDRESS_AMM);
+            if (message === "don't print tiny hard-liquidations")
+                continue;
+            eventEmitter.emit('newMessage', message);
+        }
     }
-    */
     // process.exit();
     ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
