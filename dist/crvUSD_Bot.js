@@ -34,7 +34,6 @@ export async function main() {
     await launchPegkeeper();
     // histo
     // await getLogsForBlock(22003575);
-    console.log('boot complete');
 }
 await main();
 // await telegramBotMain(ENV, bot);

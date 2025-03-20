@@ -4,30 +4,34 @@ export function registerHandler(handler) {
     handlers.push(handler);
 }
 export async function startListeningToAllEvents() {
-    let lastBlockNumber = await web3HttpProvider.eth.getBlockNumber();
-    await getLogsForBlock(lastBlockNumber);
-    // Periodic check every 10 minutes to update and log the current block
-    setInterval(async () => {
-        try {
-            lastBlockNumber = (await web3HttpProvider.eth.getBlockNumber()) - 1;
-        }
-        catch (err) {
-            console.error('Error during periodic block check:', err);
-        }
-    }, 10 * 60 * 1000); // 10 minutes in milliseconds
-    while (true) {
-        await new Promise((resolve) => setTimeout(resolve, 12 * 1000));
-        try {
-            const nextBlock = lastBlockNumber + 1;
-            await getLogsForBlock(nextBlock);
-            lastBlockNumber = nextBlock; // Only increment if successful
-        }
-        catch (err) {
-            console.error(`Failed to process block ${lastBlockNumber + 1}:`, err);
+    try {
+        let lastBlockNumber = await web3HttpProvider.eth.getBlockNumber();
+        await getLogsForBlock(lastBlockNumber);
+        while (true) {
+            await new Promise((resolve) => setTimeout(resolve, 12 * 1000));
+            try {
+                const nextBlock = lastBlockNumber + 1;
+                const validResponse = await getLogsForBlock(nextBlock);
+                if (!validResponse) {
+                    console.warn('Invalid response, restarting listener...');
+                    return startListeningToAllEvents(); // Restart from scratch
+                }
+                lastBlockNumber = nextBlock; // Only increment if successful
+            }
+            catch (err) {
+                console.error(`Failed to process block ${lastBlockNumber + 1}:`, err);
+            }
         }
     }
+    catch (err) {
+        console.error('Critical failure in startListeningToAllEvents, restarting...', err);
+        return startListeningToAllEvents(); // Restart on unexpected failure
+    }
 }
+let lastSuccessBlock = 0;
 export async function getLogsForBlock(blockNumber) {
+    if (blockNumber === lastSuccessBlock)
+        return true;
     const params = {
         fromBlock: blockNumber,
         toBlock: blockNumber,
@@ -39,7 +43,9 @@ export async function getLogsForBlock(blockNumber) {
             const logs = await web3HttpProvider.eth.getPastLogs(params);
             console.log(`Number of logs for block ${blockNumber}: ${logs.length}`);
             handlers.forEach((handler) => handler(logs));
-            return; // Success, exit the retry loop
+            if (logs.length >= 1)
+                lastSuccessBlock = blockNumber;
+            return logs.length >= 1; // Success, exit the retry loop
         }
         catch (err) {
             retries++;
