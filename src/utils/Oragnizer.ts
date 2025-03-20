@@ -87,8 +87,8 @@ export async function manageMarket(market: any): Promise<void> {
 
   //////////////////////// HISTO MODE ////////////////////////
   /*
-  const START_BLOCK = 22019155;
-  const END_BLOCK = 22019155;
+  const START_BLOCK = 22003575;
+  const END_BLOCK = 22003575;
 
   const PAST_EVENTS_AMM_CONTRACT = await getPastEvents(AMM_CONTRACT, 'allEvents', START_BLOCK, END_BLOCK);
 
@@ -224,6 +224,8 @@ export async function manageMarket(market: any): Promise<void> {
 
   await subscribeToEvents(ADDRESS_AMM, ABI_AMM, market);
   await subscribeToEvents(ADDRESS_CONTROLLER, ABI_Controller, market);
+
+  //////////////////////// HISTO MODE ////////////////////////
 }
 
 async function subscribeToEvents(address: string, abi: any, market: any) {

@@ -1,7 +1,7 @@
 import { getTgBot, telegramBotMain } from './utils/telegram/TelegramBot.js';
 import { launchCurveLendingMonitoring } from './utils/Lending/LlamalendMain.js';
 import { launchClassicCrvUSDMonitoring, launchPegkeeper } from './utils/ClassicCrvUSD/main.js';
-import { startListeningToAllEvents } from './utils/web3/AllEvents.js';
+import { getLogsForBlock, startListeningToAllEvents } from './utils/web3/AllEvents.js';
 
 console.clear();
 
@@ -47,6 +47,11 @@ export async function main() {
 
   console.log('starting launchPegkeeper');
   await launchPegkeeper();
+
+  // histo
+  // await getLogsForBlock(22003575);
+
+  console.log('boot complete');
 }
 
 await main();

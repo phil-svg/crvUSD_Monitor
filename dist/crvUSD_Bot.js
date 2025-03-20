@@ -32,6 +32,9 @@ export async function main() {
     await launchClassicCrvUSDMonitoring();
     console.log('starting launchPegkeeper');
     await launchPegkeeper();
+    // histo
+    // await getLogsForBlock(22003575);
+    console.log('boot complete');
 }
 await main();
 // await telegramBotMain(ENV, bot);

@@ -98,7 +98,7 @@ async function getPegkeeperDebt(PEG_KEEPER_CONTRACT, blockNumber) {
     return Number((debt / 1e18).toFixed(0));
 }
 function extractSingleAmount(event) {
-    const dataString = event.raw.data;
+    const dataString = event.returnValues.amount;
     const amountBigInt = BigInt(dataString);
     const amountInEther = amountBigInt / BigInt(1e18);
     return Number(Number(amountInEther).toFixed(0));

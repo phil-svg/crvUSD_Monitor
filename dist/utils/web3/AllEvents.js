@@ -27,7 +27,7 @@ export async function startListeningToAllEvents() {
         }
     }
 }
-async function getLogsForBlock(blockNumber) {
+export async function getLogsForBlock(blockNumber) {
     const params = {
         fromBlock: blockNumber,
         toBlock: blockNumber,
