@@ -154,8 +154,21 @@ async function handleSingleEvent(event, allPegKeepersInfo, eventEmitter) {
         priceAfter: Number(crvUSD_Price_After === null || crvUSD_Price_After === void 0 ? void 0 : crvUSD_Price_After.toFixed(8)),
     };
     const BeforeAndAfterDebtsForAllPegKeepers = await calculateDebtsForAllPegKeepers(event.blockNumber, allPegKeepersInfo);
-    const message = buildPegKeeperMessage(BeforeAndAfterDebtsForAllPegKeepers, context, event.transactionHash);
-    eventEmitter.emit('newMessage', message);
+    // checks if the debt crossed a million dollar boundary. eg: 39,999 => 40. If not, skips, eg: 39,444=> 39,600
+    const actuallyPrint = BeforeAndAfterDebtsForAllPegKeepers.some(({ debtAtPreviousBlock, debtAtBlock }) => {
+        if (debtAtPreviousBlock == null || debtAtBlock == null)
+            return false;
+        const min = Math.min(debtAtPreviousBlock, debtAtBlock);
+        const max = Math.max(debtAtPreviousBlock, debtAtBlock);
+        // Check if any full million (e.g. 1_000_000, 2_000_000, ...) lies between min and max (inclusive)
+        const lowerMillion = Math.ceil(min / 1000000);
+        const upperMillion = Math.floor(max / 1000000);
+        return upperMillion >= lowerMillion;
+    });
+    if (actuallyPrint) {
+        const message = buildPegKeeperMessage(BeforeAndAfterDebtsForAllPegKeepers, context, event.transactionHash);
+        eventEmitter.emit('newMessage', message);
+    }
 }
 export async function livemodePegKeepers(blockNumber) {
     const pegkeeperAddressArrOnchain = await getPegkeeperAddressArrOnchain(blockNumber);
