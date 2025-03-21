@@ -237,14 +237,10 @@ async function handleSingleEvent(
   const actuallyPrint = BeforeAndAfterDebtsForAllPegKeepers.some(({ debtAtPreviousBlock, debtAtBlock }) => {
     if (debtAtPreviousBlock == null || debtAtBlock == null) return false;
 
-    const min = Math.min(debtAtPreviousBlock, debtAtBlock);
-    const max = Math.max(debtAtPreviousBlock, debtAtBlock);
+    const prevMil = Math.floor(debtAtPreviousBlock / 1_000_000);
+    const currMil = Math.floor(debtAtBlock / 1_000_000);
 
-    // Check if any full million (e.g. 1_000_000, 2_000_000, ...) lies between min and max (inclusive)
-    const lowerMillion = Math.ceil(min / 1_000_000);
-    const upperMillion = Math.floor(max / 1_000_000);
-
-    return upperMillion >= lowerMillion;
+    return prevMil !== currMil;
   });
 
   if (actuallyPrint) {
