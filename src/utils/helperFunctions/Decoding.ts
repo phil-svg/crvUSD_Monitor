@@ -111,15 +111,15 @@ async function getTotalMarketDebt(blockNumber: number, controllerAddress: string
   return Number(TOTAL_DEBT / 1e18);
 }
 
-async function getCrvUsdTranserAmount(event: any) {
+async function getCrvUsdTranserAmount(event: any, controllerAddress: string) {
   const crvUSD = new web3HttpProvider.eth.Contract(ABI_crvUSD, ADDRESS_crvUSD);
 
   let amounts = await getPastEvents(crvUSD, 'Transfer', event.blockNumber, event.blockNumber);
   if (!amounts || !Array.isArray(amounts)) return;
   let amountElement = amounts.find(
     (element: any) =>
-      element.returnValues.sender === event.returnValues.liquidator ||
-      element.returnValues.receiver === event.returnValues.liquidator
+      element.returnValues.sender === event.returnValues.liquidator &&
+      element.returnValues.receiver.toLowerCase() === controllerAddress.toLowerCase()
   );
 
   let liquidatorCrvUsdTransferAmount = amountElement ? (amountElement as any).returnValues.value : 'bar';
@@ -226,7 +226,7 @@ export async function processLiquidateEvent(
   let collateral_received = event.returnValues.collateral_received;
   let collateralDecimals = getDecimalFromCheatSheet(collateralAddress);
   collateral_received /= 10 ** collateralDecimals;
-  let crvUSD_amount = await getCrvUsdTranserAmount(event);
+  let crvUSD_amount = await getCrvUsdTranserAmount(event, controllerAddress);
   let collateral_price = await getCollatPrice(controllerAddress, collateralAddress, event.blockNumber);
   let dollarAmount = Number(collateral_received * collateral_price!);
   let borrowRate = await getBorrowRate(event, AMM_ADDRESS);

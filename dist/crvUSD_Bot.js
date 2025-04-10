@@ -33,7 +33,7 @@ export async function main() {
     console.log('starting launchPegkeeper');
     await launchPegkeeper();
     // histo
-    // await getLogsForBlock(22003575);
+    // await getLogsForBlock(22232894);
 }
 await main();
 // await telegramBotMain(ENV, bot);

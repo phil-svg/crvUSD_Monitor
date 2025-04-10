@@ -49,7 +49,7 @@ export async function main() {
   await launchPegkeeper();
 
   // histo
-  // await getLogsForBlock(22003575);
+  // await getLogsForBlock(22232894);
 }
 
 await main();

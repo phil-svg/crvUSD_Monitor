@@ -286,7 +286,9 @@ export async function handleLiveEvents() {
             eventEmitter.emit('newMessage', message);
         }
         else if (event.event === 'Liquidate') {
+            console.log('event', event);
             const formattedEventData = await processLiquidateEvent(event, ADDRESS_CONTROLLER, ADDRESS_COLLATERAL, AMM_ADDRESS);
+            console.log('formattedEventData', formattedEventData);
             if (hasUndefinedOrNaNValues(formattedEventData))
                 return;
             const message = await buildLiquidateMessage(formattedEventData, ADDRESS_CONTROLLER, AMM_ADDRESS);
