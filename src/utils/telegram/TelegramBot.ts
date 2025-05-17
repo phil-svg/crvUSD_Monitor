@@ -39,7 +39,7 @@ function getBuyerURL(buyerAddress: string) {
 }
 
 function getCurveLendingURL(id: string): string {
-  return `https://lend.curve.fi/#/ethereum/markets/one-way-market-${id}/create/`;
+  return `https://www.curve.finance/lend/ethereum/markets/one-way-market-${id}/create/`;
 }
 
 function getProfitPrint(profit: any, revenue: any, cost: any) {
@@ -832,7 +832,7 @@ export function buildLendingMarketDepositMessage(
 
   const dollarAddon = getDollarAddOn(dollarAmount);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
@@ -878,7 +878,7 @@ export function buildLendingMarketWithdrawMessage(
 
   const dollarAddon = getDollarAddOn(dollarAmount);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
@@ -930,7 +930,7 @@ export function buildLendingMarketBorrowMessage(
   const dollarAddon = getDollarAddOn(collatDollarAmount);
   const dollarAddonBorrow = getDollarAddOn(dollarAmountBorrow);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
@@ -1014,7 +1014,7 @@ export function buildLendingMarketRepayMessage(
 
   const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
@@ -1063,7 +1063,7 @@ export function buildLendingMarketRemoveCollateralMessage(
   const borrowedTokenURL = getTokenURL(market.borrowed_token);
   const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
@@ -1105,7 +1105,7 @@ export function buildLendingMarketSelfLiquidateMessage(
 
   const liquidatorURL = getBuyerURL(liquidatorAddress);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
@@ -1155,7 +1155,7 @@ export function buildLendingMarketHardLiquidateMessage(
   const liquidatorURL = getBuyerURL(liquidatorAddress);
   const poorFellaURL = getBuyerURL(poorFellaAddress);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
@@ -1212,7 +1212,7 @@ export function buildSoftLiquidateMessage(
   const borrowedTokenURL = getTokenURL(market.borrowed_token);
   const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
 
-  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'lend.curve.fi');
+  const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
   const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
   const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
 
