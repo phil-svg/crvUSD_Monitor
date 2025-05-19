@@ -11,7 +11,7 @@ interface MarketResponse {
 }
 
 async function fetchMarkets(): Promise<MarketResponse> {
-  const url = 'https://prices.curve.fi/v1/crvusd/markets/ethereum?fetch_on_chain=false&page=1&per_page=100';
+  const url = 'https://prices.curve.finance/v1/crvusd/markets/ethereum?fetch_on_chain=false&page=1&per_page=100';
 
   try {
     const response = await fetch(url, {

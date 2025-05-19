@@ -118,7 +118,7 @@ export async function getFirstGaugeCrvApyByVaultAddress(vaultAddress: string): P
   const normalizedInputAddress = vaultAddress.toLowerCase();
 
   try {
-    const response = await fetch('https://api.curve.fi/api/getAllGauges');
+    const response = await fetch('https://api.curve.finance/api/getAllGauges');
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }

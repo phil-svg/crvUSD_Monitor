@@ -45,7 +45,7 @@ export const labels = [
   },
   {
     Address: '0x99a58482bd75cbab83b27ec03ca68ff489b5788f',
-    Label: 'Curve.fi: Swap Router',
+    Label: 'Curve.finance: Swap Router',
   },
   {
     Address: '0xcb1b068cb3937feaa2106d430af49681982626bc',
@@ -117,7 +117,7 @@ export const labels = [
   },
   {
     Address: '0xecb456ea5365865ebab8a2661b0c503410e9b347',
-    Label: 'Curve.fi: Pool Owner',
+    Label: 'Curve.finance: Pool Owner',
   },
   {
     Address: '0x1111111254fb6c44bac0bed2854e76f90643097d',

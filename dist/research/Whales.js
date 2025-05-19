@@ -2,7 +2,7 @@ import { Multicall } from 'ethereum-multicall';
 import fs from 'fs/promises';
 import { web3Call, web3HttpProvider } from '../utils/web3/Web3Basics';
 async function fetchMarkets() {
-    const url = 'https://prices.curve.fi/v1/crvusd/markets/ethereum?fetch_on_chain=false&page=1&per_page=100';
+    const url = 'https://prices.curve.finance/v1/crvusd/markets/ethereum?fetch_on_chain=false&page=1&per_page=100';
     try {
         const response = await fetch(url, {
             method: 'GET',
