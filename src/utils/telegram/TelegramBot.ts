@@ -732,6 +732,7 @@ export function buildPegKeeperMessage(
   pegKeeperDetails.sort((a, b) => (a.coinSymbol || '').localeCompare(b.coinSymbol || ''));
 
   for (const detail of pegKeeperDetails) {
+    if (detail.address === '0x503E1Bf274e7a6c64152395aE8eB57ec391F91F8') continue; // USDM removed
     if (detail.coinSymbol && detail.debtAtBlock !== null && detail.debtAtPreviousBlock !== null) {
       const beforeDebt = detail.debtAtPreviousBlock;
       const afterDebt = detail.debtAtBlock;

@@ -194,7 +194,7 @@ async function subscribeToPegkeeperEvents(address, abi) {
         console.log('Error in fetching events:', err);
     }
 }
-export async function pegkeeperHisto(eventEmitter, startBlock, endBlock) {
+export async function pegkeeperHisto(startBlock, endBlock) {
     const allPegKeepersInfo = await getAllPegKeepersInfo(endBlock);
     const allHistoEvents = await getAllEvents(web3HttpProvider, startBlock, endBlock);
     for (const histoEvent of allHistoEvents) {

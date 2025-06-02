@@ -39,4 +39,5 @@ await main();
 // await telegramBotMain(ENV, bot);
 // await launchClassicCrvUSDMonitoring();
 // await conductResearch();
+// await launchPegkeeper();
 //# sourceMappingURL=crvUSD_Bot.js.map

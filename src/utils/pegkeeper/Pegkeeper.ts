@@ -277,7 +277,7 @@ async function subscribeToPegkeeperEvents(address: string, abi: any) {
   }
 }
 
-export async function pegkeeperHisto(eventEmitter: any, startBlock: number, endBlock: number): Promise<void> {
+export async function pegkeeperHisto(startBlock: number, endBlock: number): Promise<void> {
   const allPegKeepersInfo = await getAllPegKeepersInfo(endBlock);
   const allHistoEvents = await getAllEvents(web3HttpProvider, startBlock, endBlock);
 

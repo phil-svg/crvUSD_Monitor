@@ -1,13 +1,13 @@
 import { ADDRESS_crvUSD_ControllerFactory } from '../Constants.js';
 import { handleLiveEvents, manageMarket, watchingForNewMarketOpenings } from '../Oragnizer.js';
 import { ABI_crvUSD_ControllerFactory } from '../abis/ABI_crvUSD_ControllerFactory.js';
-import { livemodePegKeepers } from '../pegkeeper/Pegkeeper.js';
+import { livemodePegKeepers, pegkeeperHisto } from '../pegkeeper/Pegkeeper.js';
 import { getPastEvents, web3HttpProvider } from '../web3/Web3Basics.js';
 
 export async function launchPegkeeper() {
   const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
   await livemodePegKeepers(currentBlockNumber);
-  // await pegkeeperHisto(19046609, 19096615);
+  // await pegkeeperHisto(22617239, 22617239);
 }
 
 export async function launchClassicCrvUSDMonitoring() {
