@@ -37,7 +37,7 @@ export async function main() {
 }
 // const bot = getTgBot(ENV);
 // await telegramBotMain(ENV, bot);
-// await main();
+await main();
 // await launchClassicCrvUSDMonitoring();
 // await conductResearch();
 // await launchPegkeeper();
