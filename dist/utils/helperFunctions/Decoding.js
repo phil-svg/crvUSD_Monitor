@@ -71,7 +71,7 @@ async function getAmountOfCollatInMarket(addressCollat, addressAmm, blockNumber)
     const DECIMALS = getDecimalFromCheatSheet(addressCollat);
     return BALANCE / 10 ** DECIMALS;
 }
-async function getcrvUSDinCirculation(blockNumber) {
+export async function getcrvUSDinCirculation(blockNumber) {
     const crvUSD_ControllerFactory = new web3HttpProvider.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
     const totalDebt = await web3Call(crvUSD_ControllerFactory, 'total_debt', [], blockNumber);
     return Number(totalDebt / 1e18);

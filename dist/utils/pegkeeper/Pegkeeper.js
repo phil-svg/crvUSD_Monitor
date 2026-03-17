@@ -7,7 +7,7 @@ import { buildPegKeeperMessage } from '../telegram/TelegramBot.js';
 import eventEmitter from '../EventEmitter.js';
 import { getPastEvents, web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
 import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
-async function getAllPegKeepersInfo(blockNumber) {
+export async function getAllPegKeepersInfo(blockNumber) {
     const pegkeeperAddressArrOnchain = await getPegkeeperAddressArrOnchain(blockNumber);
     let pegKeepersDetails = [];
     for (const pegKeeperAddress of pegkeeperAddressArrOnchain) {
@@ -24,7 +24,7 @@ async function getAllPegKeepersInfo(blockNumber) {
     }
     return pegKeepersDetails;
 }
-async function getPegkeeperAddressArrOnchain(blockNumber) {
+export async function getPegkeeperAddressArrOnchain(blockNumber) {
     const AggMonetaryContract = new web3HttpProvider.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
     let pegKeeperAddresses = [];
     let i = 0;
@@ -133,6 +133,21 @@ async function getPegKeeperDebtAtBlocks(pegKeeperInfo, blockNumber, WEB3_WS_PROV
         debtAtBlock,
         debtAtPreviousBlock,
     };
+}
+export async function getSinglePegKeeperDebtAtBlocks(pegKeeperAddress, blockNumber) {
+    const PEG_KEEPER_CONTRACT = new web3HttpProvider.eth.Contract(ABI_Pegkeeper, pegKeeperAddress);
+    // Fetch debt at the specified block number
+    const debtAtBlock = await getPegkeeperDebt(PEG_KEEPER_CONTRACT, blockNumber);
+    return debtAtBlock;
+}
+export async function getAllPegKeeperDebtAtBlock(pegKeeperAddresses, blockNumber) {
+    let debt = 0;
+    for (const pegKeeperAddress of pegKeeperAddresses) {
+        const res = await getSinglePegKeeperDebtAtBlocks(pegKeeperAddress, blockNumber);
+        if (res)
+            debt += res;
+    }
+    return debt;
 }
 export async function calculateDebtsForAllPegKeepers(blockNumber, allPegKeepersInfo) {
     let debtsSummary = [];

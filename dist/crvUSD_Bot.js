@@ -20,8 +20,8 @@ export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
 // ***************************************************
 const ENV = 'prod';
 // const ENV = 'test';
-const bot = getTgBot(ENV);
 export async function main() {
+    const bot = getTgBot(ENV);
     console.log('starting startListeningToAllEvents');
     startListeningToAllEvents();
     console.log('starting telegramBotMain');
@@ -35,8 +35,9 @@ export async function main() {
     // histo
     // await getLogsForBlock(22232894);
 }
-await main();
+// const bot = getTgBot(ENV);
 // await telegramBotMain(ENV, bot);
+// await main();
 // await launchClassicCrvUSDMonitoring();
 // await conductResearch();
 // await launchPegkeeper();
