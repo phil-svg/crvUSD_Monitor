@@ -3,12 +3,14 @@ import dotenv from 'dotenv';
 import { EventEmitter } from 'events';
 import { labels } from '../../Labels.js';
 import { get1InchV5MinAmountInfo, getSwap1InchMinAmountInfo } from '../helperFunctions/1Inch.js';
+
 import {
+  ADDRESS_crvUSD,
   MIN_HARDLIQ_AMOUNT_WORTH_PRINTING,
   MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING,
   MIN_REPAYED_AMOUNT_WORTH_PRINTING,
-} from '../../crvUSD_Bot.js';
-import { ADDRESS_crvUSD, SWAP_ROUTER } from '../Constants.js';
+  SWAP_ROUTER,
+} from '../Constants.js';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';

@@ -16,13 +16,13 @@ import {
 } from './telegram/TelegramBot.js';
 import { buildBorrowMessage, buildRepayMessage } from './telegram/TelegramBot.js';
 import { updateCheatSheet } from './CollatCheatSheet.js';
-import { MIN_REPAYED_AMOUNT_WORTH_PRINTING } from '../crvUSD_Bot.js';
 import { ABI_AMM } from './abis/ABI_AMM.js';
 import { ABI_Controller } from './abis/ABI_Controller.js';
 import { getDSProxyOwner, isDefiSaverSmartWallet } from './defisaver/DefiSaver.js';
 import eventEmitter from './EventEmitter.js';
 import { getPastEvents, getTxFromTxHash, web3HttpProvider } from './web3/Web3Basics.js';
 import { fetchEventsRealTime, registerHandler } from './web3/AllEvents.js';
+import { MIN_REPAYED_AMOUNT_WORTH_PRINTING } from './Constants.js';
 
 export async function watchingForNewMarketOpenings(address: string, abi: any) {
   try {

@@ -2,39 +2,39 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFile, appendFile, writeFile } from 'fs/promises';
 import { getPastEvents, web3HttpProvider } from '../web3/Web3Basics.js';
-import { ADDRESS_crvUSD_ControllerFactory } from '../Constants.js';
-import { ABI_crvUSD_ControllerFactory } from '../abis/ABI_crvUSD_ControllerFactory.js';
-import { handleLiveEvents, manageMarket, watchingForNewMarketOpenings } from '../Oragnizer.js';
+import { ABI_LLAMALEND_FACTORY } from './Abis.js';
+import { llamalendFactoryAddress } from '../Constants.js';
+import { handleEvent } from './Helper.js';
 const __filename = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = path.resolve(path.dirname(__filename), '../../../');
-const CLASSIC_ADDMARKET_NDJSON = path.join(PROJECT_ROOT, 'classicAddMarketEvents.ndjson');
-const LAST_SCANNED_CLASSIC_BLOCK_FILE = path.join(PROJECT_ROOT, 'lastScannedClassicCrvUSDBlock.json');
-const CRVUSD_LAUNCH_BLOCK = 17257955;
+const LENDING_MARKETS_NDJSON = path.join(PROJECT_ROOT, 'lendingMarkets.ndjson');
+const LAST_SCANNED_BLOCK_FILE = path.join(PROJECT_ROOT, 'lastScannedLendingBlock.json');
+const LENDING_LAUNCH_BLOCK = 19415827;
 // ─────────────────────────────────────────────────────────────
-// Last scanned block (persistent)
+// Last scanned block persistence
 // ─────────────────────────────────────────────────────────────
-async function getLastScannedClassicBlock() {
+async function getLastScannedBlock() {
     try {
-        const data = await readFile(LAST_SCANNED_CLASSIC_BLOCK_FILE, 'utf-8');
+        const data = await readFile(LAST_SCANNED_BLOCK_FILE, 'utf-8');
         const { lastScannedBlock } = JSON.parse(data);
-        return typeof lastScannedBlock === 'number' ? lastScannedBlock : CRVUSD_LAUNCH_BLOCK - 1;
+        return typeof lastScannedBlock === 'number' ? lastScannedBlock : LENDING_LAUNCH_BLOCK - 1;
     }
     catch (err) {
         if (err.code === 'ENOENT')
-            return CRVUSD_LAUNCH_BLOCK - 1;
-        console.error('Error reading lastScannedClassicCrvUSDBlock.json:', err);
-        return CRVUSD_LAUNCH_BLOCK - 1;
+            return LENDING_LAUNCH_BLOCK - 1;
+        console.error('Error reading lastScannedLendingBlock.json:', err);
+        return LENDING_LAUNCH_BLOCK - 1;
     }
 }
-async function saveLastScannedClassicBlock(blockNumber) {
-    await writeFile(LAST_SCANNED_CLASSIC_BLOCK_FILE, JSON.stringify({ lastScannedBlock: blockNumber }, null, 2));
+async function saveLastScannedBlock(blockNumber) {
+    await writeFile(LAST_SCANNED_BLOCK_FILE, JSON.stringify({ lastScannedBlock: blockNumber }, null, 2));
 }
 // ─────────────────────────────────────────────────────────────
 // NDJSON helpers
 // ─────────────────────────────────────────────────────────────
-async function readClassicAddMarketEvents() {
+async function readLendingMarketsFromNDJSON() {
     try {
-        const data = await readFile(CLASSIC_ADDMARKET_NDJSON, 'utf-8');
+        const data = await readFile(LENDING_MARKETS_NDJSON, 'utf-8');
         return data
             .trim()
             .split('\n')
@@ -42,9 +42,11 @@ async function readClassicAddMarketEvents() {
             .map((line) => JSON.parse(line));
     }
     catch (err) {
-        if (err.code === 'ENOENT')
+        if (err.code === 'ENOENT') {
+            console.log('No lendingMarkets.ndjson found yet — will create one.');
             return [];
-        console.error('Error reading classicAddMarketEvents.ndjson:', err);
+        }
+        console.error('Error reading lendingMarkets.ndjson:', err);
         return [];
     }
 }
@@ -53,14 +55,14 @@ async function getPastEventsChunked(contract, eventName, fromBlock, toBlock) {
     const STEP = 999;
     for (let start = fromBlock; start <= toBlock; start += STEP) {
         const end = Math.min(start + STEP, toBlock);
-        console.log(`Fetching AddMarket events ${start} → ${end} ...`);
+        console.log(`Fetching NewVault events ${start} → ${end} ...`);
         const chunk = await getPastEvents(contract, eventName, start, end);
         if (Array.isArray(chunk)) {
             events.push(...chunk);
             if (chunk.length > 0) {
                 const lines = chunk.map((e) => JSON.stringify(e)).join('\n') + '\n';
-                await appendFile(CLASSIC_ADDMARKET_NDJSON, lines);
-                console.log(`✅ Appended ${chunk.length} AddMarket events`);
+                await appendFile(LENDING_MARKETS_NDJSON, lines);
+                console.log(`✅ Appended ${chunk.length} new events to lendingMarkets.ndjson`);
             }
         }
         else {
@@ -72,34 +74,26 @@ async function getPastEventsChunked(contract, eventName, fromBlock, toBlock) {
 // ─────────────────────────────────────────────────────────────
 // Main update logic
 // ─────────────────────────────────────────────────────────────
-async function updateClassicAddMarketEvents(currentBlockNumber) {
-    const lastKnownBlock = await getLastScannedClassicBlock();
+async function updateLendingMarketsJSON(currentBlockNumber) {
+    const lastKnownBlock = await getLastScannedBlock();
     if (lastKnownBlock >= currentBlockNumber) {
-        console.log('✅ classicAddMarketEvents.ndjson is already up to date');
+        console.log('✅ lendingMarkets.ndjson is already up to date');
         return;
     }
-    console.log(`Updating classic crvUSD markets — scanning new blocks ${lastKnownBlock + 1} → ${currentBlockNumber}`);
-    const controllerFactory = new web3HttpProvider.eth.Contract(ABI_crvUSD_ControllerFactory, ADDRESS_crvUSD_ControllerFactory);
-    await getPastEventsChunked(controllerFactory, 'AddMarket', lastKnownBlock + 1, currentBlockNumber);
-    await saveLastScannedClassicBlock(currentBlockNumber);
+    console.log(`Updating lending markets — scanning new blocks ${lastKnownBlock + 1} → ${currentBlockNumber}`);
+    const llamalendFactory = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_FACTORY, llamalendFactoryAddress);
+    await getPastEventsChunked(llamalendFactory, 'NewVault', lastKnownBlock + 1, currentBlockNumber);
+    await saveLastScannedBlock(currentBlockNumber);
 }
 // ─────────────────────────────────────────────────────────────
-// Updated launch function
+// Public export
 // ─────────────────────────────────────────────────────────────
-export async function launchClassicCrvUSDMonitoring() {
+export async function getAllLendingMarkets() {
     const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
-    console.log('currentBlockNumber (classic)', currentBlockNumber);
-    await updateClassicAddMarketEvents(currentBlockNumber);
-    // Load all markets we have stored
-    const ADDED_MARKET_EVENTS = await readClassicAddMarketEvents();
-    if (!(ADDED_MARKET_EVENTS instanceof Array))
-        return;
-    for (const MARKET_CREATION of ADDED_MARKET_EVENTS) {
-        await manageMarket(MARKET_CREATION);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    await watchingForNewMarketOpenings(ADDRESS_crvUSD_ControllerFactory, ABI_crvUSD_ControllerFactory);
-    await handleLiveEvents();
-    console.log('crvUSD_Bot launched successfully.');
+    await updateLendingMarketsJSON(currentBlockNumber);
+    const events = await readLendingMarketsFromNDJSON();
+    const lendingMarkets = await Promise.all(events.map((event) => handleEvent(event)));
+    lendingMarkets.sort((a, b) => a.id.localeCompare(b.id));
+    return lendingMarkets;
 }
-//# sourceMappingURL=main.js.map
+//# sourceMappingURL=AllLendingMarkets.js.map

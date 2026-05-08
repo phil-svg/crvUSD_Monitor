@@ -32,14 +32,16 @@ import {
 } from './Helper.js';
 import eventEmitter from '../EventEmitter.js';
 import { saveLastSeenToFile } from '../Oragnizer.js';
+
+import { getPastEvents, getTxReceiptClassic, web3HttpProvider } from '../web3/Web3Basics.js';
+import { EventEmitter } from 'stream';
+import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
 import {
   LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING,
   LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING,
   LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING,
-} from '../../crvUSD_Bot.js';
-import { getPastEvents, getTxReceiptClassic, web3HttpProvider } from '../web3/Web3Basics.js';
-import { EventEmitter } from 'stream';
-import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
+} from '../Constants.js';
+import { getAllLendingMarkets } from './AllLendingMarkets.js';
 
 async function processLlamalendVaultEvent(
   market: EnrichedLendingMarketEvent,
@@ -337,29 +339,6 @@ async function processLlamalendAmmEvent(
   }
 }
 
-async function getAllLendingMarkets(): Promise<LendingMarketEvent[]> {
-  // const LENDING_LAUNCH_BLOCK_V1 = 19290923; // v1
-  const LENDING_LAUNCH_BLOCK = 19415827; // v2
-
-  const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
-
-  const llamalendFactory = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_FACTORY, llamalendFactoryAddress);
-  const result = await getPastEvents(llamalendFactory, 'NewVault', LENDING_LAUNCH_BLOCK, currentBlockNumber);
-
-  let events: EthereumEvent[] = [];
-
-  if (Array.isArray(result)) {
-    events = result as EthereumEvent[];
-  } else {
-    return [];
-  }
-
-  const lendingMarkets: LendingMarketEvent[] = await Promise.all(events.map((event) => handleEvent(event)));
-  lendingMarkets.sort((a, b) => a.id.localeCompare(b.id));
-
-  return lendingMarkets;
-}
-
 async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventEmitter: any) {
   // const LENDING_LAUNCH_BLOCK_V1 = 19290923; // v1
   const LENDING_LAUNCH_BLOCK = 19415827; // v2
@@ -550,11 +529,6 @@ async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[]) {
     }
   );
 }
-
-// Markets: (v3)
-const llamalendFactoryAddress = '0xeA6876DDE9e3467564acBeE1Ed5bac88783205E0'; // v3
-
-// todo
 
 export async function launchCurveLendingMonitoring() {
   const allLendingMarkets = await getAllLendingMarkets();

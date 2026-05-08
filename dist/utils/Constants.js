@@ -5,6 +5,7 @@ export const ADDRESS_crvUSD_CONTROLLER = '0x100dAa78fC509Db39Ef7D04DE0c1ABD299f4
 export const ADDRESS_crvUSD = '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E';
 export const ADDRESS_crvUSD_ControllerFactory = '0xC9332fdCB1C491Dcc683bAe86Fe3cb70360738BC';
 export const addressAggMonetary = '0x07491D124ddB3Ef59a8938fCB3EE50F9FA0b9251';
+export const llamalendFactoryAddress = '0xeA6876DDE9e3467564acBeE1Ed5bac88783205E0'; // v3
 // generic curve things
 export const SWAP_ROUTER = '0x99a58482BD75cbab83b27EC03CA68fF489b5788f';
 export const ADDRESS_TRICRYPTO = '0xD51a44d3FaE010294C616388b506AcdA1bfAAE46';
@@ -12,4 +13,20 @@ export const ADDRESS_PRICE_ORACLE_sfrxETH = '0x19F5B81e5325F882C9853B5585f74f751
 // ethereum things
 export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
+// ********************* Filter **********************
+// ********************* Classic crvUSD **************
+export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 100000;
+export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 65000;
+export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
+// export const MIN_REPAYED_AMOUNT_WORTH_PRINTING = 0;
+// export const MIN_LIQUIDATION_AMOUNT_WORTH_PRINTING = 0;
+// export const MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0;
+// ********************* Lending *********************
+export const LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING = 100000;
+export const LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING = 35;
+export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 5000;
+// export const LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING = 0;
+// export const LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING = 0;
+// export const LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING = 0.1;
+// ***************************************************
 //# sourceMappingURL=Constants.js.map

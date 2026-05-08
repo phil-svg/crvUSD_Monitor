@@ -182,6 +182,11 @@ async function handleSingleEvent(event, allPegKeepersInfo, eventEmitter) {
         eventEmitter.emit('newMessage', message);
     }
 }
+export async function launchPegkeeper() {
+    const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
+    await livemodePegKeepers(currentBlockNumber);
+    // await pegkeeperHisto(24673607, 24673607);
+}
 export async function livemodePegKeepers(blockNumber) {
     const pegkeeperAddressArrOnchain = await getPegkeeperAddressArrOnchain(blockNumber);
     const allPegKeepersInfo = await getAllPegKeepersInfo(blockNumber);

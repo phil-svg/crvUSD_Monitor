@@ -1,13 +1,14 @@
 import { getBorrowApr, getCollatDollarValue, getLendApr, getPositionHealth, getTotalAssets, getTotalDebtInMarket, } from '../helperFunctions/Lending.js';
 import { getPriceOf_crvUSD } from '../priceAPI/priceAPI.js';
 import { buildLendingMarketBorrowMessage, buildLendingMarketDepositMessage, buildLendingMarketHardLiquidateMessage, buildLendingMarketRemoveCollateralMessage, buildLendingMarketRepayMessage, buildLendingMarketSelfLiquidateMessage, buildLendingMarketWithdrawMessage, buildSoftLiquidateMessage, } from '../telegram/TelegramBot.js';
-import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_FACTORY, ABI_LLAMALEND_VAULT } from './Abis.js';
-import { enrichMarketData, extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, getFirstGaugeCrvApyByVaultAddress, handleEvent, } from './Helper.js';
+import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_VAULT } from './Abis.js';
+import { enrichMarketData, extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, getFirstGaugeCrvApyByVaultAddress, } from './Helper.js';
 import eventEmitter from '../EventEmitter.js';
 import { saveLastSeenToFile } from '../Oragnizer.js';
-import { LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING, LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING, LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING, } from '../../crvUSD_Bot.js';
 import { getPastEvents, getTxReceiptClassic, web3HttpProvider } from '../web3/Web3Basics.js';
 import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
+import { LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING, LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING, LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING, } from '../Constants.js';
+import { getAllLendingMarkets } from './AllLendingMarkets.js';
 async function processLlamalendVaultEvent(market, llamalendVaultContract, controllerContract, ammContract, event, eventEmitter) {
     const txHash = event.transactionHash;
     const isLongPosition = market.market_name.endsWith('Long');
@@ -179,23 +180,6 @@ async function processLlamalendAmmEvent(market, llamalendVaultContract, controll
         eventEmitter.emit('newMessage', message);
     }
 }
-async function getAllLendingMarkets() {
-    // const LENDING_LAUNCH_BLOCK_V1 = 19290923; // v1
-    const LENDING_LAUNCH_BLOCK = 19415827; // v2
-    const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
-    const llamalendFactory = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_FACTORY, llamalendFactoryAddress);
-    const result = await getPastEvents(llamalendFactory, 'NewVault', LENDING_LAUNCH_BLOCK, currentBlockNumber);
-    let events = [];
-    if (Array.isArray(result)) {
-        events = result;
-    }
-    else {
-        return [];
-    }
-    const lendingMarkets = await Promise.all(events.map((event) => handleEvent(event)));
-    lendingMarkets.sort((a, b) => a.id.localeCompare(b.id));
-    return lendingMarkets;
-}
 async function histoMode(allLendingMarkets, eventEmitter) {
     // const LENDING_LAUNCH_BLOCK_V1 = 19290923; // v1
     const LENDING_LAUNCH_BLOCK = 19415827; // v2
@@ -306,9 +290,6 @@ async function liveMode(allLendingMarkets) {
         }
     });
 }
-// Markets: (v3)
-const llamalendFactoryAddress = '0xeA6876DDE9e3467564acBeE1Ed5bac88783205E0'; // v3
-// todo
 export async function launchCurveLendingMonitoring() {
     const allLendingMarkets = await getAllLendingMarkets();
     const allEnrichedLendingMarkets = await enrichMarketData(allLendingMarkets);

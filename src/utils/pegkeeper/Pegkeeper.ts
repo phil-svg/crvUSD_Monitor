@@ -8,7 +8,7 @@ import eventEmitter from '../EventEmitter.js';
 import { getPastEvents, web3Call, web3HttpProvider } from '../web3/Web3Basics.js';
 import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
 
-async function getAllPegKeepersInfo(blockNumber: number): Promise<
+export async function getAllPegKeepersInfo(blockNumber: number): Promise<
   Array<{
     pegKeeperAddress: string;
     pool: string;
@@ -37,7 +37,7 @@ async function getAllPegKeepersInfo(blockNumber: number): Promise<
   return pegKeepersDetails;
 }
 
-async function getPegkeeperAddressArrOnchain(blockNumber: number): Promise<string[]> {
+export async function getPegkeeperAddressArrOnchain(blockNumber: number): Promise<string[]> {
   const AggMonetaryContract = new web3HttpProvider.eth.Contract(ABI_AggMonetaryPolicy, addressAggMonetary);
 
   let pegKeeperAddresses: string[] = [];
@@ -176,6 +176,26 @@ async function getPegKeeperDebtAtBlocks(
   };
 }
 
+export async function getSinglePegKeeperDebtAtBlocks(
+  pegKeeperAddress: string,
+  blockNumber: number
+): Promise<number | null> {
+  const PEG_KEEPER_CONTRACT = new web3HttpProvider.eth.Contract(ABI_Pegkeeper, pegKeeperAddress);
+
+  // Fetch debt at the specified block number
+  const debtAtBlock = await getPegkeeperDebt(PEG_KEEPER_CONTRACT, blockNumber);
+  return debtAtBlock;
+}
+
+export async function getAllPegKeeperDebtAtBlock(pegKeeperAddresses: string[], blockNumber: number) {
+  let debt = 0;
+  for (const pegKeeperAddress of pegKeeperAddresses) {
+    const res = await getSinglePegKeeperDebtAtBlocks(pegKeeperAddress, blockNumber);
+    if (res) debt += res;
+  }
+  return debt;
+}
+
 export async function calculateDebtsForAllPegKeepers(
   blockNumber: number,
   allPegKeepersInfo: Array<{
@@ -247,6 +267,12 @@ async function handleSingleEvent(
     const message = buildPegKeeperMessage(BeforeAndAfterDebtsForAllPegKeepers, context, event.transactionHash);
     eventEmitter.emit('newMessage', message);
   }
+}
+
+export async function launchPegkeeper() {
+  const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
+  await livemodePegKeepers(currentBlockNumber);
+  // await pegkeeperHisto(24673607, 24673607);
 }
 
 export async function livemodePegKeepers(blockNumber: number): Promise<void> {

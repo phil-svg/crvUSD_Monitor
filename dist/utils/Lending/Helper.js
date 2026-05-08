@@ -55,44 +55,67 @@ function buildMarketName(collateralTokenSymbol, borrowedTokenSymbol) {
     }
 }
 export async function enrichMarketData(allLendingMarkets) {
-    const enrichedMarkets = [];
-    for (const market of allLendingMarkets) {
-        const collateralTokenSymbol = await getCoinSymbol(market.collateral_token, web3HttpProvider);
-        const collateralTokenDecimals = await getCoinDecimals(market.collateral_token, web3HttpProvider);
-        const borrowedTokenSymbol = await getCoinSymbol(market.borrowed_token, web3HttpProvider);
-        const borrowedTokenDecimals = await getCoinDecimals(market.borrowed_token, web3HttpProvider);
-        const ammContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
-        let fee = await web3Call(ammContract, 'fee', []);
-        // Check if any fetched data is null
-        if (!collateralTokenSymbol || !borrowedTokenSymbol || !collateralTokenDecimals || !borrowedTokenDecimals || !fee) {
-            return null; // Return null for the whole function if any data couldn't be fetched
+    // Helper to split into chunks of max size 2
+    const chunkArray = (arr, size) => {
+        const chunks = [];
+        for (let i = 0; i < arr.length; i += size) {
+            chunks.push(arr.slice(i, i + size));
         }
-        fee = fee / 1e18;
-        // Assuming decimals are returned as strings and need to be parsed
-        const collateralDecimals = parseInt(collateralTokenDecimals, 10);
-        const borrowedDecimals = parseInt(borrowedTokenDecimals, 10);
-        const marketName = buildMarketName(collateralTokenSymbol, borrowedTokenSymbol);
-        enrichedMarkets.push(Object.assign(Object.assign({}, market), { collateral_token_symbol: collateralTokenSymbol, collateral_token_decimals: collateralDecimals, borrowed_token_symbol: borrowedTokenSymbol, borrowed_token_decimals: borrowedDecimals, market_name: marketName, fee: fee }));
+        return chunks;
+    };
+    const marketChunks = chunkArray(allLendingMarkets, 2);
+    const enrichedMarkets = [];
+    // Process one chunk at a time → max 2 markets in parallel
+    for (const chunk of marketChunks) {
+        const chunkPromises = chunk.map(async (market) => {
+            const ammContract = new web3HttpProvider.eth.Contract(ABI_LLAMALEND_AMM, market.amm);
+            // The 5 RPC calls **inside** each market still run in parallel
+            const [collateralTokenSymbol, collateralTokenDecimals, borrowedTokenSymbol, borrowedTokenDecimals, feeRaw] = await Promise.all([
+                getCoinSymbol(market.collateral_token, web3HttpProvider),
+                getCoinDecimals(market.collateral_token, web3HttpProvider),
+                getCoinSymbol(market.borrowed_token, web3HttpProvider),
+                getCoinDecimals(market.borrowed_token, web3HttpProvider),
+                web3Call(ammContract, 'fee', []),
+            ]);
+            if (!collateralTokenSymbol ||
+                !borrowedTokenSymbol ||
+                !collateralTokenDecimals ||
+                !borrowedTokenDecimals ||
+                !feeRaw) {
+                return null;
+            }
+            const fee = feeRaw / 1e18;
+            const collateralDecimals = parseInt(collateralTokenDecimals, 10);
+            const borrowedDecimals = parseInt(borrowedTokenDecimals, 10);
+            const marketName = buildMarketName(collateralTokenSymbol, borrowedTokenSymbol);
+            return Object.assign(Object.assign({}, market), { collateral_token_symbol: collateralTokenSymbol, collateral_token_decimals: collateralDecimals, borrowed_token_symbol: borrowedTokenSymbol, borrowed_token_decimals: borrowedDecimals, market_name: marketName, fee: fee });
+        });
+        const chunkResults = await Promise.all(chunkPromises);
+        // If any market in this chunk failed → whole function returns null (same as original)
+        if (chunkResults.some((r) => r === null)) {
+            return null;
+        }
+        enrichedMarkets.push(...chunkResults);
     }
     return enrichedMarkets;
 }
 export async function getFirstGaugeCrvApyByVaultAddress(vaultAddress) {
-    var _a;
+    var _a, _b, _c;
     // Normalize the input address to lower case for case-insensitive comparison
     const normalizedInputAddress = vaultAddress.toLowerCase();
     try {
-        const response = await fetch('https://api.curve.finance/api/getAllGauges');
-        if (!response.ok) {
+        const rawResponse = await fetch('https://api.curve.finance/api/getAllGauges');
+        if (!rawResponse.ok) {
             throw new Error('Network response was not ok');
         }
-        const data = await response.json();
+        const response = await rawResponse.json();
         // Search through each property in the data object
-        for (const key in data.data) {
-            const item = data.data[key];
+        for (const key in response.data) {
+            const item = response.data[key];
             // Normalize the lendingVaultAddress to lower case
             if (((_a = item.lendingVaultAddress) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === normalizedInputAddress) {
                 // Return the first number from gaugeCrvApy array
-                return item.gaugeCrvApy[0];
+                return (_c = (_b = item.gaugeCrvApy) === null || _b === void 0 ? void 0 : _b[0]) !== null && _c !== void 0 ? _c : null;
             }
         }
         // If no matching lendingVaultAddress is found, return null

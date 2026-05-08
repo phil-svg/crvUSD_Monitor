@@ -94,7 +94,7 @@ async function getAmountOfCollatInMarket(addressCollat: string, addressAmm: stri
   return BALANCE / 10 ** DECIMALS;
 }
 
-async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
+export async function getcrvUSDinCirculation(blockNumber: number): Promise<number> {
   const crvUSD_ControllerFactory = new web3HttpProvider.eth.Contract(
     ABI_crvUSD_ControllerFactory,
     ADDRESS_crvUSD_ControllerFactory
