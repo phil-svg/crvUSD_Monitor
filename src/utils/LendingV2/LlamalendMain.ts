@@ -37,9 +37,9 @@ import { getPastEvents, getTxReceiptClassic, web3HttpProvider } from '../web3/We
 import { EventEmitter } from 'stream';
 import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
 import {
-  LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING,
-  LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING,
-  LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING,
+  LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING_V2,
+  LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING_V2,
+  LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2,
 } from '../Constants.js';
 import { getAllLendingMarkets } from './AllLendingMarkets.js';
 
@@ -71,7 +71,7 @@ async function processLlamalendVaultEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const dollarAmount = parsedDepositedBorrowTokenAmount * borrowedTokenDollarPricePerUnit;
-    if (dollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
+    if (dollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketDepositMessage(
       market,
@@ -83,7 +83,8 @@ async function processLlamalendVaultEvent(
       lendApr,
       totalAssets,
       totalDebtInMarket,
-      gaugeBoostPercentage
+      gaugeBoostPercentage,
+      'is LLamaLend V2'
     );
     eventEmitter.emit('newMessage', message);
   }
@@ -95,7 +96,7 @@ async function processLlamalendVaultEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const dollarAmount = parsedWithdrawnBorrowTokenAmount * borrowedTokenDollarPricePerUnit;
-    if (dollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
+    if (dollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketWithdrawMessage(
       market,
@@ -107,7 +108,8 @@ async function processLlamalendVaultEvent(
       lendApr,
       totalAssets,
       totalDebtInMarket,
-      gaugeBoostPercentage
+      gaugeBoostPercentage,
+      'is LLamaLend V2'
     );
     eventEmitter.emit('newMessage', message);
   }
@@ -140,6 +142,7 @@ async function processLlamalendControllerEvent(
 
   const txHash = event.transactionHash;
   const agentAddress = event.returnValues.user;
+  const callerAddress = event.returnValues.caller; // NEW LINE FOR LL2
   const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
   const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
   const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
@@ -151,7 +154,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_increase / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const dollarAmountBorrow = parsedBorrowedAmount * borrowedTokenDollarPricePerUnit;
-    if (dollarAmountBorrow < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
+    if (dollarAmountBorrow < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketBorrowMessage(
       market,
@@ -166,7 +169,8 @@ async function processLlamalendControllerEvent(
       borrowApr,
       lendApr,
       totalAssets,
-      gaugeBoostPercentage
+      gaugeBoostPercentage,
+      'is LLamaLend V2'
     );
     eventEmitter.emit('newMessage', message);
   }
@@ -175,7 +179,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_decrease / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const repayDollarAmount = parsedRepayAmount * borrowedTokenDollarPricePerUnit;
-    if (repayDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
+    if (repayDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2) return;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const message = buildLendingMarketRepayMessage(
       market,
@@ -190,7 +194,8 @@ async function processLlamalendControllerEvent(
       borrowApr,
       lendApr,
       totalAssets,
-      gaugeBoostPercentage
+      gaugeBoostPercentage,
+      'is LLamaLend V2'
     );
     eventEmitter.emit('newMessage', message);
   }
@@ -198,7 +203,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_decrease / 10 ** Number(market.collateral_token_decimals);
     const collatDollarAmount = collatTokenDollarPricePerUnit * parsedCollatAmount;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
-    if (collatDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING) return;
+    if (collatDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2) return;
     const message = buildLendingMarketRemoveCollateralMessage(
       market,
       parsedCollatAmount,
@@ -210,20 +215,17 @@ async function processLlamalendControllerEvent(
       borrowApr,
       lendApr,
       totalAssets,
-      gaugeBoostPercentage
+      gaugeBoostPercentage,
+      'is LLamaLend V2'
     );
     eventEmitter.emit('newMessage', message);
   }
 
   // HARD-LIQUIDATION
   if (event.event === 'Liquidate') {
-    const receipt = await getTxReceiptClassic(txHash);
-    let parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation =
-      extractParsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation(receipt, market);
-    parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation;
-    if (!parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation) {
-      parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation = 0;
-    }
+    const parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation =
+      Number(event.returnValues.borrowed_received) / 10 ** Number(market.borrowed_token_decimals);
+
     const borrowTokenDollarAmount =
       parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation * borrowedTokenDollarPricePerUnit;
     const liquidatorAddress = event.returnValues.liquidator;
@@ -231,7 +233,7 @@ async function processLlamalendControllerEvent(
     const parsedCollatAmount = event.returnValues.collateral_received / 10 ** market.collateral_token_decimals;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const collarDollarValue = parsedCollatAmount * collatTokenDollarPricePerUnit;
-    if (collarDollarValue < LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING) return;
+    if (collarDollarValue < LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING_V2) return;
 
     if (poorFellaAddress.toLowerCase() === liquidatorAddress.toLowerCase()) {
       const message = buildLendingMarketSelfLiquidateMessage(
@@ -246,7 +248,8 @@ async function processLlamalendControllerEvent(
         lendApr,
         totalAssets,
         liquidatorAddress,
-        gaugeBoostPercentage
+        gaugeBoostPercentage,
+        'is LLamaLend V2'
       );
       eventEmitter.emit('newMessage', message);
     } else {
@@ -264,7 +267,8 @@ async function processLlamalendControllerEvent(
         totalAssets,
         liquidatorAddress,
         poorFellaAddress,
-        gaugeBoostPercentage
+        gaugeBoostPercentage,
+        'is LLamaLend V2'
       );
       eventEmitter.emit('newMessage', message);
     }
@@ -318,7 +322,7 @@ async function processLlamalendAmmEvent(
     const totalAssets = await getTotalAssets(market, llamalendVaultContract, event.blockNumber);
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const discountAmount = repaidBorrowTokenDollarAmount * market.fee;
-    if (discountAmount < LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING) return;
+    if (discountAmount < LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING_V2) return;
 
     const message = buildSoftLiquidateMessage(
       market,
@@ -333,7 +337,8 @@ async function processLlamalendAmmEvent(
       totalDebtInMarket,
       totalAssets,
       gaugeBoostPercentage,
-      discountAmount
+      discountAmount,
+      'is LLamaLend V2'
     );
     eventEmitter.emit('newMessage', message);
   }
@@ -341,13 +346,14 @@ async function processLlamalendAmmEvent(
 
 async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventEmitter: any) {
   // const LENDING_LAUNCH_BLOCK_V1 = 19290923; // v1
-  const LENDING_LAUNCH_BLOCK = 19415827; // v2
+  // const LENDING_LAUNCH_BLOCK = 19415827; // v1.1
+  const LENDING_LAUNCH_BLOCK = 25523555; // v2
   const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
 
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = currentBlockNumber;
 
-  const START_BLOCK = 20313138;
+  const START_BLOCK = 25580679;
   const END_BLOCK = START_BLOCK;
 
   for (const market of allLendingMarkets) {
@@ -530,7 +536,7 @@ async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[]) {
   );
 }
 
-export async function launchCurveLendingMonitoring() {
+export async function launchCurveLendingMonitoring_V2() {
   const allLendingMarkets = await getAllLendingMarkets();
   const allEnrichedLendingMarkets = await enrichMarketData(allLendingMarkets);
   if (!allEnrichedLendingMarkets) {
@@ -538,7 +544,7 @@ export async function launchCurveLendingMonitoring() {
     return;
   }
 
-  // console.log("allEnrichedLendingMarkets", allEnrichedLendingMarkets);
+  // console.log('allEnrichedLendingMarkets', allEnrichedLendingMarkets);
   // process.exit();
 
   // await histoMode(allEnrichedLendingMarkets, eventEmitter);
@@ -551,130 +557,34 @@ export async function launchCurveLendingMonitoring() {
 allEnrichedLendingMarkets [
   {
     id: '0',
-    collateral_token: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    collateral_token: '0xb45ad160634c528Cc3D2926d9807104FA3157305',
     borrowed_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    vault: '0x8cf1DE26729cfB7137AF1A6B2a665e099EC319b5',
-    controller: '0x1E0165DbD2019441aB7927C018701f3138114D71',
-    amm: '0x847D7a5e4Aa4b380043B2908C29a92E2e5157E64',
-    price_oracle: '0x5e2406D3D86F8c4a22baC9713F0A38804e9Ef181',
-    monetary_policy: '0x112E37742015ECe4cEB4b576a9434940838eAf02',
-    collateral_token_symbol: 'wstETH',
+    vault: '0x2b5a321C3cb1F33e1ABECD047C2649D0b4C47eBa',
+    controller: '0xC77d97cF01737EB7aCE46cAb7cd9F60eC51a40c0',
+    amm: '0xbf6f64B741164c26023f97fAaEA8e02453c27442',
+    price_oracle: '0x0117ba42D18EaC940b469F81eD0a135ca23A1003',
+    monetary_policy: '0xaA0c0290aa141280AA54702C21bA36d638d4dD07',
+    collateral_token_symbol: 'sDOLA',
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'crvUSD',
     borrowed_token_decimals: 18,
-    market_name: 'wstETH Long',
-    fee: 0.006
+    market_name: 'sDOLA Long',
+    fee: 0.002
   },
   {
     id: '1',
-    collateral_token: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+    collateral_token: '0xcf62F905562626CfcDD2261162a51fd02Fc9c5b6',
     borrowed_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    vault: '0x5AE28c9197a4a6570216fC7e53E7e0221D7A0FEF',
-    controller: '0xaade9230AA9161880E13a38C83400d3D1995267b',
-    amm: '0xb46aDcd1eA7E35C4EB801406C3E76E76e9a46EdF',
-    price_oracle: '0x6530B69479549BD3Cc806463964d58D69c285BD8',
-    monetary_policy: '0xa6c73DC07E17Feda6925C2a4F44C166Fc18Fcf1F',
-    collateral_token_symbol: 'WETH',
+    vault: '0x3Da0F110079012387F47C6Fc6e878F10262E300a',
+    controller: '0x3cD4d86a2c65e57ce4b4121b67E2D2224BA41bbe',
+    amm: '0x63791be4985992580F84daE105bcc0e15C282d1F',
+    price_oracle: '0xEa1b981203dBCcaeB1f2F00081A426B6308C8c2b',
+    monetary_policy: '0x8E7a5fCfE2394E07556387EC9870C9f524AD50AF',
+    collateral_token_symbol: 'sfrxUSD',
     collateral_token_decimals: 18,
     borrowed_token_symbol: 'crvUSD',
     borrowed_token_decimals: 18,
-    market_name: 'WETH Long',
-    fee: 0.006
-  },
-  {
-    id: '2',
-    collateral_token: '0x18084fbA666a33d37592fA2633fD49a74DD93a88',
-    borrowed_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    vault: '0xb2b23C87a4B6d1b03Ba603F7C3EB9A81fDC0AAC9',
-    controller: '0x413FD2511BAD510947a91f5c6c79EBD8138C29Fc',
-    amm: '0x5338B1bf469651a5951ef618Fb5DeFbffaed7BE9',
-    price_oracle: '0xeF42b6525454dAbA2d73441a5c749c82a942692B',
-    monetary_policy: '0xde31c340545c8031843Bff5Eb42640009961aeEF',
-    collateral_token_symbol: 'tBTC',
-    collateral_token_decimals: 18,
-    borrowed_token_symbol: 'crvUSD',
-    borrowed_token_decimals: 18,
-    market_name: 'tBTC Long',
-    fee: 0.006
-  },
-  {
-    id: '3',
-    collateral_token: '0xD533a949740bb3306d119CC777fa900bA034cd52',
-    borrowed_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    vault: '0xCeA18a8752bb7e7817F9AE7565328FE415C0f2cA',
-    controller: '0xEdA215b7666936DEd834f76f3fBC6F323295110A',
-    amm: '0xafca625321Df8D6A068bDD8F1585d489D2acF11b',
-    price_oracle: '0xE0a4C53408f5ACf3246c83b9b8bD8d36D5ee38B8',
-    monetary_policy: '0x8b6527063FbC9c30731D7E57F1DEf08edce57d07',
-    collateral_token_symbol: 'CRV',
-    collateral_token_decimals: 18,
-    borrowed_token_symbol: 'crvUSD',
-    borrowed_token_decimals: 18,
-    market_name: 'CRV Long',
-    fee: 0.006
-  },
-  {
-    id: '4',
-    collateral_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    borrowed_token: '0xD533a949740bb3306d119CC777fa900bA034cd52',
-    vault: '0x4D2f44B0369f3C20c3d670D2C26b048985598450',
-    controller: '0xC510d73Ad34BeDECa8978B6914461aA7b50CF3Fc',
-    amm: '0xe7B1c8cfC0Bc45957320895aA06884d516DAA8e6',
-    price_oracle: '0xD4Dc9D7567F76fAD2b5A90D3a1bdb3eE801435A8',
-    monetary_policy: '0x40A442F8CBFd125a762b55F76D9Dba66F84Dd6DD',
-    collateral_token_symbol: 'crvUSD',
-    collateral_token_decimals: 18,
-    borrowed_token_symbol: 'CRV',
-    borrowed_token_decimals: 18,
-    market_name: 'CRV Short',
-    fee: 0.006
-  },
-  {
-    id: '5',
-    collateral_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    borrowed_token: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-    vault: '0x46196C004de85c7a75C8b1bB9d54Afb0f8654A45',
-    controller: '0xa5D9137d2A1Ee912469d911A8E74B6c77503bac8',
-    amm: '0x08Ba6D7c10d1A7850aE938543bfbEA7C0240F9Cf',
-    price_oracle: '0x4f4B897871902d05cBa110B8e892498f12a20443',
-    monetary_policy: '0xbDb065458d34DB77d1fB2862D367edd8275f8352',
-    collateral_token_symbol: 'crvUSD',
-    collateral_token_decimals: 18,
-    borrowed_token_symbol: 'WETH',
-    borrowed_token_decimals: 18,
-    market_name: 'WETH Short',
-    fee: 0.006
-  },
-  {
-    id: '6',
-    collateral_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    borrowed_token: '0x18084fbA666a33d37592fA2633fD49a74DD93a88',
-    vault: '0x99Cff9Dc26A44dc2496B4448ebE415b5E894bd30',
-    controller: '0xe438658874b0acf4D81c24172E137F0eE00621b8',
-    amm: '0xfcb53ED72dAB68091aA6a2aB68b5116639ED8805',
-    price_oracle: '0x33A95b2121fd4eC89D9fA6C5FD21545270bC06a6',
-    monetary_policy: '0x62cD08caDABF473315D8953995DE0Dc0928b7D3C',
-    collateral_token_symbol: 'crvUSD',
-    collateral_token_decimals: 18,
-    borrowed_token_symbol: 'tBTC',
-    borrowed_token_decimals: 18,
-    market_name: 'tBTC Short',
-    fee: 0.006
-  },
-  {
-    id: '7',
-    collateral_token: '0x9D39A5DE30e57443BfF2A8307A4256c8797A3497',
-    borrowed_token: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E',
-    vault: '0x52096539ed1391CB50C6b9e4Fd18aFd2438ED23b',
-    controller: '0x98Fc283d6636f6DCFf5a817A00Ac69A3ADd96907',
-    amm: '0x9bBdb1b160B48C48efCe260aaEa4505b1aDE8f4B',
-    price_oracle: '0x50c39EA8f3D72310C8B56A56B333994266e9b477',
-    monetary_policy: '0xF82A5a3c69cA11601C9aD4A351A75857bDd1365F',
-    collateral_token_symbol: 'sUSDe',
-    collateral_token_decimals: 18,
-    borrowed_token_symbol: 'crvUSD',
-    borrowed_token_decimals: 18,
-    market_name: 'sUSDe Long',
+    market_name: 'sfrxUSD Long',
     fee: 0.002
   }
 ]

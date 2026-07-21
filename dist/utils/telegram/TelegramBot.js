@@ -494,7 +494,7 @@ function getLlamaLendPositionHealthLine(positionHealth) {
         return `Health of Position: no loan`;
     return `Health of Position: ${positionHealth.toFixed(2)}`;
 }
-export function buildLendingMarketDepositMessage(market, txHash, dollarAmount, agentAddress, parsedDepositedBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket, gaugeBoostPercentage) {
+export function buildLendingMarketDepositMessage(market, txHash, dollarAmount, agentAddress, parsedDepositedBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket, gaugeBoostPercentage, versionFlag = '') {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -505,20 +505,26 @@ export function buildLendingMarketDepositMessage(market, txHash, dollarAmount, a
     const asset_URL = getTokenURL(market.borrowed_token);
     const asset_Link = hyperlink(asset_URL, market.borrowed_token_symbol);
     const dollarAddon = getDollarAddOn(dollarAmount);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 🚀${hyperlink(agentURL, shortenAgent)} deposited ${formatForPrint(parsedDepositedBorrowTokenAmount)}${asset_Link}${dollarAddon}
 ${apyLine}
 ${utililizationLine}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketWithdrawMessage(market, txHash, dollarAmount, agentAddress, parsedWithdrawnBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket, gaugeBoostPercentage) {
+export function buildLendingMarketWithdrawMessage(market, txHash, dollarAmount, agentAddress, parsedWithdrawnBorrowTokenAmount, borrowApr, lendApr, totalAssets, totalDebtInMarket, gaugeBoostPercentage, versionFlag = '') {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -529,13 +535,19 @@ export function buildLendingMarketWithdrawMessage(market, txHash, dollarAmount, 
     const asset_URL = getTokenURL(market.borrowed_token);
     const asset_Link = hyperlink(asset_URL, market.borrowed_token_symbol);
     const dollarAddon = getDollarAddOn(dollarAmount);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedWithdrawnBorrowTokenAmount)}${asset_Link}${dollarAddon}
 ${apyLine}
 ${utililizationLine}
@@ -543,7 +555,7 @@ Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
 // CONTROLLER-MESSAGES
-export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, parsedBorrowedAmount, parsedCollatAmount, positionHealth, totalDebtInMarket, collatDollarAmount, dollarAmountBorrow, borrowApr, lendApr, totalAssets, gaugeBoostPercentage) {
+export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, parsedBorrowedAmount, parsedCollatAmount, positionHealth, totalDebtInMarket, collatDollarAmount, dollarAmountBorrow, borrowApr, lendApr, totalAssets, gaugeBoostPercentage, versionFlag = '') {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const agentURL = getBuyerURL(agentAddress);
@@ -555,7 +567,10 @@ export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, pa
     const vaultURL = getPoolURL(market.vault);
     const dollarAddon = getDollarAddOn(collatDollarAmount);
     const dollarAddonBorrow = getDollarAddOn(dollarAmountBorrow);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     let userLine;
@@ -571,8 +586,11 @@ export function buildLendingMarketBorrowMessage(market, txHash, agentAddress, pa
     const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 ${userLine}
 ${positionHealthLine}
 ${apyLine}
@@ -580,7 +598,7 @@ ${utililizationLine}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketRepayMessage(market, txHash, positionHealth, totalDebtInMarket, agentAddress, parsedRepayAmount, collatDollarAmount, parsedCollatAmount, repayDollarAmount, borrowApr, lendApr, totalAssets, gaugeBoostPercentage) {
+export function buildLendingMarketRepayMessage(market, txHash, positionHealth, totalDebtInMarket, agentAddress, parsedRepayAmount, collatDollarAmount, parsedCollatAmount, repayDollarAmount, borrowApr, lendApr, totalAssets, gaugeBoostPercentage, versionFlag = '') {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -600,13 +618,19 @@ export function buildLendingMarketRepayMessage(market, txHash, positionHealth, t
         userLine = `User${hyperlink(agentURL, shortenAgent)} returned ${Number(parsedRepayAmount.toFixed(0)).toLocaleString()}${borrowedTokenLink}${repayDollarAddon}`;
     }
     const positionHealthLine = getLlamaLendPositionHealthLine(positionHealth);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 ${userLine}
 ${positionHealthLine}
 ${apyLine}
@@ -614,7 +638,7 @@ ${utililizationLine}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAmount, txHash, agentAddress, positionHealth, collatDollarAmount, totalDebtInMarket, borrowApr, lendApr, totalAssets, gaugeBoostPercentage) {
+export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAmount, txHash, agentAddress, positionHealth, collatDollarAmount, totalDebtInMarket, borrowApr, lendApr, totalAssets, gaugeBoostPercentage, versionFlag = '') {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -626,13 +650,19 @@ export function buildLendingMarketRemoveCollateralMessage(market, parsedCollatAm
     const collatDollarAddOn = getDollarAddOn(collatDollarAmount);
     const borrowedTokenURL = getTokenURL(market.borrowed_token);
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 User${hyperlink(agentURL, shortenAgent)} removed ${formatForPrint(parsedCollatAmount)}${collat_Link}${collatDollarAddOn}
 ${positionHealthLine}
 ${apyLine}
@@ -640,29 +670,35 @@ ${utililizationLine}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketSelfLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, gaugeBoostPercentage) {
+export function buildLendingMarketSelfLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, gaugeBoostPercentage, versionFlag = '') {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
     const borrowedTokenURL = getTokenURL(market.borrowed_token);
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
     const liquidatorURL = getBuyerURL(liquidatorAddress);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     const collat_URL = getTokenURL(market.collateral_token);
     const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 User${hyperlink(liquidatorURL, shortenAddress(liquidatorAddress))} self-liquidated ${formatForPrint(parsedCollatAmount)}${collat_Link} ($${Number(collarDollarValue.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation)}${borrowedTokenLink} ($${formatForPrint(borrowTokenDollarAmount)})
 ${apyLine}
 ${utililizationLine}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress, gaugeBoostPercentage) {
+export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress, gaugeBoostPercentage, versionFlag = '') {
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
     const vaultURL = getPoolURL(market.vault);
@@ -670,7 +706,10 @@ export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowToken
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
     const liquidatorURL = getBuyerURL(liquidatorAddress);
     const poorFellaURL = getBuyerURL(poorFellaAddress);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     const discountAmount = Math.abs(collarDollarValue - borrowTokenDollarAmount);
@@ -678,8 +717,11 @@ export function buildLendingMarketHardLiquidateMessage(market, parsedBorrowToken
     const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 User${hyperlink(liquidatorURL, shortenAddress(liquidatorAddress))} hard-liquidated ${formatForPrint(parsedCollatAmount)}${collat_Link} ($${Number(collarDollarValue.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation)}${borrowedTokenLink} ($${formatForPrint(borrowTokenDollarAmount)})
 Discount: $${formatForPrint(discountAmount)}
 Affected User:${hyperlink(poorFellaURL, shortenAddress(poorFellaAddress))}
@@ -688,7 +730,7 @@ ${utililizationLine}
 Links:${etherscanLink} |${eigenphiLink} |${curveLendingLink} 🦙🦙🦙
 `;
 }
-export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets, gaugeBoostPercentage, discountAmount) {
+export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSoftLiquidatedAmount, collatDollarAmount, parsedRepaidAmount, repaidBorrrowTokenDollarAmount, borrowApr, lendApr, totalDebtInMarket, totalAssets, gaugeBoostPercentage, discountAmount, versionFlag = '') {
     const vaultURL = getPoolURL(market.vault);
     const TX_HASH_URL_ETHERSCAN = getTxHashURLfromEtherscan(txHash);
     const TX_HASH_URL_EIGENPHI = getTxHashURLfromEigenPhi(txHash);
@@ -698,7 +740,10 @@ export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSo
     const collat_Link = hyperlink(collat_URL, market.collateral_token_symbol);
     const borrowedTokenURL = getTokenURL(market.borrowed_token);
     const borrowedTokenLink = hyperlink(borrowedTokenURL, market.borrowed_token_symbol);
-    const curveLendingLink = hyperlink(getCurveLendingURL(market.id), 'curve');
+    const isLL2 = versionFlag === 'is LLamaLend V2';
+    const curveLendingLink = hyperlink(isLL2
+        ? `https://www.curve.finance/lend/ethereum/markets/${market.controller}/vault`
+        : getCurveLendingURL(market.id), 'curve');
     const etherscanLink = hyperlink(TX_HASH_URL_ETHERSCAN, 'etherscan.io');
     const eigenphiLink = hyperlink(TX_HASH_URL_EIGENPHI, 'eigenphi.io');
     let direction;
@@ -710,8 +755,11 @@ export function buildSoftLiquidateMessage(market, txHash, agentAddress, parsedSo
     }
     let apyLine = getLlamaLendRateLine(lendApr, borrowApr, gaugeBoostPercentage);
     const utililizationLine = getLlamaLendTVLline(totalDebtInMarket, totalAssets, borrowedTokenLink);
+    let openingLine = `Lending | mainnet |${hyperlink(vaultURL, market.market_name)}`;
+    if (isLL2)
+        openingLine = `LlamaLend V2 | mainnet |${hyperlink(vaultURL, market.market_name)}`;
     return `
-Lending | mainnet |${hyperlink(vaultURL, market.market_name)}
+${openingLine}
 User${hyperlink(agentURL, shortenAgent)} ${direction}-liquidated ${formatForPrint(parsedSoftLiquidatedAmount)}${collat_Link} ($${Number(collatDollarAmount.toFixed(0)).toLocaleString()}) with ${formatForPrint(parsedRepaidAmount)}${borrowedTokenLink} ($${formatForPrint(repaidBorrrowTokenDollarAmount)})
 Discount: $${formatForPrint(discountAmount)}
 ${apyLine}

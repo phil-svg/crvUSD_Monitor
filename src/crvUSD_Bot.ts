@@ -4,6 +4,7 @@ import { launchClassicCrvUSDMonitoring } from './utils/ClassicCrvUSD/main.js';
 import { getLogsForBlock, startListeningToAllEvents } from './utils/web3/AllEvents.js';
 import { conductResearch } from './research/Research.js';
 import { launchPegkeeper } from './utils/pegkeeper/Pegkeeper.js';
+import { launchCurveLendingMonitoring_V2 } from './utils/LendingV2/LlamalendMain.js';
 
 console.clear();
 
@@ -23,6 +24,9 @@ async function main() {
   console.log('starting launchCurveLendingMonitoring');
   await launchCurveLendingMonitoring();
 
+  console.log('starting launchCurveLendingMonitoring_V2');
+  await launchCurveLendingMonitoring_V2();
+
   console.log('starting launchClassicCrvUSDMonitoring');
   await launchClassicCrvUSDMonitoring();
 
@@ -32,12 +36,13 @@ async function main() {
   console.timeEnd('launching crvUSD_Bot');
 
   // histo
-  // await getLogsForBlock(25051992);
+  // await getLogsForBlock(25580688);
 }
 
 // const bot = getTgBot(ENV);
 // await telegramBotMain(ENV, bot);
 await main();
+// await launchCurveLendingMonitoring_V2();
 // await launchClassicCrvUSDMonitoring();
 // await conductResearch();
 // await launchPegkeeper();
