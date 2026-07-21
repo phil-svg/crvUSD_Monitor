@@ -347,7 +347,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = currentBlockNumber;
 
-  const START_BLOCK = 20313138;
+  const START_BLOCK = 25582473;
   const END_BLOCK = START_BLOCK;
 
   for (const market of allLendingMarkets) {
@@ -541,9 +541,9 @@ export async function launchCurveLendingMonitoring() {
   // console.log("allEnrichedLendingMarkets", allEnrichedLendingMarkets);
   // process.exit();
 
-  // await histoMode(allEnrichedLendingMarkets, eventEmitter);
+  await histoMode(allEnrichedLendingMarkets, eventEmitter);
   console.log('allEnrichedLendingMarkets', allEnrichedLendingMarkets);
-  await liveMode(allEnrichedLendingMarkets);
+  // await liveMode(allEnrichedLendingMarkets);
 }
 
 /*

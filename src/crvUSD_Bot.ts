@@ -8,8 +8,8 @@ import { launchCurveLendingMonitoring_V2 } from './utils/LendingV2/LlamalendMain
 
 console.clear();
 
-const ENV = 'prod';
-// const ENV = 'test';
+// const ENV = 'prod';
+const ENV = 'test';
 
 async function main() {
   console.time('launching crvUSD_Bot');
@@ -24,14 +24,14 @@ async function main() {
   console.log('starting launchCurveLendingMonitoring');
   await launchCurveLendingMonitoring();
 
-  console.log('starting launchCurveLendingMonitoring_V2');
-  await launchCurveLendingMonitoring_V2();
+  // console.log('starting launchCurveLendingMonitoring_V2');
+  // await launchCurveLendingMonitoring_V2();
 
-  console.log('starting launchClassicCrvUSDMonitoring');
-  await launchClassicCrvUSDMonitoring();
+  // console.log('starting launchClassicCrvUSDMonitoring');
+  // await launchClassicCrvUSDMonitoring();
 
-  console.log('starting launchPegkeeper');
-  await launchPegkeeper();
+  // console.log('starting launchPegkeeper');
+  // await launchPegkeeper();
 
   console.timeEnd('launching crvUSD_Bot');
 
