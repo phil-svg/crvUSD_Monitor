@@ -541,9 +541,9 @@ export async function launchCurveLendingMonitoring() {
   // console.log("allEnrichedLendingMarkets", allEnrichedLendingMarkets);
   // process.exit();
 
-  await histoMode(allEnrichedLendingMarkets, eventEmitter);
+  // await histoMode(allEnrichedLendingMarkets, eventEmitter);
   console.log('allEnrichedLendingMarkets', allEnrichedLendingMarkets);
-  // await liveMode(allEnrichedLendingMarkets);
+  await liveMode(allEnrichedLendingMarkets);
 }
 
 /*
