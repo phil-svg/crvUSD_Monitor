@@ -8,7 +8,7 @@ import { saveLastSeenToFile } from '../Oragnizer.js';
 import { getPastEvents, web3HttpProvider } from '../web3/Web3Basics.js';
 import { fetchEventsRealTime, registerHandler } from '../web3/AllEvents.js';
 import { LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING_V2, LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING_V2, LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2, } from '../Constants.js';
-import { getAllLendingMarkets } from './AllLendingMarkets.js';
+import { getAllLendingMarkets, readLendingMarketsFromNDJSON_V2 } from './AllLendingMarkets.js';
 async function processLlamalendVaultEvent(market, llamalendVaultContract, controllerContract, ammContract, event, eventEmitter) {
     const txHash = event.transactionHash;
     const isLongPosition = market.market_name.endsWith('Long');
@@ -183,7 +183,7 @@ async function histoMode(allLendingMarkets, eventEmitter) {
     const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
     // const START_BLOCK = LENDING_LAUNCH_BLOCK;
     // const END_BLOCK = currentBlockNumber;
-    const START_BLOCK = 25580679;
+    const START_BLOCK = 25585567;
     const END_BLOCK = START_BLOCK;
     for (const market of allLendingMarkets) {
         // used to filter for only 1 market to speed up debugging, works for address of vault, controller, or amm
@@ -262,6 +262,15 @@ export async function subscribeToLendingMarketsEvents(market, vaultContract, vau
         console.log('Error in fetching events:', err);
     }
 }
+async function isLlamaLendV2Market(market) {
+    const ndjsonData = await readLendingMarketsFromNDJSON_V2();
+    return ndjsonData.some((entry) => {
+        const rv = entry.returnValues;
+        return (String(rv.vault).toLowerCase() === String(market.vault).toLowerCase() ||
+            String(rv.controller).toLowerCase() === String(market.controller).toLowerCase() ||
+            String(rv.amm).toLowerCase() === String(market.amm).toLowerCase());
+    });
+}
 async function liveMode(allLendingMarkets) {
     for (const market of allLendingMarkets) {
         // console.log('\nmarket', market);
@@ -273,7 +282,8 @@ async function liveMode(allLendingMarkets) {
         subscribeToLendingMarketsEvents(market, vaultContract, market.vault, ABI_LLAMALEND_VAULT, controllerContact, market.controller, ABI_LLAMALEND_CONTROLLER, ammContract, market.amm, ABI_LLAMALEND_AMM, eventEmitter, 'Amm');
     }
     eventEmitter.on('newLendingMarketsEvent', async ({ market, event, type, vaultContract, controllerContact, ammContract }) => {
-        // console.log('\n\n\n\nnew event in Market:', market.vault, ':', event, 'type:', type);
+        if (!(await isLlamaLendV2Market(market)))
+            return; // this ensures we do not process other events with the same signature (eg some Lending V1 events)
         console.log(`${event.transactionHash} | ${event.event} | lending`);
         await saveLastSeenToFile(event.transactionHash, new Date());
         if (type === 'Vault') {

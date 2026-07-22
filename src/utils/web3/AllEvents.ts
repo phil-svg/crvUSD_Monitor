@@ -18,6 +18,14 @@ export function registerHandler(handler: (logs: EvmLogEntry[]) => void) {
   handlers.push(handler);
 }
 
+export async function runHistoricalBlock(blockNumber: number) {
+  const logs = await web3HttpProvider.eth.getPastLogs({
+    fromBlock: blockNumber,
+    toBlock: blockNumber,
+  });
+  handlers.forEach((handler) => handler(logs));
+}
+
 export async function startListeningToAllEvents(): Promise<any> {
   try {
     let lastBlockNumber = await web3HttpProvider.eth.getBlockNumber();

@@ -41,7 +41,7 @@ import {
   LENDING_MIN_LIQUIDATION_DISCOUNT_WORTH_PRINTING_V2,
   LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING_V2,
 } from '../Constants.js';
-import { getAllLendingMarkets } from './AllLendingMarkets.js';
+import { getAllLendingMarkets, readLendingMarketsFromNDJSON_V2 } from './AllLendingMarkets.js';
 
 async function processLlamalendVaultEvent(
   market: EnrichedLendingMarketEvent,
@@ -353,7 +353,7 @@ async function histoMode(allLendingMarkets: EnrichedLendingMarketEvent[], eventE
   // const START_BLOCK = LENDING_LAUNCH_BLOCK;
   // const END_BLOCK = currentBlockNumber;
 
-  const START_BLOCK = 25580679;
+  const START_BLOCK = 25585567;
   const END_BLOCK = START_BLOCK;
 
   for (const market of allLendingMarkets) {
@@ -459,6 +459,18 @@ export async function subscribeToLendingMarketsEvents(
   }
 }
 
+async function isLlamaLendV2Market(market: EnrichedLendingMarketEvent): Promise<boolean> {
+  const ndjsonData = await readLendingMarketsFromNDJSON_V2();
+  return ndjsonData.some((entry: any) => {
+    const rv = entry.returnValues;
+    return (
+      String(rv.vault).toLowerCase() === String(market.vault).toLowerCase() ||
+      String(rv.controller).toLowerCase() === String(market.controller).toLowerCase() ||
+      String(rv.amm).toLowerCase() === String(market.amm).toLowerCase()
+    );
+  });
+}
+
 async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[]) {
   for (const market of allLendingMarkets) {
     // console.log('\nmarket', market);
@@ -514,7 +526,7 @@ async function liveMode(allLendingMarkets: EnrichedLendingMarketEvent[]) {
   eventEmitter.on(
     'newLendingMarketsEvent',
     async ({ market, event, type, vaultContract, controllerContact, ammContract }: LendingMarketEventPayload) => {
-      // console.log('\n\n\n\nnew event in Market:', market.vault, ':', event, 'type:', type);
+      if (!(await isLlamaLendV2Market(market))) return; // this ensures we do not process other events with the same signature (eg some Lending V1 events)
       console.log(`${event.transactionHash} | ${event.event} | lending`);
       await saveLastSeenToFile(event.transactionHash, new Date());
 

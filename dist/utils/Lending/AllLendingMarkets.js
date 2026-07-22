@@ -32,7 +32,7 @@ async function saveLastScannedBlock(blockNumber) {
 // ─────────────────────────────────────────────────────────────
 // NDJSON helpers
 // ─────────────────────────────────────────────────────────────
-async function readLendingMarketsFromNDJSON() {
+export async function readLendingMarketsFromNDJSON_V1() {
     try {
         const data = await readFile(LENDING_MARKETS_NDJSON, 'utf-8');
         return data
@@ -91,7 +91,7 @@ async function updateLendingMarketsJSON(currentBlockNumber) {
 export async function getAllLendingMarkets() {
     const currentBlockNumber = await web3HttpProvider.eth.getBlockNumber();
     await updateLendingMarketsJSON(currentBlockNumber);
-    const events = await readLendingMarketsFromNDJSON();
+    const events = await readLendingMarketsFromNDJSON_V1();
     const lendingMarkets = await Promise.all(events.map((event) => handleEvent(event)));
     lendingMarkets.sort((a, b) => a.id.localeCompare(b.id));
     return lendingMarkets;

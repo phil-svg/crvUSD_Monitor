@@ -3,6 +3,13 @@ const handlers = [];
 export function registerHandler(handler) {
     handlers.push(handler);
 }
+export async function runHistoricalBlock(blockNumber) {
+    const logs = await web3HttpProvider.eth.getPastLogs({
+        fromBlock: blockNumber,
+        toBlock: blockNumber,
+    });
+    handlers.forEach((handler) => handler(logs));
+}
 export async function startListeningToAllEvents() {
     try {
         let lastBlockNumber = await web3HttpProvider.eth.getBlockNumber();

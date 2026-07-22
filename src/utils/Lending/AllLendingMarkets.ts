@@ -40,7 +40,7 @@ async function saveLastScannedBlock(blockNumber: number): Promise<void> {
 // NDJSON helpers
 // ─────────────────────────────────────────────────────────────
 
-async function readLendingMarketsFromNDJSON(): Promise<EthereumEvent[]> {
+export async function readLendingMarketsFromNDJSON_V1(): Promise<EthereumEvent[]> {
   try {
     const data = await readFile(LENDING_MARKETS_NDJSON, 'utf-8');
     return data
@@ -119,7 +119,7 @@ export async function getAllLendingMarkets(): Promise<LendingMarketEvent[]> {
 
   await updateLendingMarketsJSON(currentBlockNumber);
 
-  const events = await readLendingMarketsFromNDJSON();
+  const events = await readLendingMarketsFromNDJSON_V1();
 
   const lendingMarkets: LendingMarketEvent[] = await Promise.all(events.map((event) => handleEvent(event)));
 
