@@ -28,13 +28,13 @@ async function main() {
   console.log('starting launchCurveLendingMonitoring_V2');
   await launchCurveLendingMonitoring_V2();
 
-  // console.log('starting launchClassicCrvUSDMonitoring');
-  // await launchClassicCrvUSDMonitoring();
+  console.log('starting launchClassicCrvUSDMonitoring');
+  await launchClassicCrvUSDMonitoring();
 
-  // console.log('starting launchPegkeeper');
-  // await launchPegkeeper();
+  console.log('starting launchPegkeeper');
+  await launchPegkeeper();
 
-  // console.timeEnd('launching crvUSD_Bot');
+  console.timeEnd('launching crvUSD_Bot');
 
   // histo
   // await getLogsForBlock(25580688);
@@ -48,4 +48,5 @@ await main();
 // await conductResearch();
 // await launchPegkeeper();
 
-// await runHistoricalBlock(25585567); // requires main() to have booted
+// console.log('Starting Historical Block');
+// await runHistoricalBlock(25617460); // requires main() to have booted
