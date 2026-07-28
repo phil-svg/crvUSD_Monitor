@@ -167,5 +167,9 @@ export const labels = [
         Address: '0x92F3f71CeF740ED5784874B8C70Ff87ECdF33588',
         Label: '1Inch',
     },
+    {
+        Address: '0x09AcE8B2f2fE2189A5B37046BBaFa29Dce31c920',
+        Label: 'Yearn Vault',
+    },
 ];
 //# sourceMappingURL=Labels.js.map

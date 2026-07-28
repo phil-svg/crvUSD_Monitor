@@ -34,5 +34,5 @@ await main();
 // await conductResearch();
 // await launchPegkeeper();
 // console.log('Starting Historical Block');
-// await runHistoricalBlock(25617460); // requires main() to have booted
+// await runHistoricalBlock(25630125); // requires main() to have booted
 //# sourceMappingURL=crvUSD_Bot.js.map
