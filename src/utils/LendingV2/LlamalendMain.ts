@@ -5,6 +5,7 @@ import {
   LendingMarketEventPayload,
 } from '../Interfaces.js';
 import {
+  considerOnlyBoost,
   getBorrowApr,
   getCollatDollarValue,
   getLendApr,
@@ -64,7 +65,7 @@ async function processLlamalendVaultEvent(
   }
 
   if (event.event === 'Deposit') {
-    const agentAddress = event.returnValues.sender;
+    const agentAddress = await considerOnlyBoost(event.returnValues.sender, txHash);
     const parsedDepositedBorrowTokenAmount = event.returnValues.assets / 10 ** Number(market.borrowed_token_decimals);
     const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
     const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
@@ -89,7 +90,7 @@ async function processLlamalendVaultEvent(
     eventEmitter.emit('newMessage', message);
   }
   if (event.event === 'Withdraw') {
-    const agentAddress = event.returnValues.sender;
+    const agentAddress = await considerOnlyBoost(event.returnValues.sender, txHash);
     const parsedWithdrawnBorrowTokenAmount = event.returnValues.assets / 10 ** Number(market.borrowed_token_decimals);
     const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
     const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
@@ -143,6 +144,8 @@ async function processLlamalendControllerEvent(
   const txHash = event.transactionHash;
   const agentAddress = event.returnValues.user;
   const callerAddress = event.returnValues.caller; // NEW LINE FOR LL2
+  // display only — health/debt lookups below must keep the real position owner
+  const displayAgentAddress = await considerOnlyBoost(agentAddress, txHash);
   const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
   const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
   const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
@@ -159,7 +162,7 @@ async function processLlamalendControllerEvent(
     const message = buildLendingMarketBorrowMessage(
       market,
       txHash,
-      agentAddress,
+      displayAgentAddress,
       parsedBorrowedAmount,
       parsedCollatAmount,
       positionHealth,
@@ -186,7 +189,7 @@ async function processLlamalendControllerEvent(
       txHash,
       positionHealth,
       totalDebtInMarket,
-      agentAddress,
+      displayAgentAddress,
       parsedRepayAmount,
       collatDollarAmount,
       parsedCollatAmount,
@@ -208,7 +211,7 @@ async function processLlamalendControllerEvent(
       market,
       parsedCollatAmount,
       txHash,
-      agentAddress,
+      displayAgentAddress,
       positionHealth,
       collatDollarAmount,
       totalDebtInMarket,
@@ -230,6 +233,8 @@ async function processLlamalendControllerEvent(
       parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation * borrowedTokenDollarPricePerUnit;
     const liquidatorAddress = event.returnValues.liquidator;
     const poorFellaAddress = event.returnValues.user;
+    // display only — the self-liquidation check below needs the raw liquidator
+    const displayLiquidatorAddress = await considerOnlyBoost(liquidatorAddress, txHash);
     const parsedCollatAmount = event.returnValues.collateral_received / 10 ** market.collateral_token_decimals;
     const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
     const collarDollarValue = parsedCollatAmount * collatTokenDollarPricePerUnit;
@@ -247,7 +252,7 @@ async function processLlamalendControllerEvent(
         borrowApr,
         lendApr,
         totalAssets,
-        liquidatorAddress,
+        displayLiquidatorAddress,
         gaugeBoostPercentage,
         'is LLamaLend V2'
       );
@@ -265,7 +270,7 @@ async function processLlamalendControllerEvent(
         borrowApr,
         lendApr,
         totalAssets,
-        liquidatorAddress,
+        displayLiquidatorAddress,
         poorFellaAddress,
         gaugeBoostPercentage,
         'is LLamaLend V2'
@@ -303,7 +308,7 @@ async function processLlamalendAmmEvent(
     }
 
     const txHash = event.transactionHash;
-    const agentAddress = event.returnValues.buyer;
+    const agentAddress = await considerOnlyBoost(event.returnValues.buyer, txHash);
     let parsedSoftLiquidatedAmount;
     let parsedRepaidAmount;
     if (event.returnValues.sold_id === '0') {
@@ -442,7 +447,7 @@ export async function subscribeToLendingMarketsEvents(
       const events = await fetchEventsRealTime(logs, address, abi, 'AllEvents');
       if (events.length > 0) {
         events.forEach((event: any) => {
-          console.log('LLAMMA LEND Event', event.transactionHash);
+          console.log('LLAMMA LEND 2 Event', event.transactionHash);
           eventEmitter.emit('newLendingMarketsEvent', {
             market,
             event,

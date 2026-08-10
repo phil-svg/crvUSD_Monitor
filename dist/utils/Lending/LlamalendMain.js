@@ -1,4 +1,4 @@
-import { getBorrowApr, getCollatDollarValue, getLendApr, getPositionHealth, getTotalAssets, getTotalDebtInMarket, } from '../helperFunctions/Lending.js';
+import { considerOnlyBoost, getBorrowApr, getCollatDollarValue, getLendApr, getPositionHealth, getTotalAssets, getTotalDebtInMarket, } from '../helperFunctions/Lending.js';
 import { getPriceOf_crvUSD } from '../priceAPI/priceAPI.js';
 import { buildLendingMarketBorrowMessage, buildLendingMarketDepositMessage, buildLendingMarketHardLiquidateMessage, buildLendingMarketRemoveCollateralMessage, buildLendingMarketRepayMessage, buildLendingMarketSelfLiquidateMessage, buildLendingMarketWithdrawMessage, buildSoftLiquidateMessage, } from '../telegram/TelegramBot.js';
 import { ABI_LLAMALEND_AMM, ABI_LLAMALEND_CONTROLLER, ABI_LLAMALEND_VAULT } from './Abis.js';
@@ -24,7 +24,7 @@ async function processLlamalendVaultEvent(market, llamalendVaultContract, contro
         borrowedTokenDollarPricePerUnit = otherTokenDollarValue;
     }
     if (event.event === 'Deposit') {
-        const agentAddress = event.returnValues.sender;
+        const agentAddress = await considerOnlyBoost(event.returnValues.sender, txHash);
         const parsedDepositedBorrowTokenAmount = event.returnValues.assets / 10 ** Number(market.borrowed_token_decimals);
         const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
         const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
@@ -38,7 +38,7 @@ async function processLlamalendVaultEvent(market, llamalendVaultContract, contro
         eventEmitter.emit('newMessage', message);
     }
     if (event.event === 'Withdraw') {
-        const agentAddress = event.returnValues.sender;
+        const agentAddress = await considerOnlyBoost(event.returnValues.sender, txHash);
         const parsedWithdrawnBorrowTokenAmount = event.returnValues.assets / 10 ** Number(market.borrowed_token_decimals);
         const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
         const lendApr = await getLendApr(llamalendVaultContract, event.blockNumber);
@@ -72,6 +72,8 @@ async function processLlamalendControllerEvent(market, llamalendVaultContract, c
     }
     const txHash = event.transactionHash;
     const agentAddress = event.returnValues.user;
+    // display only — health/debt lookups below must keep the real position owner
+    const displayAgentAddress = await considerOnlyBoost(agentAddress, txHash);
     const positionHealth = await getPositionHealth(controllerContract, agentAddress, event.blockNumber);
     const totalDebtInMarket = await getTotalDebtInMarket(market, controllerContract, event.blockNumber);
     const borrowApr = await getBorrowApr(llamalendVaultContract, event.blockNumber);
@@ -85,7 +87,7 @@ async function processLlamalendControllerEvent(market, llamalendVaultContract, c
         if (dollarAmountBorrow < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING)
             return;
         const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
-        const message = buildLendingMarketBorrowMessage(market, txHash, agentAddress, parsedBorrowedAmount, parsedCollatAmount, positionHealth, totalDebtInMarket, collatDollarAmount, dollarAmountBorrow, borrowApr, lendApr, totalAssets, gaugeBoostPercentage);
+        const message = buildLendingMarketBorrowMessage(market, txHash, displayAgentAddress, parsedBorrowedAmount, parsedCollatAmount, positionHealth, totalDebtInMarket, collatDollarAmount, dollarAmountBorrow, borrowApr, lendApr, totalAssets, gaugeBoostPercentage);
         eventEmitter.emit('newMessage', message);
     }
     if (event.event === 'Repay') {
@@ -96,7 +98,7 @@ async function processLlamalendControllerEvent(market, llamalendVaultContract, c
         if (repayDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING)
             return;
         const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
-        const message = buildLendingMarketRepayMessage(market, txHash, positionHealth, totalDebtInMarket, agentAddress, parsedRepayAmount, collatDollarAmount, parsedCollatAmount, repayDollarAmount, borrowApr, lendApr, totalAssets, gaugeBoostPercentage);
+        const message = buildLendingMarketRepayMessage(market, txHash, positionHealth, totalDebtInMarket, displayAgentAddress, parsedRepayAmount, collatDollarAmount, parsedCollatAmount, repayDollarAmount, borrowApr, lendApr, totalAssets, gaugeBoostPercentage);
         eventEmitter.emit('newMessage', message);
     }
     if (event.event === 'RemoveCollateral') {
@@ -105,7 +107,7 @@ async function processLlamalendControllerEvent(market, llamalendVaultContract, c
         const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
         if (collatDollarAmount < LENDING_MIN_LOAN_CHANGE_AMOUNT_WORTH_PRINTING)
             return;
-        const message = buildLendingMarketRemoveCollateralMessage(market, parsedCollatAmount, txHash, agentAddress, positionHealth, collatDollarAmount, totalDebtInMarket, borrowApr, lendApr, totalAssets, gaugeBoostPercentage);
+        const message = buildLendingMarketRemoveCollateralMessage(market, parsedCollatAmount, txHash, displayAgentAddress, positionHealth, collatDollarAmount, totalDebtInMarket, borrowApr, lendApr, totalAssets, gaugeBoostPercentage);
         eventEmitter.emit('newMessage', message);
     }
     // HARD-LIQUIDATION
@@ -119,18 +121,20 @@ async function processLlamalendControllerEvent(market, llamalendVaultContract, c
         const borrowTokenDollarAmount = parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation * borrowedTokenDollarPricePerUnit;
         const liquidatorAddress = event.returnValues.liquidator;
         const poorFellaAddress = event.returnValues.user;
+        // display only — the self-liquidation check below needs the raw liquidator
+        const displayLiquidatorAddress = await considerOnlyBoost(liquidatorAddress, txHash);
         const parsedCollatAmount = event.returnValues.collateral_received / 10 ** market.collateral_token_decimals;
         const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
         const collarDollarValue = parsedCollatAmount * collatTokenDollarPricePerUnit;
         if (collarDollarValue < LENDING_MIN_HARDLIQ_AMOUNT_WORTH_PRINTING)
             return;
         if (poorFellaAddress.toLowerCase() === liquidatorAddress.toLowerCase()) {
-            const message = buildLendingMarketSelfLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, gaugeBoostPercentage);
+            const message = buildLendingMarketSelfLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, displayLiquidatorAddress, gaugeBoostPercentage);
             eventEmitter.emit('newMessage', message);
         }
         else {
             const gaugeBoostPercentage = await getFirstGaugeCrvApyByVaultAddress(market.vault);
-            const message = buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, liquidatorAddress, poorFellaAddress, gaugeBoostPercentage);
+            const message = buildLendingMarketHardLiquidateMessage(market, parsedBorrowTokenAmountSentByBotFromReceiptForHardLiquidation, borrowTokenDollarAmount, parsedCollatAmount, collarDollarValue, txHash, totalDebtInMarket, borrowApr, lendApr, totalAssets, displayLiquidatorAddress, poorFellaAddress, gaugeBoostPercentage);
             eventEmitter.emit('newMessage', message);
         }
     }
@@ -155,7 +159,7 @@ async function processLlamalendAmmEvent(market, llamalendVaultContract, controll
             collatTokenDollarPricePerUnit = crvUSDPrice;
         }
         const txHash = event.transactionHash;
-        const agentAddress = event.returnValues.buyer;
+        const agentAddress = await considerOnlyBoost(event.returnValues.buyer, txHash);
         let parsedSoftLiquidatedAmount;
         let parsedRepaidAmount;
         if (event.returnValues.sold_id === '0') {
@@ -248,7 +252,7 @@ export async function subscribeToLendingMarketsEvents(market, vaultContract, vau
             const events = await fetchEventsRealTime(logs, address, abi, 'AllEvents');
             if (events.length > 0) {
                 events.forEach((event) => {
-                    console.log('LLAMMA LEND Event', event.transactionHash);
+                    console.log('LLAMMA LEND 1 Event ', event.transactionHash);
                     eventEmitter.emit('newLendingMarketsEvent', {
                         market,
                         event,
@@ -287,15 +291,17 @@ async function liveMode(allLendingMarkets) {
     eventEmitter.on('newLendingMarketsEvent', async ({ market, event, type, vaultContract, controllerContact, ammContract }) => {
         if (!(await isLlamaLendV1Market(market)))
             return; // this ensures we do not process other events with the same signature (eg some Lending V2 events)
-        console.log(`${event.transactionHash} | ${event.event} | lending`);
+        console.log(`newLendingMarketsEvent info: ${event.transactionHash} | ${event.event} | lending`, event);
         await saveLastSeenToFile(event.transactionHash, new Date());
         if (type === 'Vault') {
+            console.log(`newLendingMarketsEvent info: ${event.transactionHash} | ${event.event} | vault`, event);
             await processLlamalendVaultEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
         }
         else if (type === 'Controller') {
             await processLlamalendControllerEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
         }
         else if (type === 'Amm') {
+            console.log(`newLendingMarketsEvent info: ${event.transactionHash} | ${event.event} | Amm`, event);
             await processLlamalendAmmEvent(market, vaultContract, controllerContact, ammContract, event, eventEmitter);
         }
     });

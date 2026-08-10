@@ -1,5 +1,9 @@
 export const labels = [
   {
+    Address: '0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6',
+    Label: 'Only Boost',
+  },
+  {
     Address: '0x4025ee6512dbbda97049bcf5aa5d38c54af6be8a',
     Label: 'Railgun: WETH Helper',
   },
