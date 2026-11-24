@@ -53,8 +53,8 @@ export async function readLendingMarketsFromNDJSON_V2() {
 }
 async function getPastEventsChunked(contract, eventName, fromBlock, toBlock) {
     const events = [];
-    const STEP = 999;
-    for (let start = fromBlock; start <= toBlock; start += STEP) {
+    const STEP = 499; // eth_getLogs is capped at 500 blocks per request (start..end inclusive)
+    for (let start = fromBlock; start <= toBlock; start += STEP + 1) {
         const end = Math.min(start + STEP, toBlock);
         console.log(`Fetching NewVault events ${start} → ${end} ...`);
         const chunk = await getPastEvents(contract, eventName, start, end);

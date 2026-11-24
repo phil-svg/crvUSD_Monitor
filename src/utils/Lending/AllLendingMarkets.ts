@@ -65,9 +65,9 @@ async function getPastEventsChunked(
   toBlock: number
 ): Promise<EthereumEvent[]> {
   const events: EthereumEvent[] = [];
-  const STEP = 999;
+  const STEP = 499; // eth_getLogs is capped at 500 blocks per request (start..end inclusive)
 
-  for (let start = fromBlock; start <= toBlock; start += STEP) {
+  for (let start = fromBlock; start <= toBlock; start += STEP + 1) {
     const end = Math.min(start + STEP, toBlock);
     console.log(`Fetching NewVault events ${start} → ${end} ...`);
 
